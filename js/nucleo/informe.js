@@ -18,7 +18,6 @@
     return String(txt || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
   }
 
-  const LOGO = '<svg class="inf-logo" viewBox="0 0 64 64" aria-hidden="true"><path class="logo-zap" d="M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58"/><path class="logo-col" d="M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13"/></svg>';
 
   function itemHtml(it) {
     const tex = global.Memoria.tex;
@@ -38,7 +37,7 @@
   function portada(d) {
     const i = d.info, resp = listaResponsables(i.responsables), ok = d.R.todoOk;
     return '<section class="inf-portada">' +
-      '<div class="inf-portada-sup">' + LOGO + '<p class="inf-tipo">Memoria de cálculo estructural</p></div>' +
+      '<div class="inf-portada-sup">' + global.Logo.svg('inf-logo') + '<p class="inf-tipo">Memoria de cálculo estructural</p></div>' +
       '<div class="inf-portada-centro">' +
         '<h1 class="inf-titulo">' + esc(i.titulo) + '</h1>' +
         '<dl class="inf-meta">' +
@@ -68,11 +67,22 @@
 
     add('<h2 class="inf-h2">Resumen de resultados</h2>', { nueva: true, conSiguiente: true });
     add('<p class="inf-veredicto ' + (ok ? 'ok' : 'mal') + '">' + (ok ? 'El diseño cumple.' : 'El diseño no cumple.') + ' ' + esc(d.resumen) + '</p>');
-    add('<table class="inf-tabla"><thead><tr><th>Chequeo</th><th>Detalle</th><th>Utilización</th><th>Estado</th></tr></thead><tbody>' +
-      d.chequeos.map((c) => '<tr><td>' + c.titulo + '</td><td class="inf-mono">' + c.det + '</td><td class="inf-mono">' + (c.util * 100).toFixed(0) + ' %</td><td class="' + (c.ok ? 'ok' : 'mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</td></tr>').join('') +
+    const L = global.Memoria.texLinea;
+    add('<table class="inf-tabla inf-resumen"><thead><tr><th>Chequeo</th><th>Verificación</th><th>Utilización</th><th>Estado</th></tr></thead><tbody>' +
+      d.chequeos.map((c) => '<tr><td>' + c.titulo + '</td><td class="inf-tex">' + (c.tex ? L(c.tex) : c.det) + '</td><td class="inf-mono">' + (c.util * 100).toFixed(0) + ' %</td><td class="' + (c.ok ? 'ok' : 'mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</td></tr>').join('') +
       '</tbody></table>');
     add('<h2 class="inf-h2 inf-h2-sig">Datos de entrada</h2>', { conSiguiente: true });
-    add('<table class="inf-tabla inf-datos"><tbody>' + d.datos.map((r) => '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>').join('') + '</tbody></table>');
+    // Una tabla por categoría: Parámetro, símbolo (LaTeX), valor, unidad
+    d.datos.forEach((g, i) => {
+      // Mismo ancho de columnas en todas las tablas para que queden alineadas entre grupos
+      add('<table class="inf-tabla inf-datos"><colgroup><col style="width:44%"><col style="width:18%"><col style="width:20%"><col style="width:18%"></colgroup>' +
+        (i === 0 ? '<thead><tr><th>Parámetro</th><th>Símbolo</th><th>Valor</th><th>Unidad</th></tr></thead>' : '') +
+        '<tbody><tr class="inf-grupo"><th colspan="4">' + g.grupo + '</th></tr>' +
+        g.filas.map((f) => f[1] || f[3]
+          ? '<tr><td>' + f[0] + '</td><td class="inf-tex">' + (f[1] ? L(f[1]) : '') + '</td><td class="inf-mono">' + f[2] + '</td><td>' + (f[3] || '') + '</td></tr>'
+          : '<tr><td>' + f[0] + '</td><td class="inf-mono" colspan="3">' + f[2] + '</td></tr>').join('') +
+        '</tbody></table>');
+    });
 
     add('<h2 class="inf-h2">Planos</h2>', { nueva: true, conSiguiente: true });
     const fig = (f) => '<figure>' + (f.html || '<img src="' + f.src + '" alt="' + esc(f.cap) + '">') + '<figcaption>' + f.cap + '</figcaption></figure>';

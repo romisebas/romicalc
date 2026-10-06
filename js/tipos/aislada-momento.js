@@ -26,6 +26,63 @@
     informe: { titulo: '', elaboro: '', responsables: '', fecha: '' },
   };
 
+  // Zapata nueva: todos los campos vacíos (null). El refuerzo arranca en barras.
+  const VACIO = {
+    tipo: 'aislada-momento',
+    proyecto: { nombre: '', elemento: '' },
+    cargas: { D: { P: null, Mx: null, My: null }, L: { P: null, Mx: null, My: null } },
+    suelo: { qadm: null, pesoPropio: false, Df: null, gs: null, gc: null },
+    columna: { Cx: null, Cy: null, barra: null, nBarras: null, alpha: null },
+    materiales: { fc: null, fy: null, lambda: null, phiV: null, phiF: null, phiB: null },
+    zapata: { Lx: null, Ly: null, d: null, r: null },
+    acero: { tipo: 'barras', barX: null, barY: null, malla: null, capas: 'auto', fyMalla: 4200 },
+    informe: { titulo: '', elaboro: '', responsables: '', fecha: '' },
+  };
+
+  // Valores de la NSR-10 que el botón "Usar valores de la NSR-10" llena de un clic.
+  const NSR = { 'materiales.lambda': 1, 'materiales.phiV': 0.75, 'materiales.phiF': 0.90, 'materiales.phiB': 0.65, 'zapata.r': 0.075, 'columna.alpha': 40 };
+
+  // Campos obligatorios por categoría (los momentos vacíos se toman como cero).
+  const REQUERIDOS = {
+    cargas: ['cargas.D.P', 'cargas.L.P'],
+    suelo: ['suelo.qadm', 'suelo.Df'],
+    columna: ['columna.Cx', 'columna.Cy', 'columna.barra', 'columna.nBarras', 'columna.alpha'],
+    materiales: ['materiales.fc', 'materiales.fy', 'materiales.lambda', 'materiales.phiV', 'materiales.phiF', 'materiales.phiB'],
+    planta: ['zapata.Lx', 'zapata.Ly'],
+    altura: ['zapata.d', 'zapata.r'],
+  };
+  const vacio = (v) => v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v));
+
+  // Lista de campos vacíos por categoría: { cargas: [...], ... } solo con las incompletas.
+  function faltantes(e) {
+    const out = {};
+    Object.keys(REQUERIDOS).forEach((cat) => {
+      const req = REQUERIDOS[cat].slice();
+      if (cat === 'suelo' && e.suelo.pesoPropio) req.push('suelo.gs', 'suelo.gc');
+      const f = req.filter((k) => vacio(get(e, k)));
+      if (f.length) out[cat] = f;
+    });
+    return out;
+  }
+
+  // Copia lista para calcular: momentos vacíos = 0.
+  function preparar(e) {
+    const c = clone(e);
+    ['D', 'L'].forEach((t) => ['Mx', 'My'].forEach((m) => { if (vacio(c.cargas[t][m])) c.cargas[t][m] = 0; }));
+    return c;
+  }
+
+  // Vista previa del paso Planta: presiones con Lx, Ly aunque falten materiales o d.
+  function vistaPlanta(e) {
+    const c = preparar(e);
+    const rel = (k, v) => { const ks = k.split('.'); if (vacio(c[ks[0]][ks[1]])) c[ks[0]][ks[1]] = v; };
+    rel('zapata.d', 0.5); rel('zapata.r', 0.075);
+    rel('materiales.fc', 280); rel('materiales.fy', 4200); rel('materiales.lambda', 1);
+    rel('materiales.phiV', 0.75); rel('materiales.phiF', 0.9); rel('materiales.phiB', 0.65);
+    rel('columna.barra', 5); rel('columna.nBarras', 4); rel('columna.alpha', 40);
+    return calcular(c);
+  }
+
   // Valores reportados en el PDF para la validación automática.
   // Muy se compara contra el valor corregido (el PDF reporta 8.8 por usar Ly·Ky).
   const VALORES_PDF = [
@@ -268,6 +325,20 @@
         det: 'ldc ' + (ld.ldc / 10).toFixed(1) + ' cm de ' + (ld.disponible / 10).toFixed(1) + ' cm disponibles' },
     ];
 
+    // Desigualdad de cada chequeo en LaTeX (para el resumen del PDF)
+    const n2 = (x) => Number(x).toFixed(2);
+    const rel = (ok) => (ok ? '\\le' : '>');
+    const relG = (ok) => (ok ? '\\ge' : '<');
+    const T = '\\,\\text{tonf}';
+    chequeos[0].tex = '\\sigma_{max} = ' + n2(serv.smax) + ' \\;' + rel(serv.okMax) + '\\; \\sigma_{adm} = ' + n2(qadm) + '\\,\\text{tonf/m}^2';
+    chequeos[1].tex = 'V_u = ' + n2(pz.Vu) + ' \\;' + rel(pz.ok) + '\\; \\phi V_c = ' + n2(pz.phiVc) + T;
+    chequeos[2].tex = 'V_{ux} = ' + n2(cu.x.Vu) + ' \\;' + rel(cu.x.ok) + '\\; ' + n2(cu.x.phiVc) + ',\\quad V_{uy} = ' + n2(cu.y.Vu) + ' \\;' + rel(cu.y.ok) + '\\; ' + n2(cu.y.phiVc) + T;
+    chequeos[3].tex = ref.tipo === 'malla'
+      ? 'a_{s,prov} = ' + n2(Math.min(ref.sel.provX, ref.sel.provY)) + ' \\;' + relG(ref.ok) + '\\; a_{s,req} = ' + n2(Math.max(ref.reqX, ref.reqY)) + '\\,\\text{cm}^2/\\text{m}'
+      : 'A_{sx} = ' + n2(ref.selX.AsProv) + ' \\;' + relG(ref.selX.AsProv >= fx.As) + '\\; ' + n2(fx.As) + ',\\quad A_{sy} = ' + n2(ref.selY.AsProv) + ' \\;' + relG(ref.selY.AsProv >= fyv.As) + '\\; ' + n2(fyv.As) + '\\,\\text{cm}^2';
+    chequeos[4].tex = 'P_u = ' + n2(ult.P) + ' \\;' + rel(ap.ok1 && ap.ok2) + '\\; \\phi P_{nb} = ' + n2(Math.min(ap.phiPnb1, ap.phiPnb2)) + T;
+    chequeos[5].tex = 'l_{dc} = ' + (ld.ldc / 10).toFixed(1) + ' \\;' + rel(ld.ok) + '\\; h - r = ' + (ld.disponible / 10).toFixed(1) + '\\,\\text{cm}';
+
     return {
       inp, Lx, Ly, d, r, h, serv, ult, pz, cu, fx, fy: fyv, banda, ref,
       ap, ld, dMinOk, chequeos, todoOk: chequeos.every((c) => c.ok),
@@ -333,7 +404,8 @@
 
   const modulo = {
     id: 'aislada-momento', nombre: 'Aislada con momento',
-    EJEMPLO, D_MIN, calcular, optimizarPlanta, optimizarPeralte, validarContraPdf, validarEntrada, clone,
+    EJEMPLO, VACIO, NSR, REQUERIDOS, D_MIN, calcular, optimizarPlanta, optimizarPeralte, validarContraPdf, validarEntrada,
+    faltantes, preparar, vistaPlanta, clone,
   };
   global.Tipos = global.Tipos || {};
   global.Tipos['aislada-momento'] = modulo;

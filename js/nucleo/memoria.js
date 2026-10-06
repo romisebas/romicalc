@@ -18,6 +18,17 @@
     return html;
   }
 
+  // Fórmula en línea (tablas del informe)
+  function texLinea(src) {
+    const clave = 'L|' + src;
+    if (cache.has(clave)) return cache.get(clave);
+    const html = global.katex
+      ? global.katex.renderToString(src, { displayMode: false, throwOnError: false, strict: 'ignore', output: 'html' })
+      : '<code class="tex-crudo">' + src.replace(/</g, '&lt;') + '</code>';
+    cache.set(clave, html);
+    return html;
+  }
+
   function item(it) {
     switch (it.t) {
       case 'p': return '<p class="explica">' + it.html + '</p>';
@@ -63,5 +74,5 @@
     int.removeAttribute('data-pendiente');
   }
 
-  global.Memoria = { aHtml, completar, tex };
+  global.Memoria = { aHtml, completar, tex, texLinea };
 })(window);

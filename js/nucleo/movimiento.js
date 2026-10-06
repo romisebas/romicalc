@@ -6,7 +6,14 @@
   'use strict';
 
   const mq = global.matchMedia ? global.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
-  const reducido = () => mq.matches;
+  // Ajuste de la app: 'sistema' respeta Windows/macOS; 'activadas' y 'desactivadas' lo ignoran.
+  let modo = 'activadas';
+  const reducido = () => (modo === 'activadas' ? false : modo === 'desactivadas' ? true : mq.matches);
+  function configurar(m) {
+    modo = m || 'activadas';
+    document.documentElement.classList.toggle('mov-reducido', reducido());
+  }
+  if (mq.addEventListener) mq.addEventListener('change', () => configurar(modo));
   const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
   const EASE_IN_OUT = 'cubic-bezier(0.77, 0, 0.175, 1)';
 
@@ -129,5 +136,5 @@
     return { cancelar() { vivo = false; } };
   }
 
-  global.Mov = { reducido, revelar, contar, segmentado, detallesSuaves, desplazarA, tween, EASE_OUT, EASE_IN_OUT };
+  global.Mov = { configurar, reducido, revelar, contar, segmentado, detallesSuaves, desplazarA, tween, EASE_OUT, EASE_IN_OUT };
 })(window);

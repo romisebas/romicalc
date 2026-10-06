@@ -86,7 +86,7 @@
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--alto-barra) + 16px); }
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+html:not(.mov-reducido) { scroll-behavior: smooth; }
 .cambiando-tema, .cambiando-tema * { transition: background-color .3s ease, color .3s ease, border-color .3s ease !important; }
 body {
   margin: 0;
@@ -461,11 +461,11 @@ input::placeholder, textarea::placeholder { color: var(--tinta-3); }
 .revela { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease-out), transform .75s var(--ease-out); transition-delay: calc(var(--i, 0) * 70ms); }
 .revela.visible { opacity: 1; transform: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-  .seg-ind, .popover, .aviso-flotante, .ch-barra, .btn, .interruptor input::after { transition-property: opacity, background-color, color !important; }
-  .revela { opacity: 1; transform: none; }
-}
+/* Movimiento reducido: lo decide el ajuste de la app (Sistema / Activadas / Desactivadas) */
+html.mov-reducido *, html.mov-reducido *::before, html.mov-reducido *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+html.mov-reducido .seg-ind, html.mov-reducido .popover, html.mov-reducido .aviso-flotante, html.mov-reducido .ch-barra, html.mov-reducido .btn,
+html.mov-reducido .interruptor input::after, html.mov-reducido .dialogo { transition-property: opacity, background-color, color !important; }
+html.mov-reducido .revela { opacity: 1; transform: none; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1280px) {

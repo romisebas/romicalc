@@ -9,244 +9,198 @@
   <meta name="theme-color" content="#12161b" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/flujo.css">
   <link rel="stylesheet" href="css/informe.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke-width='3.2' stroke-linejoin='round'%3E%3Cpath d='M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58' stroke='%231b232c'/%3E%3Cpath d='M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13' stroke='%23c2502a'/%3E%3C/svg%3E">
+  <link rel="icon" href="assets/logo/logo.svg" type="image/svg+xml">
 </head>
-<body>
+<body class="en-bienvenida">
   <a class="saltar" href="#principal">Saltar al contenido</a>
 
-  <header class="barra-sup" id="barra-sup">
-    <a class="marca" href="#principal" aria-label="Diseño de Zapatas, ir al inicio">
-      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
-        <path class="logo-zap" d="M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58"/>
-        <path class="logo-col" d="M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13"/>
-      </svg>
-      <span class="marca-nombre">Diseño de Zapatas</span>
-    </a>
-
-    <div class="menu-tipo">
-      <button type="button" class="btn-tipo" id="btn-tipo" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-tipo">
-        <span class="btn-tipo-lbl">Tipo</span>
-        <span id="tipo-actual">Aislada con momento</span>
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
-      </button>
-      <div class="popover" id="menu-tipo" role="menu" aria-labelledby="btn-tipo" hidden></div>
+  <!-- ============================================================ Bienvenida -->
+  <div class="bienvenida" id="bienvenida">
+    <div class="intro" id="intro" hidden>
+      <button type="button" class="btn btn-quieto intro-saltar" id="btn-saltar">Saltar</button>
     </div>
 
-    <nav class="acciones" aria-label="Acciones">
-      <button type="button" class="btn btn-quieto" id="btn-ejemplo">Cargar ejemplo</button>
-      <button type="button" class="btn btn-quieto" id="btn-exportar">Exportar</button>
-      <label class="btn btn-quieto" for="archivo-importar">Importar</label>
-      <input type="file" id="archivo-importar" accept=".json,application/json" hidden>
-      <button type="button" class="btn btn-acento" id="btn-imprimir" aria-haspopup="dialog">Imprimir</button>
-      <button type="button" class="btn-icono" id="btn-tema" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
-      </button>
-    </nav>
-  </header>
+    <section class="bv-pantalla bv-portada" id="bv-portada" aria-labelledby="titulo-app">
+      <div class="bv-marca" id="bv-marca"></div>
+      <h1 class="bv-titulo" id="titulo-app">Diseño de Zapatas</h1>
+      <p class="bv-lema">Memorias de cálculo de cimentaciones según la NSR-10</p>
+      <button type="button" class="btn btn-acento btn-grande" id="btn-disenar">Diseñar</button>
+      <button type="button" class="btn btn-quieto bv-ajustes" data-abrir-ajustes>Ajustes</button>
+    </section>
 
-  <div class="aviso-flotante" id="aviso" role="status" aria-live="polite"></div>
+    <section class="bv-pantalla" id="bv-opciones" aria-labelledby="titulo-opciones" hidden>
+      <button type="button" class="btn btn-quieto bv-volver" data-ir="portada">Volver</button>
+      <h2 class="bv-h2" id="titulo-opciones">¿Qué quieres hacer?</h2>
+      <div class="opciones">
+        <button type="button" class="opcion opcion-principal" id="op-nueva">
+          <span class="op-tit">Nueva zapata</span><span class="op-desc">Empieza con todos los campos vacíos y el asistente paso a paso.</span>
+        </button>
+        <label class="opcion" for="archivo-importar">
+          <span class="op-tit">Importar proyecto</span><span class="op-desc">Abre un archivo .json exportado desde la app.</span>
+        </label>
+        <button type="button" class="opcion" id="op-ejemplo">
+          <span class="op-tit">Usar el ejemplo</span><span class="op-desc">Zapata del documento del curso, 2.50 × 2.00 m.</span>
+        </button>
+      </div>
+      <div class="recientes" id="recientes" hidden>
+        <h3 class="bv-h3">Continuar un proyecto</h3>
+        <ul class="lista-recientes" id="lista-recientes"></ul>
+      </div>
+    </section>
 
-  <div class="layout">
-    <aside class="panel-datos" aria-label="Datos de entrada">
-      <section class="grupo">
-        <h2>Proyecto</h2>
-        <div class="campos dos">
-          <label>Nombre<input type="text" data-k="proyecto.nombre" data-tipo="texto" placeholder="Edificio Las Acacias"></label>
-          <label>Elemento<input type="text" data-k="proyecto.elemento" data-tipo="texto" placeholder="Z-1, eje B-3"></label>
-        </div>
-      </section>
+    <section class="bv-pantalla" id="bv-tipos" aria-labelledby="titulo-tipos" hidden>
+      <button type="button" class="btn btn-quieto bv-volver" data-ir="opciones">Volver</button>
+      <h2 class="bv-h2" id="titulo-tipos">Tipo de zapata</h2>
+      <div class="tipos" id="tipos"></div>
+    </section>
+  </div>
 
-      <section class="grupo">
-        <h2>Cargas de servicio</h2>
-        <table class="tabla-cargas">
-          <thead><tr><th></th><th>P <small>tonf</small></th><th>Mx <small>tonf·m</small></th><th>My <small>tonf·m</small></th></tr></thead>
-          <tbody>
-            <tr><th scope="row">PP+CM</th>
-              <td><input type="number" step="any" data-k="cargas.D.P" aria-label="P de carga muerta"></td>
-              <td><input type="number" step="any" data-k="cargas.D.Mx" aria-label="Mx de carga muerta"></td>
-              <td><input type="number" step="any" data-k="cargas.D.My" aria-label="My de carga muerta"></td></tr>
-            <tr><th scope="row">CV</th>
-              <td><input type="number" step="any" data-k="cargas.L.P" aria-label="P de carga viva"></td>
-              <td><input type="number" step="any" data-k="cargas.L.Mx" aria-label="Mx de carga viva"></td>
-              <td><input type="number" step="any" data-k="cargas.L.My" aria-label="My de carga viva"></td></tr>
-          </tbody>
-        </table>
-        <p class="ayuda">Se usan valores absolutos. La app arma 1.4D y 1.2D + 1.6L y diseña con la que gobierna.</p>
-        <details class="pegar">
-          <summary>Pegar tabla de SAP2000 o ETABS</summary>
-          <textarea id="texto-sap" rows="5" spellcheck="false" aria-label="Tabla de reacciones pegada" placeholder="206  CV  LinStatic  0,014  -0,015  8,534  -0,036  -0,057  0,001"></textarea>
-          <div class="fila-btn">
-            <button type="button" class="btn" id="btn-interpretar">Leer cargas</button>
-            <span class="msg" id="msg-sap" role="status"></span>
-          </div>
-        </details>
-      </section>
-
-      <section class="grupo">
-        <h2>Suelo</h2>
-        <div class="campos dos">
-          <label>σadm <small>tonf/m²</small><input type="number" step="any" min="0" data-k="suelo.qadm"></label>
-          <label>Df <small>m</small><input type="number" step="0.05" min="0" data-k="suelo.Df"></label>
-        </div>
-        <label class="check"><input type="checkbox" data-k="suelo.pesoPropio" data-tipo="bool"> Incluir peso propio de zapata y suelo en servicio</label>
-        <div class="campos dos" id="campos-peso">
-          <label>γ suelo <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gs"></label>
-          <label>γ concreto <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gc"></label>
-        </div>
-      </section>
-
-      <section class="grupo">
-        <h2>Columna</h2>
-        <div class="campos dos">
-          <label>Cx <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cx"></label>
-          <label>Cy <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cy"></label>
-          <label>Barra de la columna<select data-k="columna.barra" data-tipo="int" id="sel-barra-col"></select></label>
-          <label>Número de barras<input type="number" step="2" min="4" data-k="columna.nBarras" data-tipo="int"></label>
-          <label class="ancho">Ubicación (αs)
-            <select data-k="columna.alpha" data-tipo="int">
-              <option value="40">Interior, αs = 40</option>
-              <option value="30">Borde, αs = 30</option>
-              <option value="20">Esquina, αs = 20</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="grupo">
-        <h2>Materiales y factores</h2>
-        <div class="campos tres">
-          <label>f'c <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fc"></label>
-          <label>fy <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fy"></label>
-          <label>λ<input type="number" step="0.05" data-k="materiales.lambda"></label>
-          <label>φ cortante<input type="number" step="0.05" data-k="materiales.phiV"></label>
-          <label>φ flexión<input type="number" step="0.05" data-k="materiales.phiF"></label>
-          <label>φ aplast.<input type="number" step="0.05" data-k="materiales.phiB"></label>
-        </div>
-      </section>
-
-      <section class="grupo">
-        <h2>Zapata</h2>
-        <div class="campos dos">
-          <label>Lx <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Lx"></label>
-          <label>Ly <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Ly"></label>
-          <label>d <small>m</small><input type="number" step="0.025" min="0.15" data-k="zapata.d"></label>
-          <label>Recubrimiento r <small>m</small><input type="number" step="0.005" data-k="zapata.r"></label>
-        </div>
-        <p class="dato-h">h = d + r = <b id="valor-h">0.550</b> m</p>
-        <div class="fila-btn">
-          <button type="button" class="btn" id="btn-opt-planta">Proponer Lx y Ly</button>
-          <button type="button" class="btn" id="btn-opt-d">Proponer d</button>
-        </div>
-        <p class="msg" id="msg-opt" role="status"></p>
-      </section>
-    </aside>
+  <!-- ============================================================ App -->
+  <div class="app" id="app" hidden>
+    <header class="barra-sup" id="barra-sup">
+      <div class="barra-fila">
+        <button type="button" class="marca" id="btn-inicio" aria-label="Volver al inicio">
+          <span id="marca-logo"></span>
+          <span class="marca-nombre">Diseño de Zapatas</span>
+        </button>
+        <span class="tipo-actual" id="tipo-actual">Aislada con momento</span>
+        <nav class="acciones" aria-label="Acciones">
+          <button type="button" class="btn btn-quieto" id="btn-exportar">Exportar</button>
+          <label class="btn btn-quieto" for="archivo-importar">Importar</label>
+          <button type="button" class="btn btn-acento" id="btn-imprimir" aria-haspopup="dialog">Imprimir</button>
+          <button type="button" class="btn-icono" data-abrir-ajustes aria-label="Ajustes" title="Ajustes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+          </button>
+          <button type="button" class="btn-icono" id="btn-tema" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="relleno" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+          </button>
+        </nav>
+      </div>
+      <nav class="categorias" id="categorias" aria-label="Editar datos por categoría"></nav>
+    </header>
 
     <main class="principal" id="principal" tabindex="-1">
-      <section class="resumen" id="resumen" aria-live="polite">
-        <div class="veredicto" id="veredicto">
-          <h1 class="v-tit" id="v-tit">El diseño cumple</h1>
-          <p class="v-det" id="v-det"></p>
-        </div>
-        <dl class="cifras" id="cifras">
-          <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">2.50</span> × <span class="num" data-cifra="Ly">2.00</span> <small>m</small></dd></div>
-          <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.55</span> <small>m</small></dd></div>
-          <div><dt>σmax de servicio</dt><dd><span class="num" data-cifra="smax">10.87</span> <small>de <span data-cifra-txt="qadm">12.00</span> tonf/m²</small></dd></div>
-          <div><dt>Utilización máxima</dt><dd><span class="num" data-cifra="util">0</span><small>%</small></dd></div>
-        </dl>
-        <ol class="chequeos" id="chequeos"></ol>
+      <section class="estado-vacio" id="estado-vacio" hidden>
+        <h1 class="v-tit">Faltan datos para calcular</h1>
+        <p class="v-det">Completa estas categorías para ver la planta, los chequeos y la memoria.</p>
+        <div class="faltan" id="faltan"></div>
       </section>
 
-      <section class="vistas">
-        <figure class="vista">
-          <div class="vista-cab">
-            <h2>Planta</h2>
-            <div class="seg" role="tablist" aria-label="Capa de la planta" id="capas">
-              <button type="button" role="tab" data-capa="presion" aria-selected="true">Presiones</button>
-              <button type="button" role="tab" data-capa="punz" aria-selected="false">Punzonamiento</button>
-              <button type="button" role="tab" data-capa="cortante" aria-selected="false">Cortante</button>
-              <button type="button" role="tab" data-capa="flexion" aria-selected="false">Flexión</button>
-              <button type="button" role="tab" data-capa="acero" aria-selected="false">Refuerzo</button>
-            </div>
+      <div id="contenido">
+        <section class="resumen" id="resumen" aria-live="polite">
+          <div class="veredicto" id="veredicto">
+            <h1 class="v-tit" id="v-tit">El diseño cumple</h1>
+            <p class="v-det" id="v-det"></p>
           </div>
-          <div class="lienzo" id="planta"></div>
-        </figure>
-        <figure class="vista">
-          <div class="vista-cab">
-            <h2 id="titulo-vista2">Vista 3D</h2>
-            <div class="seg" role="tablist" aria-label="Segunda vista" id="vistas2">
-              <button type="button" role="tab" data-vista="3d" aria-selected="true">3D</button>
-              <button type="button" role="tab" data-vista="X" aria-selected="false">Corte X</button>
-              <button type="button" role="tab" data-vista="Y" aria-selected="false">Corte Y</button>
-            </div>
-          </div>
-          <div class="lienzo lienzo-3d" id="vista3d">
-            <button type="button" class="btn btn-mini encuadre" id="btn-encuadrar">Reencuadrar</button>
-            <p class="pista">Arrastre para girar, rueda para acercar</p>
-          </div>
-          <div class="lienzo" id="corte" hidden></div>
-        </figure>
-      </section>
+          <dl class="cifras" id="cifras">
+            <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">0.00</span> × <span class="num" data-cifra="Ly">0.00</span> <small>m</small></dd></div>
+            <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.00</span> <small>m</small></dd></div>
+            <div><dt>σmax de servicio</dt><dd><span class="num" data-cifra="smax">0.00</span> <small>de <span data-cifra-txt="qadm">0</span> tonf/m²</small></dd></div>
+            <div><dt>Utilización máxima</dt><dd><span class="num" data-cifra="util">0</span><small>%</small></dd></div>
+          </dl>
+          <ol class="chequeos" id="chequeos"></ol>
+        </section>
 
-      <section class="bloque" id="bloque-refuerzo">
-        <div class="bloque-cab">
-          <h2>Refuerzo inferior</h2>
-          <div class="seg" role="tablist" aria-label="Tipo de refuerzo" id="tipo-refuerzo">
-            <button type="button" role="tab" data-ref="barras" aria-selected="true">Barras corrugadas</button>
-            <button type="button" role="tab" data-ref="malla" aria-selected="false">Malla electrosoldada</button>
-          </div>
-        </div>
-        <div id="panel-barras">
-          <p class="ayuda">Elija la barra en cada dirección. La cantidad cubre el acero requerido y respeta smax = min(3h, 45 cm).</p>
-          <div class="aceros">
-            <div class="acero-dir" id="acero-x"></div>
-            <div class="acero-dir" id="acero-y"></div>
-          </div>
-        </div>
-        <div id="panel-malla" hidden>
-          <div class="malla-ctl">
-            <div class="ctl">
-              <span class="ctl-lbl" id="lbl-capas">Capas</span>
-              <div class="seg seg-sm" role="tablist" aria-labelledby="lbl-capas" id="capas-malla">
-                <button type="button" role="tab" data-capas="auto" aria-selected="true">Automático</button>
-                <button type="button" role="tab" data-capas="1" aria-selected="false">1 capa</button>
-                <button type="button" role="tab" data-capas="2" aria-selected="false">2 capas</button>
+        <section class="dims" aria-label="Ajuste rápido de dimensiones">
+          <span class="dims-tit">Ajuste rápido</span>
+          <div class="paso-num"><span class="pn-lbl">Lx</span><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="-0.05" aria-label="Reducir Lx 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Lx" aria-label="Lx en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="0.05" aria-label="Aumentar Lx 5 cm">+</button><small>m</small></div>
+          <div class="paso-num"><span class="pn-lbl">Ly</span><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="-0.05" aria-label="Reducir Ly 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Ly" aria-label="Ly en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="0.05" aria-label="Aumentar Ly 5 cm">+</button><small>m</small></div>
+          <div class="paso-num"><span class="pn-lbl">d</span><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="-0.025" aria-label="Reducir d 2.5 cm">−</button><input type="number" step="0.025" data-k="zapata.d" aria-label="d en metros"><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="0.025" aria-label="Aumentar d 2.5 cm">+</button><small>m</small></div>
+        </section>
+
+        <section class="vistas">
+          <figure class="vista">
+            <div class="vista-cab">
+              <h2>Planta</h2>
+              <div class="seg" role="tablist" aria-label="Capa de la planta" id="capas">
+                <button type="button" role="tab" data-capa="presion" aria-selected="true">Presiones</button>
+                <button type="button" role="tab" data-capa="punz" aria-selected="false">Punzonamiento</button>
+                <button type="button" role="tab" data-capa="cortante" aria-selected="false">Cortante</button>
+                <button type="button" role="tab" data-capa="flexion" aria-selected="false">Flexión</button>
+                <button type="button" role="tab" data-capa="acero" aria-selected="false">Refuerzo</button>
               </div>
             </div>
-            <label class="ctl">fy de diseño de la malla
-              <select id="fy-malla">
-                <option value="4200">4200 kgf/cm² (conservador, como las barras)</option>
-                <option value="4945">4945 kgf/cm² (485 MPa, ficha Diaco)</option>
-              </select>
-            </label>
-          </div>
-          <p class="ayuda" id="malla-req"></p>
-          <div class="acero-dir" id="tabla-mallas"></div>
-          <p class="ayuda fuente">Catálogo: Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026. Panel de 6.00 × 2.35 m.</p>
-        </div>
-      </section>
+            <div class="lienzo" id="planta"></div>
+          </figure>
+          <figure class="vista">
+            <div class="vista-cab">
+              <h2 id="titulo-vista2">Vista 3D</h2>
+              <div class="seg" role="tablist" aria-label="Segunda vista" id="vistas2">
+                <button type="button" role="tab" data-vista="3d" aria-selected="true">3D</button>
+                <button type="button" role="tab" data-vista="X" aria-selected="false">Corte X</button>
+                <button type="button" role="tab" data-vista="Y" aria-selected="false">Corte Y</button>
+              </div>
+            </div>
+            <div class="lienzo lienzo-3d" id="vista3d">
+              <button type="button" class="btn btn-mini encuadre" id="btn-encuadrar">Reencuadrar</button>
+              <p class="pista">Arrastre para girar, rueda para acercar</p>
+            </div>
+            <div class="lienzo" id="corte" hidden></div>
+          </figure>
+        </section>
 
-      <section class="bloque" id="bloque-memoria">
-        <div class="bloque-cab">
-          <h2>Memoria de cálculo</h2>
-          <div class="fila-btn">
-            <label class="interruptor"><input type="checkbox" id="chk-explica" checked> <span>Explicaciones</span></label>
-            <button type="button" class="btn btn-mini" id="btn-abrir">Desplegar todo</button>
-            <button type="button" class="btn btn-mini" id="btn-cerrar">Plegar todo</button>
+        <section class="bloque" id="bloque-refuerzo">
+          <div class="bloque-cab">
+            <h2>Refuerzo inferior</h2>
+            <div class="seg" role="tablist" aria-label="Tipo de refuerzo" id="tipo-refuerzo">
+              <button type="button" role="tab" data-ref="barras" aria-selected="true">Barras corrugadas</button>
+              <button type="button" role="tab" data-ref="malla" aria-selected="false">Malla electrosoldada</button>
+            </div>
           </div>
-        </div>
-        <div id="memoria" class="memoria"></div>
-      </section>
+          <div id="panel-barras">
+            <p class="ayuda">Elija la barra en cada dirección. La cantidad cubre el acero requerido y respeta smax = min(3h, 45 cm).</p>
+            <div class="aceros">
+              <div class="acero-dir" id="acero-x"></div>
+              <div class="acero-dir" id="acero-y"></div>
+            </div>
+          </div>
+          <div id="panel-malla" hidden>
+            <div class="malla-ctl">
+              <div class="ctl">
+                <span class="ctl-lbl" id="lbl-capas">Capas</span>
+                <div class="seg seg-sm" role="tablist" aria-labelledby="lbl-capas" id="capas-malla">
+                  <button type="button" role="tab" data-capas="auto" aria-selected="true">Automático</button>
+                  <button type="button" role="tab" data-capas="1" aria-selected="false">1 capa</button>
+                  <button type="button" role="tab" data-capas="2" aria-selected="false">2 capas</button>
+                </div>
+              </div>
+              <label class="ctl">fy de diseño de la malla
+                <select id="fy-malla">
+                  <option value="4200">4200 kgf/cm² (conservador, como las barras)</option>
+                  <option value="4945">4945 kgf/cm² (485 MPa, ficha Diaco)</option>
+                </select>
+              </label>
+            </div>
+            <p class="ayuda" id="malla-req"></p>
+            <div class="acero-dir" id="tabla-mallas"></div>
+            <p class="ayuda fuente">Catálogo: Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026. Panel de 6.00 × 2.35 m.</p>
+          </div>
+        </section>
 
-      <section class="bloque no-print">
-        <details class="paso" id="validacion">
-          <summary><span class="paso-tit">Validación contra el ejemplo del PDF</span><span class="tag" id="tag-validacion"></span></summary>
-          <div class="paso-cuerpo"><div class="paso-int">
-            <div class="tabla-scroll"><table class="tabla-valid"><thead><tr><th>Valor</th><th>PDF</th><th>App</th><th>Diferencia</th><th></th></tr></thead><tbody id="tabla-validacion"></tbody></table></div>
-            <p class="ayuda">Compara el motor de cálculo con los resultados del documento, con tolerancia del 1 %. Muy se compara con el valor corregido.</p>
-          </div></div>
-        </details>
-      </section>
+        <section class="bloque" id="bloque-memoria">
+          <div class="bloque-cab">
+            <h2>Memoria de cálculo</h2>
+            <div class="fila-btn">
+              <label class="interruptor"><input type="checkbox" id="chk-explica" checked> <span>Explicaciones</span></label>
+              <button type="button" class="btn btn-mini" id="btn-abrir">Desplegar todo</button>
+              <button type="button" class="btn btn-mini" id="btn-cerrar">Plegar todo</button>
+            </div>
+          </div>
+          <div id="memoria" class="memoria"></div>
+        </section>
+
+        <section class="bloque">
+          <details class="paso" id="validacion">
+            <summary><span class="paso-tit">Validación contra el ejemplo del PDF</span><span class="tag" id="tag-validacion"></span></summary>
+            <div class="paso-cuerpo"><div class="paso-int">
+              <div class="tabla-scroll"><table class="tabla-valid"><thead><tr><th>Valor</th><th>PDF</th><th>App</th><th>Diferencia</th><th></th></tr></thead><tbody id="tabla-validacion"></tbody></table></div>
+              <p class="ayuda">Compara el motor de cálculo con los resultados del documento, con tolerancia del 1 %. Muy se compara con el valor corregido.</p>
+            </div></div>
+          </details>
+        </section>
+      </div>
 
       <footer class="pie">
         <p>Método del curso Diseño de Concreto II (Ing. Gustavo Chang Nieto, Universidad del Magdalena) y NSR-10. Mallas según la ficha técnica Diaco NTC 5806.</p>
@@ -255,6 +209,138 @@
     </main>
   </div>
 
+  <!-- ============================================================ Asistente / edición por categoría -->
+  <dialog class="dialogo asistente" id="asistente" aria-labelledby="wz-titulo">
+    <form class="wz-form" id="wz-form" novalidate>
+      <div class="wz-cab">
+        <p class="wz-contador" id="wz-contador">Paso 1 de 7</p>
+        <h2 id="wz-titulo">Proyecto</h2>
+        <ol class="wz-progreso" id="wz-progreso" aria-hidden="true"></ol>
+      </div>
+      <div class="wz-cuerpo" id="wz-cuerpo">
+
+        <section class="wz-paso" data-paso="proyecto">
+          <p class="ayuda">Estos datos identifican el proyecto y salen en la portada del PDF. Ninguno es obligatorio.</p>
+          <div class="campos dos">
+            <label>Nombre del proyecto<input type="text" data-k="proyecto.nombre" data-tipo="texto" placeholder="Edificio Las Acacias"></label>
+            <label>Elemento<input type="text" data-k="proyecto.elemento" data-tipo="texto" placeholder="Z-1, eje B-3"></label>
+            <label class="ancho">Elaboró<input type="text" data-k="informe.elaboro" data-tipo="texto" placeholder="Nombre de quien elabora la memoria"></label>
+            <label class="ancho">Ingenieros responsables <small>uno por línea</small><textarea rows="2" data-k="informe.responsables" data-tipo="texto" placeholder="Ing. Laura Pérez, MP 25202-123456"></textarea></label>
+          </div>
+        </section>
+
+        <section class="wz-paso" data-paso="cargas">
+          <p class="ayuda">Reacciones de servicio en la base de la columna. Los momentos vacíos se toman como cero.</p>
+          <table class="tabla-cargas">
+            <thead><tr><th></th><th>P <small>tonf</small></th><th>Mx <small>tonf·m</small></th><th>My <small>tonf·m</small></th></tr></thead>
+            <tbody>
+              <tr><th scope="row">PP+CM</th>
+                <td><input type="number" step="any" data-k="cargas.D.P" aria-label="P de carga muerta"></td>
+                <td><input type="number" step="any" data-k="cargas.D.Mx" aria-label="Mx de carga muerta"></td>
+                <td><input type="number" step="any" data-k="cargas.D.My" aria-label="My de carga muerta"></td></tr>
+              <tr><th scope="row">CV</th>
+                <td><input type="number" step="any" data-k="cargas.L.P" aria-label="P de carga viva"></td>
+                <td><input type="number" step="any" data-k="cargas.L.Mx" aria-label="Mx de carga viva"></td>
+                <td><input type="number" step="any" data-k="cargas.L.My" aria-label="My de carga viva"></td></tr>
+            </tbody>
+          </table>
+          <details class="pegar">
+            <summary>Pegar tabla de SAP2000 o ETABS</summary>
+            <textarea id="texto-sap" rows="4" spellcheck="false" aria-label="Tabla de reacciones pegada" placeholder="206  CV  LinStatic  0,014  -0,015  8,534  -0,036  -0,057  0,001"></textarea>
+            <div class="fila-btn">
+              <button type="button" class="btn" id="btn-interpretar">Leer cargas</button>
+              <span class="msg" id="msg-sap" role="status"></span>
+            </div>
+          </details>
+        </section>
+
+        <section class="wz-paso" data-paso="suelo">
+          <p class="ayuda">Capacidad admisible del suelo y profundidad de desplante.</p>
+          <div class="campos dos">
+            <label>σadm <small>tonf/m²</small><input type="number" step="any" min="0" data-k="suelo.qadm"></label>
+            <label>Df <small>m</small><input type="number" step="0.05" min="0" data-k="suelo.Df"></label>
+          </div>
+          <label class="check"><input type="checkbox" data-k="suelo.pesoPropio" data-tipo="bool"> Incluir peso propio de zapata y suelo en servicio</label>
+          <div class="campos dos" id="campos-peso">
+            <label>γ suelo <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gs"></label>
+            <label>γ concreto <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gc"></label>
+          </div>
+        </section>
+
+        <section class="wz-paso" data-paso="columna">
+          <div class="campos dos">
+            <label>Cx <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cx"></label>
+            <label>Cy <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cy"></label>
+            <label>Barra de la columna<select data-k="columna.barra" data-tipo="int" id="sel-barra-col"></select></label>
+            <label>Número de barras<input type="number" step="2" min="4" data-k="columna.nBarras" data-tipo="int"></label>
+            <label class="ancho">Ubicación (αs)
+              <select data-k="columna.alpha" data-tipo="int">
+                <option value="">Seleccione…</option>
+                <option value="40">Interior, αs = 40</option>
+                <option value="30">Borde, αs = 30</option>
+                <option value="20">Esquina, αs = 20</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="wz-paso" data-paso="materiales">
+          <div class="campos tres">
+            <label>f'c <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fc"></label>
+            <label>fy <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fy"></label>
+            <label>λ<input type="number" step="0.05" data-k="materiales.lambda"></label>
+            <label>φ cortante<input type="number" step="0.05" data-k="materiales.phiV"></label>
+            <label>φ flexión<input type="number" step="0.05" data-k="materiales.phiF"></label>
+            <label>φ aplast.<input type="number" step="0.05" data-k="materiales.phiB"></label>
+          </div>
+          <div class="fila-btn">
+            <button type="button" class="btn" id="btn-nsr">Usar valores de la NSR-10</button>
+            <span class="ayuda nsr-txt">λ = 1.0, φ = 0.75 / 0.90 / 0.65, r = 7.5 cm, αs = 40</span>
+          </div>
+        </section>
+
+        <section class="wz-paso wz-paso-ancho" data-paso="planta">
+          <div class="wz-dos">
+            <div>
+              <p class="ayuda">Dimensiones en planta. La presión de servicio debe quedar bajo σadm en las cuatro esquinas y sin tensión.</p>
+              <div class="campos dos">
+                <label>Lx <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Lx"></label>
+                <label>Ly <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Ly"></label>
+              </div>
+              <div class="fila-btn"><button type="button" class="btn" id="btn-opt-planta">Proponer Lx y Ly</button></div>
+              <p class="msg" id="msg-opt-planta" role="status"></p>
+              <div class="wz-veredicto" id="wz-planta-v" aria-live="polite"></div>
+            </div>
+            <div class="lienzo wz-lienzo" id="wz-planta"></div>
+          </div>
+        </section>
+
+        <section class="wz-paso" data-paso="altura">
+          <p class="ayuda">Altura efectiva d y recubrimiento r. La altura total es h = d + r.</p>
+          <div class="campos dos">
+            <label>d <small>m</small><input type="number" step="0.025" min="0.15" data-k="zapata.d"></label>
+            <label>Recubrimiento r <small>m</small><input type="number" step="0.005" data-k="zapata.r"></label>
+          </div>
+          <div class="fila-btn"><button type="button" class="btn" id="btn-opt-d">Proponer d</button></div>
+          <p class="msg" id="msg-opt-d" role="status"></p>
+          <ul class="wz-chequeos" id="wz-altura" aria-live="polite"></ul>
+        </section>
+
+      </div>
+      <div class="wz-error" id="wz-error" role="alert" hidden>
+        <span id="wz-error-txt"></span>
+        <button type="button" class="btn btn-mini" id="wz-continuar">Continuar de todos modos</button>
+      </div>
+      <div class="wz-pie">
+        <button type="button" class="btn btn-quieto" id="wz-atras">Atrás</button>
+        <button type="button" class="btn btn-quieto wz-saltar" id="wz-saltar">Ir al dashboard</button>
+        <span class="dlg-espacio"></span>
+        <button type="submit" class="btn btn-acento" id="wz-siguiente">Siguiente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================================================ Documento (PDF) -->
   <dialog class="dialogo" id="dlg-informe" aria-labelledby="dlg-titulo">
     <form method="dialog" class="dlg-form" id="form-informe" novalidate>
       <div class="dlg-cab">
@@ -289,6 +375,46 @@
     </form>
   </dialog>
 
+  <dialog class="dialogo doc-listo" id="doc-listo" aria-labelledby="doc-listo-tit">
+    <div class="dl-cuerpo">
+      <svg class="dl-anim" viewBox="0 0 120 120" aria-hidden="true">
+        <path class="dl-hoja" d="M30 14 H76 L94 32 V106 H30 Z"/>
+        <path class="dl-doblez" d="M76 14 V32 H94"/>
+        <path class="dl-linea l1" d="M42 46 H82"/>
+        <path class="dl-linea l2" d="M42 58 H82"/>
+        <path class="dl-linea l3" d="M42 70 H70"/>
+        <circle class="dl-circulo" cx="84" cy="88" r="18"/>
+        <path class="dl-check" d="M76 88 L82 94 L93 82"/>
+      </svg>
+      <h2 id="doc-listo-tit">Documento listo</h2>
+      <p class="ayuda">Si lo guardaste como PDF, quedó con el título del documento como nombre de archivo.</p>
+    </div>
+    <div class="dlg-pie">
+      <button type="button" class="btn btn-quieto" id="dl-reimprimir">Volver a imprimir</button>
+      <span class="dlg-espacio"></span>
+      <button type="button" class="btn btn-acento" id="dl-cerrar">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ============================================================ Ajustes -->
+  <dialog class="dialogo dlg-ajustes" id="dlg-ajustes" aria-labelledby="aj-titulo">
+    <form method="dialog" class="dlg-form">
+      <div class="dlg-cab"><h2 id="aj-titulo">Ajustes</h2></div>
+      <div class="dlg-cuerpo">
+        <fieldset class="aj-grupo">
+          <legend>Animaciones</legend>
+          <label class="radio-fila"><input type="radio" name="aj-anim" value="activadas"> Activadas <small>siempre, aunque el sistema las tenga apagadas</small></label>
+          <label class="radio-fila"><input type="radio" name="aj-anim" value="sistema"> Según el sistema <small>respeta la opción de Windows o macOS</small></label>
+          <label class="radio-fila"><input type="radio" name="aj-anim" value="desactivadas"> Desactivadas</label>
+        </fieldset>
+        <label class="check"><input type="checkbox" id="aj-sin-intro"> No mostrar la animación de inicio</label>
+      </div>
+      <div class="dlg-pie"><span class="dlg-espacio"></span><button type="submit" class="btn btn-acento">Listo</button></div>
+    </form>
+  </dialog>
+
+  <input type="file" id="archivo-importar" accept=".json,application/json" hidden>
+  <div class="aviso-flotante" id="aviso" role="status" aria-live="polite"></div>
   <div id="informe" class="informe forzar-claro" aria-hidden="true"></div>
   <div id="medidor-informe" class="inf-medidor forzar-claro" aria-hidden="true"></div>
 
@@ -296,14 +422,17 @@
   <script src="vendor/OrbitControls.js"></script>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="js/nucleo/movimiento.js"></script>
+  <script src="js/nucleo/logo.js"></script>
   <script src="js/nucleo/refuerzo.js"></script>
   <script src="js/nucleo/memoria.js"></script>
   <script src="js/nucleo/informe.js"></script>
   <script src="js/nucleo/dibujo.js"></script>
   <script src="js/nucleo/vista3d.js"></script>
+  <script src="js/nucleo/intro3d.js"></script>
   <script src="js/tipos/catalogo.js"></script>
   <script src="js/tipos/aislada-momento.js"></script>
   <script src="js/tipos/aislada-momento-memoria.js"></script>
+  <script src="js/nucleo/proyectos.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

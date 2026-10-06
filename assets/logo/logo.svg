@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Diseño de Zapatas</title>
+  <g transform="translate(0 -1.5)" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M8 38 L32 26 L56 38 L32 50 Z" fill="#c3cad1"/>
+    <path d="M8 38 L32 50 L32 57 L8 45 Z" fill="#56606b"/>
+    <path d="M32 50 L56 38 L56 45 L32 57 Z" fill="#1b232c"/>
+    <path d="M26 12 L32 9 L38 12 L32 15 Z" fill="#ec9a76"/>
+    <path d="M26 12 L32 15 L32 41 L26 38 Z" fill="#c2502a"/>
+    <path d="M32 15 L38 12 L38 38 L32 41 Z" fill="#8f3a1c"/>
+  </g>
+</svg>

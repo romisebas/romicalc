@@ -82,7 +82,9 @@
 .inf-tabla thead th { font-weight: 500; color: var(--tinta-3); font-size: 8.5pt; }
 .inf-tabla td.ok { color: var(--ok); font-weight: 500; }
 .inf-tabla td.mal { color: var(--mal); font-weight: 500; }
-.inf-datos th { width: 38mm; font-weight: 500; color: var(--tinta-2); }
+.inf-datos { table-layout: fixed; }
+.inf-datos .inf-grupo th { font: 600 9pt var(--sans); color: var(--tinta); padding-top: 4mm; background: transparent; }
+.inf-datos thead th { font-weight: 500; color: var(--tinta-3); }
 .inf-mono { font-family: var(--mono); font-size: 8.5pt; }
 .inf-planos { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-bottom: 4mm; }
 .inf-planos-3d { grid-template-columns: 1fr; }
