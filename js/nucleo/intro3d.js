@@ -16,7 +16,7 @@
   function colores() {
     const cs = getComputedStyle(document.documentElement);
     const c = (n, d) => (cs.getPropertyValue(n).trim() || d);
-    return { acero: c('--acento', '#c2502a'), concreto: c('--concreto', '#d5dade'), borde: c('--concreto-borde', '#56606b'), linea: c('--linea-fuerte', '#b3bcc5'), tinta: c('--tinta', '#1b232c') };
+    return { acero: c('--acero', '#1d1d1d'), concreto: c('--concreto', '#d5dade'), borde: c('--concreto-borde', '#56606b'), linea: c('--linea-fuerte', '#b3bcc5'), tinta: c('--tinta', '#1b232c') };
   }
 
   function reproducir(cont, opciones) {

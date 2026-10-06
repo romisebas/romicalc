@@ -88,14 +88,14 @@ def test_intro_y_saltar(navegador, url):
     pagina.wait_for_timeout(600)
     pagina.click("#btn-saltar")
     pagina.wait_for_selector("#bv-portada:not([hidden])", timeout=4000)
-    assert "DISEÑO" in pagina.inner_text("#titulo-app").upper()
+    assert "DISEÑO" in pagina.text_content("#titulo-app").upper()
     assert not errores, errores
 
 
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
-    assert "cumple" in pagina.inner_text("#v-tit")
+    assert "cumple" in pagina.text_content("#v-tit")
     assert pagina.locator(".chequeo.mal").count() == 0
     pagina.click("#btn-abrir")
     pagina.wait_for_function("document.querySelectorAll('#memoria .katex').length > 60")
@@ -112,12 +112,12 @@ def test_nueva_zapata_vacia_y_asistente(navegador, url):
     # Todos los campos numéricos vacíos, en el asistente y en el dashboard
     llenos = pagina.evaluate("[...document.querySelectorAll('[data-k]')].filter(e => e.type !== 'checkbox' && e.value !== '').map(e => e.dataset.k)")
     assert llenos == [], llenos
-    assert "Paso 1 de 7" in pagina.inner_text("#wz-contador")
+    assert "Paso 1 de 7" in pagina.text_content("#wz-contador")
     pagina.fill('#asistente [data-k="proyecto.nombre"]', "Bloque B")
     pagina.click("#wz-siguiente")
     # Cargas vacías: aviso y botón para continuar de todos modos
     pagina.click("#wz-siguiente")
-    assert "Faltan" in pagina.inner_text("#wz-error")
+    assert "Faltan" in pagina.text_content("#wz-error")
     for k, v in EJEMPLO.items():
         pagina.fill(f'#asistente [data-k="{k}"]', v)
     pagina.click("#wz-siguiente")
@@ -135,16 +135,16 @@ def test_nueva_zapata_vacia_y_asistente(navegador, url):
     pagina.click("#btn-nsr")
     assert pagina.input_value('#asistente [data-k="materiales.phiV"]') == "0.75"
     pagina.click("#wz-siguiente")
-    assert "Planta" in pagina.inner_text("#wz-titulo")
+    assert "Planta" in pagina.text_content("#wz-titulo")
     pagina.click("#btn-opt-planta")
-    assert "cumplen" in pagina.inner_text("#wz-planta-v")
+    assert "cumplen" in pagina.text_content("#wz-planta-v")
     assert pagina.locator("#wz-planta svg").count() == 1
     pagina.click("#wz-siguiente")
     pagina.click("#btn-opt-d")
     pagina.wait_for_selector("#wz-altura li.ok")
     pagina.click("#wz-siguiente")
     pagina.wait_for_selector("#asistente", state="hidden")
-    assert "cumple" in pagina.inner_text("#v-tit")
+    assert "cumple" in pagina.text_content("#v-tit")
     assert not errores, errores
 
 
@@ -155,7 +155,7 @@ def test_recientes(navegador, url):
     pagina.click("#btn-inicio")
     pagina.wait_for_selector("#recientes:not([hidden]) .reciente")
     assert pagina.locator(".reciente").count() == 1
-    assert "Cumple" in pagina.inner_text(".rc-estado")
+    assert "Cumple" in pagina.text_content(".rc-estado")
     pagina.click(".reciente")
     pagina.wait_for_selector("#chequeos .chequeo")
 
@@ -164,7 +164,7 @@ def test_zapata_pequena_falla(navegador, url):
     pagina, _ = abrir(navegador, url)
     entrar_ejemplo(pagina)
     pagina.fill('.dims [data-k="zapata.Lx"]', "1.5")
-    assert "no cumple" in pagina.inner_text("#v-tit")
+    assert "no cumple" in pagina.text_content("#v-tit")
     pagina.click('.dims .pn-btn[data-paso-k="zapata.Lx"][data-delta="0.05"]')
     assert pagina.input_value('.dims [data-k="zapata.Lx"]') == "1.55"
 
@@ -174,7 +174,7 @@ def test_malla_insuficiente_en_el_ejemplo(navegador, url):
     entrar_ejemplo(pagina)
     pagina.click('#tipo-refuerzo [data-ref="malla"]')
     assert pagina.locator("#tabla-mallas tbody tr").count() == 20
-    assert "Ninguna malla" in pagina.inner_text("#malla-req")
+    assert "Ninguna malla" in pagina.text_content("#malla-req")
 
 
 def test_malla_en_zapata_liviana(navegador, url):
@@ -212,7 +212,7 @@ def test_informe_paginado_y_documento_listo(navegador, url):
     assert desbordes == 0
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
     pagina.wait_for_selector("#doc-listo[open]")
-    assert "Documento listo" in pagina.inner_text("#doc-listo")
+    assert "Documento listo" in pagina.text_content("#doc-listo")
     assert not errores, errores
 
 

@@ -79,9 +79,24 @@
     return new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color }));
   }
 
+  // Colores tomados del tema activo (claro u oscuro), para que el 3D siga la paleta de la app
+  function leerColores() {
+    const cs = getComputedStyle(contenedor);
+    const c = (n, d) => { const v = cs.getPropertyValue(n).trim(); return v ? new global.THREE.Color(v).getHex() : d; };
+    COLOR.acero = c('--acero', COLOR.acero);
+    COLOR.mal = c('--mal', COLOR.mal);
+    COLOR.dovela = c('--dovela', COLOR.dovela);
+    COLOR.concreto = c('--concreto', COLOR.concreto);
+    COLOR.borde = c('--concreto-borde', COLOR.borde);
+    COLOR.perimetro = c('--azul', COLOR.perimetro);
+    COLOR.grid1 = c('--linea-fuerte', COLOR.grid1);
+    COLOR.grid2 = c('--linea', COLOR.grid2);
+  }
+
   function update(R) {
     if (!renderer) return;
     const THREE = global.THREE;
+    leerColores();
     if (grupo) { scene.remove(grupo); liberar(grupo); }
     grupo = new THREE.Group();
     const { Lx, Ly, h, d, r } = R;

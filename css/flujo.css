@@ -1,15 +1,16 @@
 /* v3: bienvenida, asistente, dashboard por categorías. Se carga después de styles.css. */
 
+/* Logo monocromo (v3.1): zapata en piedra y tinta, columna en papel, ceniza y tinta */
 :root {
   --alto-barra: 108px;
-  --lg-zt: #c3cad1; --lg-zl: #56606b; --lg-zr: #1b232c;
-  --lg-ct: #ec9a76; --lg-cl: #c2502a; --lg-cr: #8f3a1c;
+  --lg-zt: #bfbebe; --lg-zl: #6a6965; --lg-zr: #1d1d1d;
+  --lg-ct: #ffffff; --lg-cl: #8f8e8a; --lg-cr: #3f3f3c;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --lg-zt: #8d969f; --lg-zl: #5b646e; --lg-zr: #39414b; --lg-ct: #f3b294; --lg-cl: #e2774c; --lg-cr: #b5532c; }
+  :root:not([data-theme="light"]) { --lg-zt: #6a6965; --lg-zl: #4a4946; --lg-zr: #33322f; --lg-ct: #ffffff; --lg-cl: #c4c3be; --lg-cr: #8f8e8a; }
 }
-:root[data-theme="dark"] { --lg-zt: #8d969f; --lg-zl: #5b646e; --lg-zr: #39414b; --lg-ct: #f3b294; --lg-cl: #e2774c; --lg-cr: #b5532c; }
-.forzar-claro { --lg-zt: #c3cad1; --lg-zl: #56606b; --lg-zr: #1b232c; --lg-ct: #ec9a76; --lg-cl: #c2502a; --lg-cr: #8f3a1c; }
+:root[data-theme="dark"] { --lg-zt: #6a6965; --lg-zl: #4a4946; --lg-zr: #33322f; --lg-ct: #ffffff; --lg-cl: #c4c3be; --lg-cr: #8f8e8a; }
+.forzar-claro { --lg-zt: #bfbebe; --lg-zl: #6a6965; --lg-zr: #1d1d1d; --lg-ct: #ffffff; --lg-cl: #8f8e8a; --lg-cr: #3f3f3c; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
