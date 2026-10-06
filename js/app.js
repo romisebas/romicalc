@@ -334,17 +334,6 @@
     return { info: infoInforme(), tipoNombre: T.nombre, R, secciones, datos: datosEntrada(), chequeos: R.chequeos, resumen: resumenTexto(), conExplica };
   }
 
-  // Pie de página propio: al definir cajas de margen el navegador omite su encabezado con URL y título.
-  function estiloPagina(titulo) {
-    const t = String(titulo).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ');
-    let el = document.getElementById('estilo-pagina');
-    if (!el) { el = document.createElement('style'); el.id = 'estilo-pagina'; document.head.appendChild(el); }
-    el.textContent = '@media print { @page { size: letter; margin: 18mm 17mm 20mm;' +
-      ' @top-left { content: ""; } @bottom-left { content: "' + t + '"; font: 8pt "Geist", sans-serif; color: #66717c; }' +
-      ' @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8pt "Geist", sans-serif; color: #66717c; } }' +
-      ' @page :first { @bottom-left { content: none; } @bottom-right { content: none; } } }';
-  }
-
   let tituloOriginal = document.title;
   function construirInforme(conExplica) {
     const d = datosInforme(conExplica);
@@ -356,43 +345,15 @@
       { html: Dibujo.corte(R, 'Y', 'inf'), cap: 'Corte Y' },
     ];
     if (img) d.figuras.push({ src: img, cap: 'Vista 3D' });
-    $('#informe').innerHTML = Informe.html(d);
-    estiloPagina(d.info.titulo);
+    $('#informe').innerHTML = Informe.construir(d, $('#medidor-informe'));
     tituloOriginal = document.title;
-    document.title = d.info.titulo; // también es el nombre sugerido del PDF
+    document.title = d.info.titulo; // nombre sugerido del archivo PDF
     document.body.classList.add('con-informe');
   }
   function limpiarInforme() {
     document.body.classList.remove('con-informe');
     $('#informe').innerHTML = '';
     document.title = tituloOriginal;
-  }
-
-  async function descargarMarkdown(conExplica) {
-    const d = datosInforme(conExplica);
-    const taller = $('#taller-png');
-    const planos = [
-      ['planos/planta-presiones.png', Dibujo.planta(R, 'presion', 'png'), 'Planta: presiones de servicio'],
-      ['planos/planta-refuerzo.png', Dibujo.planta(R, 'acero', 'png'), 'Planta: refuerzo'],
-      ['planos/corte-x.png', Dibujo.corte(R, 'X', 'png'), 'Corte X'],
-      ['planos/corte-y.png', Dibujo.corte(R, 'Y', 'png'), 'Corte Y'],
-    ];
-    const archivos = [];
-    d.figuras = [];
-    for (const [nombre, svg, cap] of planos) {
-      const blob = await Informe.svgAPng(svg, taller, 2);
-      archivos.push({ nombre, datos: new Uint8Array(await blob.arrayBuffer()) });
-      d.figuras.push({ archivo: nombre, cap });
-    }
-    const img = captura3d();
-    if (img) {
-      archivos.push({ nombre: 'planos/vista-3d.png', datos: new Uint8Array(await Informe.dataUrlABlob(img).arrayBuffer()) });
-      d.figuras.push({ archivo: 'planos/vista-3d.png', cap: 'Vista 3D' });
-    }
-    const base = Informe.slug(d.info.titulo);
-    archivos.unshift({ nombre: base + '.md', datos: new TextEncoder().encode(Informe.markdown(d)) });
-    Informe.descargar(Informe.zip(archivos), base + '.zip');
-    return base + '.zip';
   }
 
   // ------------------------------------------------------------ ventana del documento
@@ -603,21 +564,6 @@
       // Se espera a que la ventana se cierre para que no quede en el PDF
       setTimeout(() => { construirInforme(conExplica); window.print(); }, Mov.reducido() ? 30 : 190);
     });
-    $('#inf-md').addEventListener('click', async () => {
-      if (!guardarDialogo()) return;
-      const b = $('#inf-md');
-      b.disabled = true; b.textContent = 'Preparando…';
-      try {
-        const nombre = await descargarMarkdown($('#inf-explica').checked);
-        cerrarDialogo();
-        avisar('Descargado ' + nombre + ' con la memoria en Markdown y los planos en PNG.');
-      } catch (err) {
-        $('#inf-error').textContent = 'No se pudo generar el archivo: ' + err.message;
-      } finally {
-        b.disabled = false; b.textContent = 'Descargar Markdown + LaTeX';
-      }
-    });
-
     $('#btn-tema').addEventListener('click', () => {
       const raiz = document.documentElement;
       const oscuro = raiz.dataset.theme ? raiz.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;

@@ -111,34 +111,26 @@ def test_menu_de_tipos(navegador, url):
     assert pagina.get_attribute("#btn-tipo", "aria-expanded") == "false"
 
 
-def test_ventana_de_informe_y_markdown(navegador, url, tmp_path):
-    import zipfile
+def test_ventana_de_informe_y_paginacion(navegador, url):
     pagina, errores = abrir(navegador, url)
+    assert pagina.locator("#inf-md").count() == 0  # sin opción de descargar Markdown
+    pagina.evaluate("window.print = () => {}")
     pagina.click("#btn-imprimir")
     pagina.wait_for_selector("#dlg-informe[open]")
     pagina.fill("#inf-titulo", "")
-    pagina.click("#inf-md")
+    pagina.click("#inf-imprimir")
     assert "título" in pagina.inner_text("#inf-error")  # el título es obligatorio
     pagina.fill("#inf-titulo", "Memoria Z-1")
     pagina.fill("#inf-elaboro", "Juan Reyes")
-    with pagina.expect_download() as dl:
-        pagina.click("#inf-md")
-    ruta = tmp_path / dl.value.suggested_filename
-    dl.value.save_as(str(ruta))
-    with zipfile.ZipFile(ruta) as z:
-        assert z.testzip() is None
-        nombres = z.namelist()
-        md = z.read("Memoria_Z-1.md").decode("utf-8")
-    assert "planos/corte-x.png" in nombres and "planos/planta-refuerzo.png" in nombres
-    assert md.count("$$") > 100 and "Juan Reyes" in md
-    # Imprimir arma la portada y cambia el título (nombre sugerido del PDF)
-    pagina.evaluate("window.print = () => {}")
-    pagina.click("#btn-imprimir")
     pagina.click("#inf-imprimir")
     pagina.wait_for_function("document.body.classList.contains('con-informe')")
-    assert pagina.title() == "Memoria Z-1"
+    assert pagina.title() == "Memoria Z-1"  # nombre sugerido del PDF
     assert pagina.locator("#informe .inf-portada .inf-titulo").inner_text() == "Memoria Z-1"
     assert pagina.locator("#informe .inf-ec").count() > 60
+    assert pagina.locator("#informe .inf-nota-pdf").count() == 0  # sin notas de corrección del documento
+    # Ninguna hoja se desborda: el contenido cabe en el alto útil de cada hoja
+    desbordes = pagina.evaluate("[...document.querySelectorAll('#informe .hoja')].filter(h => h.scrollHeight > h.clientHeight + 1).length")
+    assert desbordes == 0
     assert not errores, errores
 
 

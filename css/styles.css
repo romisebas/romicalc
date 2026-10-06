@@ -151,7 +151,7 @@ a { color: inherit; }
 .logo { width: 34px; height: 34px; fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
 .logo .logo-zap { stroke: var(--tinta); }
 .logo .logo-col { stroke: var(--acento); }
-.marca-nombre { font: 500 1.28rem/1 var(--serif); font-optical-sizing: auto; letter-spacing: -0.015em; white-space: nowrap; }
+.marca-nombre { font: 500 1.08rem/1 var(--serif); font-optical-sizing: auto; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
 
 .menu-tipo { position: relative; }
 .btn-tipo {
@@ -219,12 +219,17 @@ a { color: inherit; }
 .grupo { padding: 18px 0 20px; border-bottom: 1px solid var(--linea); }
 .grupo:last-child { border-bottom: 0; }
 .grupo h2 { margin-bottom: 12px; }
-.campos { display: grid; gap: 10px 12px; }
+/* Las cajas se alinean por abajo aunque una etiqueta ocupe dos líneas */
+.campos { display: grid; gap: 12px 12px; align-items: end; }
 .campos.dos { grid-template-columns: 1fr 1fr; }
 .campos.tres { grid-template-columns: repeat(3, 1fr); }
 .campos .ancho { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; gap: 5px; font-size: .8rem; color: var(--tinta-2); font-weight: 500; }
-input[type="number"], input[type="text"], select, textarea {
+/* Etiqueta y unidad en la misma línea; el control debajo, con alto uniforme */
+label { display: block; font-size: .8rem; line-height: 1.35; color: var(--tinta-2); font-weight: 500; }
+label > small { font-size: .74rem; margin-left: 2px; white-space: nowrap; }
+label > input:not([type="checkbox"]):not([type="radio"]), label > select, label > textarea { display: block; margin-top: 6px; }
+input[type="number"], input[type="text"], input[type="date"], select { height: 36px; }
+input[type="number"], input[type="text"], input[type="date"], select, textarea {
   width: 100%; min-width: 0;
   font: 400 .92rem var(--sans); color: var(--tinta);
   background: var(--fondo);
@@ -238,7 +243,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--f
 input.invalido { border-color: var(--mal); background: var(--mal-fondo); }
 textarea { font-family: var(--mono); font-size: .74rem; resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--tinta-3); }
-.check { flex-direction: row; align-items: center; gap: 9px; margin: 14px 0 10px; font-weight: 500; color: var(--tinta); cursor: pointer; }
+.check { display: flex; flex-direction: row; align-items: center; gap: 9px; margin: 14px 0 10px; font-weight: 500; color: var(--tinta); cursor: pointer; }
 .check input { width: 16px; height: 16px; accent-color: var(--acento); margin: 0; }
 .apagado { opacity: .5; }
 .ayuda { font-size: .8rem; color: var(--tinta-3); margin: 8px 0 0; line-height: 1.5; max-width: 72ch; }
@@ -388,7 +393,7 @@ input::placeholder, textarea::placeholder { color: var(--tinta-3); }
 .tabla-acero tr { transition: background-color .2s ease; }
 .tabla-acero tr.sel td { background: color-mix(in srgb, var(--acento) 10%, transparent); }
 .tabla-acero tr.est-mal td:not(:last-child) { color: var(--tinta-3); }
-.radio { flex-direction: row; align-items: center; gap: 7px; font: 500 .85rem var(--mono); color: var(--tinta); cursor: pointer; }
+.radio { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; font: 500 .85rem var(--mono); color: var(--tinta); cursor: pointer; }
 .radio input { accent-color: var(--acento); margin: 0; }
 .alt { display: block; font: .72rem var(--mono); color: var(--tinta-3); margin-left: 21px; }
 .punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; }
@@ -406,7 +411,7 @@ input::placeholder, textarea::placeholder { color: var(--tinta-3); }
 .fuente { font-size: .74rem; }
 
 /* ---------- Memoria de cálculo ---------- */
-.interruptor { flex-direction: row; align-items: center; gap: 8px; font-size: .82rem; color: var(--tinta-2); cursor: pointer; margin-right: 6px; }
+.interruptor { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font-size: .82rem; color: var(--tinta-2); cursor: pointer; margin-right: 6px; }
 .interruptor input { appearance: none; width: 30px; height: 18px; border-radius: 9px; background: var(--linea-fuerte); position: relative; margin: 0; cursor: pointer; transition: background-color .2s ease; }
 .interruptor input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .26s var(--ease-out); }
 .interruptor input:checked { background: var(--acento); }
@@ -492,6 +497,6 @@ input::placeholder, textarea::placeholder { color: var(--tinta-3); }
 }
 @media (max-width: 420px) {
   .campos.tres { grid-template-columns: 1fr 1fr; }
-  .marca-nombre { font-size: 1.15rem; }
+  .marca-nombre { font-size: .98rem; letter-spacing: .04em; }
 }
 

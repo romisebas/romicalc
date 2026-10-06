@@ -256,7 +256,7 @@
   </div>
 
   <dialog class="dialogo" id="dlg-informe" aria-labelledby="dlg-titulo">
-    <form method="dialog" class="dlg-form" id="form-informe">
+    <form method="dialog" class="dlg-form" id="form-informe" novalidate>
       <div class="dlg-cab">
         <h2 id="dlg-titulo">Documento de la memoria</h2>
         <p class="ayuda">Estos datos van en la portada. Se guardan con el proyecto.</p>
@@ -284,14 +284,13 @@
       <div class="dlg-pie">
         <button type="button" class="btn btn-quieto" id="inf-cancelar">Cancelar</button>
         <span class="dlg-espacio"></span>
-        <button type="button" class="btn" id="inf-md">Descargar Markdown + LaTeX</button>
         <button type="submit" class="btn btn-acento" id="inf-imprimir">Imprimir o guardar PDF</button>
       </div>
     </form>
   </dialog>
 
   <div id="informe" class="informe forzar-claro" aria-hidden="true"></div>
-  <div id="taller-png" class="taller-png forzar-claro" aria-hidden="true"></div>
+  <div id="medidor-informe" class="inf-medidor forzar-claro" aria-hidden="true"></div>
 
   <script src="vendor/three.min.js"></script>
   <script src="vendor/OrbitControls.js"></script>
