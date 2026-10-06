@@ -1,4 +1,4 @@
-"""Pruebas automáticas de la app con Playwright.
+"""Pruebas automáticas de Diseño de Zapatas con Playwright.
 
 Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests -q
@@ -34,15 +34,18 @@ def navegador():
         b.close()
 
 
-def abrir(navegador, url, ancho=1440, alto=900):
-    pagina = navegador.new_page(viewport={"width": ancho, "height": alto})
+def abrir(navegador, url, ancho=1440, alto=900, tema="light"):
+    # Movimiento reducido: las capturas no dependen de animaciones a medio camino.
+    ctx = navegador.new_context(viewport={"width": ancho, "height": alto}, reduced_motion="reduce", color_scheme=tema)
+    pagina = ctx.new_page()
     errores = []
     pagina.on("pageerror", lambda e: errores.append(str(e)))
     pagina.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
     pagina.goto(url)
     pagina.evaluate("localStorage.clear()")
     pagina.reload()
-    pagina.wait_for_selector("#chequeos .chip")
+    pagina.wait_for_selector("#chequeos .chequeo")
+    pagina.evaluate("document.fonts.ready")
     return pagina, errores
 
 
@@ -55,25 +58,65 @@ def test_validacion_contra_pdf(navegador, url):
     assert not errores, errores
 
 
-def test_ejemplo_cumple(navegador, url):
-    pagina, _ = abrir(navegador, url)
+def test_ejemplo_cumple_y_memoria_katex(navegador, url):
+    pagina, errores = abrir(navegador, url)
     pagina.click("#btn-ejemplo")
-    assert "cumple" in pagina.inner_text("#veredicto")
-    assert pagina.locator(".chip.mal").count() == 0
+    assert "cumple" in pagina.inner_text("#v-tit")
+    assert pagina.locator(".chequeo.mal").count() == 0
+    pagina.click("#btn-abrir")  # las secciones cerradas se dibujan al abrirlas
+    pagina.wait_for_function("document.querySelectorAll('#memoria .katex').length > 60")
+    assert pagina.locator("#memoria .katex-error").count() == 0
+    assert pagina.locator("#memoria details.paso").count() == 6
+    assert not errores, errores
 
 
 def test_zapata_pequena_falla(navegador, url):
     pagina, _ = abrir(navegador, url)
     pagina.fill('[data-k="zapata.Lx"]', "1.5")
-    assert "no cumple" in pagina.inner_text("#veredicto")
-    assert pagina.locator(".chip.mal").count() >= 1
+    assert "no cumple" in pagina.inner_text("#v-tit")
+    assert pagina.locator(".chequeo.mal").count() >= 1
+
+
+def test_malla_insuficiente_en_el_ejemplo(navegador, url):
+    pagina, _ = abrir(navegador, url)
+    pagina.click('#tipo-refuerzo [data-ref="malla"]')
+    assert pagina.locator("#tabla-mallas tbody tr").count() == 20
+    assert "Ninguna malla" in pagina.inner_text("#malla-req")
+    assert "no cumple" in pagina.inner_text("#v-tit")
+
+
+def test_malla_en_zapata_liviana(navegador, url):
+    pagina, _ = abrir(navegador, url)
+    # Zapata pequeña y poco cargada: la demanda queda en el mínimo de cuantía
+    for k, v in {"cargas.D.P": "6", "cargas.L.P": "2", "cargas.D.Mx": "0.05", "cargas.D.My": "0.05",
+                 "cargas.L.Mx": "0", "cargas.L.My": "0", "zapata.Lx": "1.0", "zapata.Ly": "1.0",
+                 "zapata.d": "0.15", "columna.Cx": "0.3", "columna.Cy": "0.3", "columna.barra": "4"}.items():
+        sel = f'[data-k="{k}"]'
+        if k == "columna.barra":
+            pagina.select_option(sel, v)
+        else:
+            pagina.fill(sel, v)
+    pagina.click('#tipo-refuerzo [data-ref="malla"]')
+    assert pagina.locator("#tabla-mallas tr.est-ok").count() >= 1
+    assert pagina.locator("#tabla-mallas tr.sel.est-ok").count() == 1
+
+
+def test_menu_de_tipos(navegador, url):
+    pagina, _ = abrir(navegador, url)
+    pagina.click("#btn-tipo")
+    pagina.wait_for_selector("#menu-tipo.abierto")
+    assert pagina.locator("#menu-tipo .menu-item").count() == 6
+    assert pagina.locator("#menu-tipo .mi-tag.pronto").count() == 5
+    pagina.keyboard.press("Escape")
+    assert pagina.get_attribute("#btn-tipo", "aria-expanded") == "false"
 
 
 def test_capturas_y_sin_scroll_horizontal(navegador, url):
     CAPTURAS.mkdir(exist_ok=True)
-    for nombre, ancho, alto in [("escritorio", 1440, 900), ("celular", 375, 812)]:
-        pagina, errores = abrir(navegador, url, ancho, alto)
-        pagina.wait_for_timeout(300)
+    for nombre, ancho, alto, tema in [("escritorio", 1440, 900, "light"), ("escritorio-oscuro", 1440, 900, "dark"), ("celular", 390, 844, "light")]:
+        pagina, errores = abrir(navegador, url, ancho, alto, tema)
+        pagina.evaluate("document.querySelectorAll('#memoria details.paso').forEach((d, i) => { d.open = i < 2; })")
+        pagina.wait_for_timeout(400)
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}.png"), full_page=True)
         assert pagina.evaluate("document.documentElement.scrollWidth") <= ancho
         assert not errores, errores

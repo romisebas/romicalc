@@ -3,41 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zapata con Momento</title>
-  <meta name="description" content="Diseño de zapata aislada con momento biaxial: esfuerzos en esquinas, punzonamiento, cortante, flexión, aplastamiento y longitud de desarrollo (NSR-10).">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Diseño de Zapatas</title>
+  <meta name="description" content="Diseño de zapatas de concreto reforzado según NSR-10: esfuerzos en el suelo, punzonamiento, cortante, flexión con barras o mallas electrosoldadas, aplastamiento y longitud de desarrollo, con memoria de cálculo.">
+  <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12161b" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='20' width='26' height='8' fill='%23b4441f'/%3E%3Crect x='12' y='4' width='8' height='16' fill='%231d2731'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke-width='3.2' stroke-linejoin='round'%3E%3Cpath d='M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58' stroke='%231b232c'/%3E%3Cpath d='M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13' stroke='%23c2502a'/%3E%3C/svg%3E">
 </head>
 <body>
-  <header class="barra-sup">
-    <div class="marca">
-      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="20" width="26" height="8"/><rect class="logo-col" x="12" y="4" width="8" height="16"/></svg>
-      <div>
-        <h1>Zapata aislada con momento</h1>
-        <p class="sub">Método del curso · NSR-10 · tonf, m, kgf/cm²</p>
-      </div>
+  <a class="saltar" href="#principal">Saltar al contenido</a>
+
+  <header class="barra-sup" id="barra-sup">
+    <a class="marca" href="#principal" aria-label="Diseño de Zapatas, ir al inicio">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+        <path class="logo-zap" d="M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58"/>
+        <path class="logo-col" d="M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13"/>
+      </svg>
+      <span class="marca-nombre">Diseño de Zapatas</span>
+    </a>
+
+    <div class="menu-tipo">
+      <button type="button" class="btn-tipo" id="btn-tipo" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-tipo">
+        <span class="btn-tipo-lbl">Tipo</span>
+        <span id="tipo-actual">Aislada con momento</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div class="popover" id="menu-tipo" role="menu" aria-labelledby="btn-tipo" hidden></div>
     </div>
-    <div class="acciones">
-      <button type="button" class="btn btn-claro" id="btn-ejemplo">Cargar ejemplo del documento</button>
-      <button type="button" class="btn btn-claro" id="btn-exportar">Exportar .json</button>
-      <label class="btn btn-claro" for="archivo-importar">Importar .json</label>
+
+    <nav class="acciones" aria-label="Acciones">
+      <button type="button" class="btn btn-quieto" id="btn-ejemplo">Cargar ejemplo</button>
+      <button type="button" class="btn btn-quieto" id="btn-exportar">Exportar</button>
+      <label class="btn btn-quieto" for="archivo-importar">Importar</label>
       <input type="file" id="archivo-importar" accept=".json,application/json" hidden>
-      <button type="button" class="btn btn-acento" id="btn-imprimir">Imprimir / PDF</button>
-      <button type="button" class="btn-icono" id="btn-tema" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">
+      <button type="button" class="btn btn-acento" id="btn-imprimir">Imprimir</button>
+      <button type="button" class="btn-icono" id="btn-tema" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
       </button>
-    </div>
+    </nav>
   </header>
+
+  <div class="aviso-flotante" id="aviso" role="status" aria-live="polite"></div>
 
   <div class="layout">
     <aside class="panel-datos" aria-label="Datos de entrada">
       <section class="grupo">
         <h2>Proyecto</h2>
         <div class="campos dos">
-          <label>Nombre<input type="text" data-k="proyecto.nombre" data-tipo="texto"></label>
+          <label>Nombre<input type="text" data-k="proyecto.nombre" data-tipo="texto" placeholder="Edificio Las Acacias"></label>
           <label>Elemento<input type="text" data-k="proyecto.elemento" data-tipo="texto" placeholder="Z-1, eje B-3"></label>
         </div>
       </section>
@@ -48,21 +62,21 @@
           <thead><tr><th></th><th>P <small>tonf</small></th><th>Mx <small>tonf·m</small></th><th>My <small>tonf·m</small></th></tr></thead>
           <tbody>
             <tr><th scope="row">PP+CM</th>
-              <td><input type="number" step="any" data-k="cargas.D.P" aria-label="P muerta"></td>
-              <td><input type="number" step="any" data-k="cargas.D.Mx" aria-label="Mx muerta"></td>
-              <td><input type="number" step="any" data-k="cargas.D.My" aria-label="My muerta"></td></tr>
+              <td><input type="number" step="any" data-k="cargas.D.P" aria-label="P de carga muerta"></td>
+              <td><input type="number" step="any" data-k="cargas.D.Mx" aria-label="Mx de carga muerta"></td>
+              <td><input type="number" step="any" data-k="cargas.D.My" aria-label="My de carga muerta"></td></tr>
             <tr><th scope="row">CV</th>
-              <td><input type="number" step="any" data-k="cargas.L.P" aria-label="P viva"></td>
-              <td><input type="number" step="any" data-k="cargas.L.Mx" aria-label="Mx viva"></td>
-              <td><input type="number" step="any" data-k="cargas.L.My" aria-label="My viva"></td></tr>
+              <td><input type="number" step="any" data-k="cargas.L.P" aria-label="P de carga viva"></td>
+              <td><input type="number" step="any" data-k="cargas.L.Mx" aria-label="Mx de carga viva"></td>
+              <td><input type="number" step="any" data-k="cargas.L.My" aria-label="My de carga viva"></td></tr>
           </tbody>
         </table>
         <p class="ayuda">Se usan valores absolutos. La app arma 1.4D y 1.2D + 1.6L y diseña con la que gobierna.</p>
         <details class="pegar">
-          <summary>Pegar tabla de SAP2000 / ETABS</summary>
-          <textarea id="texto-sap" rows="5" spellcheck="false" placeholder="Copie las filas de Joint Reactions (incluya CV y PP+CM) y péguelas aquí"></textarea>
+          <summary>Pegar tabla de SAP2000 o ETABS</summary>
+          <textarea id="texto-sap" rows="5" spellcheck="false" aria-label="Tabla de reacciones pegada" placeholder="206  CV  LinStatic  0,014  -0,015  8,534  -0,036  -0,057  0,001"></textarea>
           <div class="fila-btn">
-            <button type="button" class="btn" id="btn-interpretar">Interpretar</button>
+            <button type="button" class="btn" id="btn-interpretar">Leer cargas</button>
             <span class="msg" id="msg-sap" role="status"></span>
           </div>
         </details>
@@ -87,12 +101,12 @@
           <label>Cx <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cx"></label>
           <label>Cy <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cy"></label>
           <label>Barra de la columna<select data-k="columna.barra" data-tipo="int" id="sel-barra-col"></select></label>
-          <label>Nº de barras<input type="number" step="2" min="4" data-k="columna.nBarras" data-tipo="int"></label>
+          <label>Número de barras<input type="number" step="2" min="4" data-k="columna.nBarras" data-tipo="int"></label>
           <label class="ancho">Ubicación (αs)
             <select data-k="columna.alpha" data-tipo="int">
-              <option value="40">Interior · αs = 40</option>
-              <option value="30">Borde · αs = 30</option>
-              <option value="20">Esquina · αs = 20</option>
+              <option value="40">Interior, αs = 40</option>
+              <option value="30">Borde, αs = 30</option>
+              <option value="20">Esquina, αs = 20</option>
             </select>
           </label>
         </div>
@@ -118,18 +132,27 @@
           <label>d <small>m</small><input type="number" step="0.025" min="0.15" data-k="zapata.d"></label>
           <label>Recubrimiento r <small>m</small><input type="number" step="0.005" data-k="zapata.r"></label>
         </div>
-        <p class="dato-h">h = d + r = <b id="valor-h">—</b> m</p>
+        <p class="dato-h">h = d + r = <b id="valor-h">0.550</b> m</p>
         <div class="fila-btn">
-          <button type="button" class="btn" id="btn-opt-planta">Proponer Lx · Ly</button>
+          <button type="button" class="btn" id="btn-opt-planta">Proponer Lx y Ly</button>
           <button type="button" class="btn" id="btn-opt-d">Proponer d</button>
         </div>
         <p class="msg" id="msg-opt" role="status"></p>
       </section>
     </aside>
 
-    <main class="principal">
-      <section class="estado" aria-live="polite">
-        <div class="veredicto" id="veredicto"></div>
+    <main class="principal" id="principal" tabindex="-1">
+      <section class="resumen" id="resumen" aria-live="polite">
+        <div class="veredicto" id="veredicto">
+          <h1 class="v-tit" id="v-tit">El diseño cumple</h1>
+          <p class="v-det" id="v-det"></p>
+        </div>
+        <dl class="cifras" id="cifras">
+          <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">2.50</span> × <span class="num" data-cifra="Ly">2.00</span> <small>m</small></dd></div>
+          <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.55</span> <small>m</small></dd></div>
+          <div><dt>σmax de servicio</dt><dd><span class="num" data-cifra="smax">10.87</span> <small>de <span data-cifra-txt="qadm">12.00</span> tonf/m²</small></dd></div>
+          <div><dt>Utilización máxima</dt><dd><span class="num" data-cifra="util">0</span><small>%</small></dd></div>
+        </dl>
         <ol class="chequeos" id="chequeos"></ol>
       </section>
 
@@ -139,10 +162,10 @@
             <h2>Planta</h2>
             <div class="seg" role="tablist" aria-label="Capa de la planta" id="capas">
               <button type="button" role="tab" data-capa="presion" aria-selected="true">Presiones</button>
-              <button type="button" role="tab" data-capa="punz">Punzonamiento</button>
-              <button type="button" role="tab" data-capa="cortante">Cortante</button>
-              <button type="button" role="tab" data-capa="flexion">Flexión</button>
-              <button type="button" role="tab" data-capa="acero">Acero</button>
+              <button type="button" role="tab" data-capa="punz" aria-selected="false">Punzonamiento</button>
+              <button type="button" role="tab" data-capa="cortante" aria-selected="false">Cortante</button>
+              <button type="button" role="tab" data-capa="flexion" aria-selected="false">Flexión</button>
+              <button type="button" role="tab" data-capa="acero" aria-selected="false">Refuerzo</button>
             </div>
           </div>
           <div class="lienzo" id="planta"></div>
@@ -152,58 +175,98 @@
             <h2 id="titulo-vista2">Vista 3D</h2>
             <div class="seg" role="tablist" aria-label="Segunda vista" id="vistas2">
               <button type="button" role="tab" data-vista="3d" aria-selected="true">3D</button>
-              <button type="button" role="tab" data-vista="X">Corte X</button>
-              <button type="button" role="tab" data-vista="Y">Corte Y</button>
+              <button type="button" role="tab" data-vista="X" aria-selected="false">Corte X</button>
+              <button type="button" role="tab" data-vista="Y" aria-selected="false">Corte Y</button>
             </div>
           </div>
           <div class="lienzo lienzo-3d" id="vista3d">
             <button type="button" class="btn btn-mini encuadre" id="btn-encuadrar">Reencuadrar</button>
-            <p class="pista">Arrastre para girar · rueda para acercar · clic derecho para desplazar</p>
+            <p class="pista">Arrastre para girar, rueda para acercar</p>
           </div>
           <div class="lienzo" id="corte" hidden></div>
         </figure>
       </section>
 
-      <section class="bloque" id="bloque-acero">
+      <section class="bloque" id="bloque-refuerzo">
         <div class="bloque-cab">
-          <h2>Selección del acero</h2>
-          <p class="ayuda">Elija la barra en cada dirección. La cantidad cubre As requerido y respeta smax = min(3h, 45 cm).</p>
+          <h2>Refuerzo inferior</h2>
+          <div class="seg" role="tablist" aria-label="Tipo de refuerzo" id="tipo-refuerzo">
+            <button type="button" role="tab" data-ref="barras" aria-selected="true">Barras corrugadas</button>
+            <button type="button" role="tab" data-ref="malla" aria-selected="false">Malla electrosoldada</button>
+          </div>
         </div>
-        <div class="aceros">
-          <div class="acero-dir" id="acero-x"></div>
-          <div class="acero-dir" id="acero-y"></div>
+        <div id="panel-barras">
+          <p class="ayuda">Elija la barra en cada dirección. La cantidad cubre el acero requerido y respeta smax = min(3h, 45 cm).</p>
+          <div class="aceros">
+            <div class="acero-dir" id="acero-x"></div>
+            <div class="acero-dir" id="acero-y"></div>
+          </div>
+        </div>
+        <div id="panel-malla" hidden>
+          <div class="malla-ctl">
+            <div class="ctl">
+              <span class="ctl-lbl" id="lbl-capas">Capas</span>
+              <div class="seg seg-sm" role="tablist" aria-labelledby="lbl-capas" id="capas-malla">
+                <button type="button" role="tab" data-capas="auto" aria-selected="true">Automático</button>
+                <button type="button" role="tab" data-capas="1" aria-selected="false">1 capa</button>
+                <button type="button" role="tab" data-capas="2" aria-selected="false">2 capas</button>
+              </div>
+            </div>
+            <label class="ctl">fy de diseño de la malla
+              <select id="fy-malla">
+                <option value="4200">4200 kgf/cm² (conservador, como las barras)</option>
+                <option value="4945">4945 kgf/cm² (485 MPa, ficha Diaco)</option>
+              </select>
+            </label>
+          </div>
+          <p class="ayuda" id="malla-req"></p>
+          <div class="acero-dir" id="tabla-mallas"></div>
+          <p class="ayuda fuente">Catálogo: Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026. Panel de 6.00 × 2.35 m.</p>
         </div>
       </section>
 
-      <section class="bloque">
+      <section class="bloque" id="bloque-memoria">
         <div class="bloque-cab">
           <h2>Memoria de cálculo</h2>
           <div class="fila-btn">
+            <label class="interruptor"><input type="checkbox" id="chk-explica" checked> <span>Explicaciones</span></label>
             <button type="button" class="btn btn-mini" id="btn-abrir">Desplegar todo</button>
             <button type="button" class="btn btn-mini" id="btn-cerrar">Plegar todo</button>
           </div>
         </div>
-        <div id="memoria"></div>
+        <div id="memoria" class="memoria"></div>
       </section>
 
       <section class="bloque no-print">
         <details class="paso" id="validacion">
           <summary><span class="paso-tit">Validación contra el ejemplo del PDF</span><span class="tag" id="tag-validacion"></span></summary>
-          <div class="tabla-scroll"><table class="memoria valid"><thead><tr><th>Valor</th><th>PDF</th><th>App</th><th>Diferencia</th><th></th></tr></thead><tbody id="tabla-validacion"></tbody></table></div>
-          <p class="ayuda">Compara el motor de cálculo con los resultados del documento (tolerancia 1 %). Mu<sub>y</sub> se compara con el valor corregido.</p>
+          <div class="paso-cuerpo"><div class="paso-int">
+            <div class="tabla-scroll"><table class="tabla-valid"><thead><tr><th>Valor</th><th>PDF</th><th>App</th><th>Diferencia</th><th></th></tr></thead><tbody id="tabla-validacion"></tbody></table></div>
+            <p class="ayuda">Compara el motor de cálculo con los resultados del documento, con tolerancia del 1 %. Muy se compara con el valor corregido.</p>
+          </div></div>
         </details>
       </section>
 
       <section class="solo-print" id="print-extra"></section>
+
+      <footer class="pie">
+        <p>Método del curso Diseño de Concreto II (Ing. Gustavo Chang Nieto, Universidad del Magdalena) y NSR-10. Mallas según la ficha técnica Diaco NTC 5806.</p>
+        <p>Herramienta académica: verifique los resultados antes de usarlos en un proyecto real.</p>
+      </footer>
     </main>
   </div>
 
   <script src="vendor/three.min.js"></script>
   <script src="vendor/OrbitControls.js"></script>
-  <script src="js/calc.js"></script>
-  <script src="js/memoria.js"></script>
-  <script src="js/draw2d.js"></script>
-  <script src="js/view3d.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="js/nucleo/movimiento.js"></script>
+  <script src="js/nucleo/refuerzo.js"></script>
+  <script src="js/nucleo/memoria.js"></script>
+  <script src="js/nucleo/dibujo.js"></script>
+  <script src="js/nucleo/vista3d.js"></script>
+  <script src="js/tipos/catalogo.js"></script>
+  <script src="js/tipos/aislada-momento.js"></script>
+  <script src="js/tipos/aislada-momento-memoria.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
