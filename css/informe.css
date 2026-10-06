@@ -1,0 +1,119 @@
+/* Ventana del documento, informe impreso (portada + memoria) y tema claro forzado para exportar. */
+
+/* ---------- Tema claro forzado (informe y generación de PNG) ---------- */
+.forzar-claro {
+  --fondo: #ffffff; --superficie: #ffffff; --superficie-2: #eef1f4;
+  --tinta: #1b232c; --tinta-2: #434e59; --tinta-3: #5f6a75;
+  --linea: #d3d9df; --linea-fuerte: #b3bcc5;
+  --acento: #c2502a; --acero: #c2502a; --dovela: #8f3a1c;
+  --concreto: #d5dade; --concreto-borde: #56606b; --columna: #8a939c;
+  --presion-lo: #dde8f3; --presion-hi: #2f6db5; --azul: #2c64a6;
+  --ok: #22704a; --ok-fondo: #dff0e6; --mal: #b3302a; --mal-fondo: #f8e1de; --aviso: #875a0b; --aviso-fondo: #f6ebd3;
+  color: var(--tinta);
+}
+.taller-png { position: absolute; left: -10000px; top: 0; width: 640px; pointer-events: none; }
+.informe { display: none; }
+
+/* ---------- Ventana del documento ---------- */
+.dialogo {
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
+  padding: 0; border: 1px solid var(--linea); border-radius: 14px;
+  background: var(--superficie); color: var(--tinta);
+  box-shadow: var(--sombra-pop);
+  opacity: 0; transform: scale(0.97);
+  transition: opacity .18s var(--ease-out), transform .24s var(--ease-out);
+}
+.dialogo.abierto { opacity: 1; transform: none; }
+.dialogo::backdrop { background: rgba(18, 22, 27, .38); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.dlg-form { display: flex; flex-direction: column; max-height: inherit; }
+.dlg-cab { padding: 22px 24px 6px; }
+.dlg-cab h2 { font-size: 1.35rem; letter-spacing: -0.015em; }
+.dlg-cab .ayuda { margin-top: 4px; }
+.dlg-cuerpo { padding: 12px 24px 8px; display: grid; gap: 14px; overflow-y: auto; }
+.dlg-cuerpo label small { font-weight: 400; }
+.dialogo input[type="date"] {
+  width: 100%; font: 400 .92rem var(--sans); color: var(--tinta); background: var(--fondo);
+  border: 1px solid var(--linea-fuerte); border-radius: var(--r-ctl); padding: 7px 9px;
+}
+.dialogo input[type="date"]:focus { outline: none; border-color: var(--foco); box-shadow: 0 0 0 3px color-mix(in srgb, var(--foco) 22%, transparent); }
+#inf-responsables { font: 400 .92rem/1.45 var(--sans); }
+.check-dlg { align-self: end; margin: 0 0 8px; }
+.dlg-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 24px 20px; border-top: 1px solid var(--linea); margin-top: 8px; }
+.dlg-espacio { flex: 1; }
+.btn:disabled { opacity: .6; cursor: progress; }
+@media (max-width: 520px) {
+  .dlg-pie .btn { flex: 1 1 100%; }
+  .dlg-espacio { display: none; }
+}
+
+/* ---------- Impresión ---------- */
+@page { size: letter; margin: 18mm 17mm 20mm; }
+@media print {
+  body.con-informe > *:not(.informe) { display: none !important; }
+  body.con-informe { background: #fff; }
+  .con-informe .informe { display: block; }
+  .informe, .informe * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ---------- Informe ---------- */
+.informe { font: 10pt/1.5 var(--sans); color: var(--tinta); }
+.inf-portada { height: 236mm; display: flex; flex-direction: column; justify-content: space-between; break-after: page; padding: 4mm 0; }
+.inf-portada-sup { display: flex; align-items: center; gap: 14px; }
+.inf-logo { width: 22mm; height: 22mm; fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.inf-logo .logo-zap { stroke: var(--tinta); }
+.inf-logo .logo-col { stroke: var(--acento); }
+.inf-tipo { margin: 0; font: 500 10pt var(--sans); color: var(--tinta-3); letter-spacing: .02em; }
+.inf-portada-centro { border-top: 2px solid var(--tinta); padding-top: 10mm; }
+.inf-titulo { font: 500 30pt/1.08 var(--serif); font-optical-sizing: auto; letter-spacing: -0.02em; margin: 0 0 12mm; max-width: 150mm; }
+.inf-meta, .inf-firmas { display: grid; gap: 4mm; margin: 0; }
+.inf-meta div, .inf-firmas div { display: grid; grid-template-columns: 42mm 1fr; gap: 4mm; }
+.inf-meta dt, .inf-firmas dt { color: var(--tinta-3); font-size: 9pt; padding-top: 1px; }
+.inf-meta dd, .inf-firmas dd { margin: 0; font-size: 11pt; }
+.inf-portada-inf { border-top: 1px solid var(--linea); padding-top: 7mm; }
+.inf-norma { margin: 8mm 0 0; font-size: 8.5pt; color: var(--tinta-3); }
+.inf-bloque { break-before: page; }
+.inf-h2 { font: 500 17pt/1.2 var(--serif); letter-spacing: -0.01em; margin: 0 0 4mm; break-after: avoid; }
+.inf-tabla + .inf-h2 { margin-top: 9mm; }
+.inf-veredicto { font-size: 11pt; margin: 0 0 5mm; }
+.inf-veredicto.ok { color: var(--ok); }
+.inf-veredicto.mal { color: var(--mal); }
+.inf-tabla { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.inf-tabla th, .inf-tabla td { text-align: left; padding: 2.2mm 2mm; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.inf-tabla tr { break-inside: avoid; }
+.inf-tabla thead th { font-weight: 500; color: var(--tinta-3); font-size: 8.5pt; }
+.inf-tabla td.ok { color: var(--ok); font-weight: 500; }
+.inf-tabla td.mal { color: var(--mal); font-weight: 500; }
+.inf-datos th { width: 38mm; font-weight: 500; color: var(--tinta-2); }
+.inf-mono { font-family: var(--mono); font-size: 8.5pt; }
+.inf-planos { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.inf-planos figure { margin: 0; border: 1px solid var(--linea); break-inside: avoid; }
+.inf-planos svg, .inf-planos img { width: 100%; height: auto; display: block; }
+/* La vista 3D ocupa el ancho completo bajo los cuatro planos, sin pasar a otra página */
+.inf-planos figure:nth-child(5) { grid-column: 1 / -1; }
+.inf-planos figure:nth-child(5) img { height: 52mm; object-fit: contain; }
+.inf-planos { gap: 4mm; }
+.inf-planos figcaption { font-size: 8.5pt; color: var(--tinta-2); padding: 2mm 3mm; border-top: 1px solid var(--linea); }
+.inf-paso { margin-bottom: 7mm; }
+.inf-h3 { font: 500 13pt/1.25 var(--serif); margin: 7mm 0 2mm; padding-bottom: 2mm; border-bottom: 1px solid var(--linea); break-after: avoid; display: flex; gap: 2mm; align-items: baseline; }
+.inf-h3 small { margin-left: auto; font: 8pt var(--mono); color: var(--tinta-3); }
+.inf-h2-memoria + .inf-paso .inf-h3 { margin-top: 0; }
+.inf-p { font: 10.5pt/1.55 var(--serif); color: var(--tinta-2); margin: 3mm 0 2mm; break-inside: avoid; orphans: 3; widows: 3; }
+.inf-sub { font: 600 9.5pt var(--sans); margin: 5mm 0 1mm; break-after: avoid; }
+/* Cada ecuación es un bloque indivisible: nunca se parte entre páginas */
+.inf-ec { display: grid; grid-template-columns: 40mm 1fr; gap: 4mm; align-items: center; padding: 1.4mm 0; break-inside: avoid; page-break-inside: avoid; }
+.inf-etq { font-size: 8.5pt; color: var(--tinta-2); }
+.inf-ec-nota { display: block; font: 7.5pt var(--mono); color: var(--tinta-3); margin-top: 1px; }
+.inf-math .katex-display { margin: 0; text-align: left; }
+.inf-math .katex-display > .katex { text-align: left; }
+.inf-math .katex { font-size: 1.02em; }
+.inf-ver { grid-template-columns: 40mm 1fr auto; padding: 2mm 3mm; margin: 1.5mm 0; border-radius: 2mm; }
+.inf-ver.ok { background: var(--ok-fondo); }
+.inf-ver.mal { background: var(--mal-fondo); }
+.inf-ver .inf-etq { color: var(--tinta); font-weight: 500; }
+.inf-tag { font: 600 8pt var(--sans); }
+.inf-ver.ok .inf-tag { color: var(--ok); }
+.inf-ver.mal .inf-tag { color: var(--mal); }
+.inf-nota { font-size: 9pt; padding: 2.5mm 3.5mm; margin: 3mm 0; border-radius: 2mm; break-inside: avoid; }
+.inf-nota-pdf, .inf-nota-aviso { background: var(--aviso-fondo); }
+.inf-nota-info { background: var(--superficie-2); color: var(--tinta-2); }
+.inf-nota-mal { background: var(--mal-fondo); }

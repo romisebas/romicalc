@@ -23,6 +23,7 @@
     materiales: { fc: 280, fy: 4200, lambda: 1, phiV: 0.75, phiF: 0.90, phiB: 0.65 },
     zapata: { Lx: 2.50, Ly: 2.00, d: 0.475, r: 0.075 },
     acero: { tipo: 'barras', barX: null, barY: null, malla: null, capas: 'auto', fyMalla: 4200 },
+    informe: { titulo: '', elaboro: '', responsables: '', fecha: '' },
   };
 
   // Valores reportados en el PDF para la validación automática.

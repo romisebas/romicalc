@@ -495,30 +495,3 @@ input::placeholder, textarea::placeholder { color: var(--tinta-3); }
   .marca-nombre { font-size: 1.15rem; }
 }
 
-/* ---------- Impresión ---------- */
-@media print {
-  @page { size: letter; margin: 14mm 12mm; }
-  :root { --fondo: #fff; --superficie: #fff; --superficie-2: #f1f3f5; --material: #fff; color-scheme: light; }
-  body { background: #fff; font-size: 10.5pt; }
-  .panel-datos, .acciones, .menu-tipo, .seg, .vistas, #bloque-refuerzo, .no-print, .fila-btn, .encuadre, .pista, .aviso-flotante, .saltar, .pie p:last-child { display: none !important; }
-  .barra-sup { position: static; height: auto; padding: 0 0 8px; background: #fff; border-bottom: 1.5px solid #000; backdrop-filter: none; }
-  .layout { display: block; }
-  .principal { padding: 0; gap: 14px; max-width: none; }
-  .revela { opacity: 1 !important; transform: none !important; }
-  .chequeo { break-inside: avoid; padding: 6px 2px; }
-  .solo-print { display: block; }
-  .print-figs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .print-figs figure { margin: 0; border: 1px solid #bbb; break-inside: avoid; }
-  .print-figs figcaption { font-size: 9pt; padding: 4px 8px; border-top: 1px solid #ddd; }
-  .print-figs img, .print-figs svg { width: 100%; height: auto; display: block; }
-  #print-extra h2 { font-size: 13pt; margin: 14px 0 6px; }
-  .tabla-datos th { width: 20%; text-align: left; color: #333; font-weight: 500; padding: 3px 6px 3px 0; vertical-align: top; }
-  .tabla-datos td { padding: 3px 0; }
-  .paso { break-inside: auto; border-color: #bbb; box-shadow: none; }
-  .paso > summary::after { display: none; }
-  .paso-cuerpo { height: auto !important; }
-  .ec { break-inside: avoid; }
-  .resumen { order: -2; margin-top: 14px; }
-  #print-extra { order: -1; }
-  .vista { box-shadow: none; }
-}

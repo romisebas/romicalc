@@ -159,8 +159,8 @@
     $('#corte').hidden = vista2 === '3d';
     $('#titulo-vista2').textContent = vista2 === '3d' ? 'Vista 3D' : 'Corte ' + vista2;
     if (vista2 !== '3d') $('#corte').innerHTML = Dibujo.corte(R, vista2);
-    // La escena 3D solo se reconstruye cuando está visible (o antes de imprimir)
-    if (hay3d && (vista2 === '3d' || document.body.classList.contains('imprimiendo'))) Vista3D.update(R);
+    // La escena 3D solo se reconstruye cuando está visible (el informe la actualiza aparte)
+    if (hay3d && vista2 === '3d') Vista3D.update(R);
   }
 
   // ------------------------------------------------------------ refuerzo
@@ -212,9 +212,8 @@
   let secciones = [];
   function pintarMemoria() {
     if (!R) return;
-    const imprimiendo = document.body.classList.contains('imprimiendo');
     secciones = MemoriaAisladaMomento.generar(R);
-    $('#memoria').innerHTML = Memoria.aHtml(secciones, imprimiendo ? null : abiertos);
+    $('#memoria').innerHTML = Memoria.aHtml(secciones, abiertos);
   }
   function abrirPaso(d) {
     Memoria.completar(d, secciones);
@@ -286,18 +285,29 @@
     }
   }
 
-  // ------------------------------------------------------------ impresión
-  function prepararImpresion() {
-    document.body.classList.add('imprimiendo');
-    clearTimeout(temporizadorMemoria);
-    pintarMemoria();
-    const p = estado.proyecto, e = estado;
-    if (hay3d) Vista3D.update(R);
-    const img = hay3d ? Vista3D.snapshot() : null;
-    const rd = Dibujo.refuerzoDibujo(R);
-    const datos = [
-      ['Proyecto', (p.nombre || 'Sin nombre') + (p.elemento ? ', ' + p.elemento : '')],
-      ['Tipo de zapata', T.nombre],
+  // ------------------------------------------------------------ informe: portada, PDF y Markdown
+  function hoyIso() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function tituloPorDefecto() {
+    return 'Memoria de cálculo de cimentación' + (estado.proyecto.elemento ? ' ' + estado.proyecto.elemento : '');
+  }
+  function infoInforme() {
+    const i = estado.informe || {};
+    return {
+      titulo: i.titulo || tituloPorDefecto(),
+      proyecto: estado.proyecto.nombre || '',
+      elemento: estado.proyecto.elemento || '',
+      elaboro: i.elaboro || '',
+      responsables: i.responsables || '',
+      fecha: i.fecha || hoyIso(),
+    };
+  }
+
+  function datosEntrada() {
+    const e = estado, rd = Dibujo.refuerzoDibujo(R);
+    return [
       ['Cargas PP+CM', 'P ' + e.cargas.D.P + ' tonf, Mx ' + e.cargas.D.Mx + ' y My ' + e.cargas.D.My + ' tonf·m'],
       ['Cargas CV', 'P ' + e.cargas.L.P + ' tonf, Mx ' + e.cargas.L.Mx + ' y My ' + e.cargas.L.My + ' tonf·m'],
       ['Suelo', 'σadm ' + e.suelo.qadm + ' tonf/m², Df ' + e.suelo.Df + ' m' + (e.suelo.pesoPropio ? ', incluye peso propio' : '')],
@@ -306,20 +316,129 @@
       ['Zapata', f(R.Lx) + ' × ' + f(R.Ly) + ' m, d ' + f(R.d, 3) + ' m, h ' + f(R.h, 3) + ' m, r ' + f(R.r, 3) + ' m'],
       ['Refuerzo inferior', rd.etq],
     ];
-    $('#print-extra').innerHTML =
-      '<h2>Datos de entrada</h2><table class="tabla-datos">' + datos.map((d) => '<tr><th>' + d[0] + '</th><td>' + d[1] + '</td></tr>').join('') + '</table>' +
-      '<h2>Planos</h2><div class="print-figs">' +
-      '<figure>' + Dibujo.planta(R, 'presion', 'imp') + '<figcaption>Planta: presiones de servicio</figcaption></figure>' +
-      '<figure>' + Dibujo.planta(R, 'acero', 'imp') + '<figcaption>Planta: refuerzo</figcaption></figure>' +
-      '<figure>' + Dibujo.corte(R, 'X', 'imp') + '<figcaption>Corte X</figcaption></figure>' +
-      '<figure>' + Dibujo.corte(R, 'Y', 'imp') + '<figcaption>Corte Y</figcaption></figure>' +
-      (img ? '<figure><img src="' + img + '" alt="Vista 3D de la zapata"><figcaption>Vista 3D</figcaption></figure>' : '') +
-      '</div>';
   }
-  function terminarImpresion() {
-    document.body.classList.remove('imprimiendo');
-    pintarMemoria();
+
+  function resumenTexto() {
+    return 'Zapata de ' + f(R.Lx) + ' × ' + f(R.Ly) + ' m y ' + f(R.h) + ' m de altura. Gobierna ' + R.ult.gob.id + ' con σu = ' + f(R.ult.su) + ' tonf/m²; utilización máxima ' + f(R.utilMax * 100, 0) + ' %.';
   }
+
+  function captura3d() {
+    if (!hay3d) return null;
+    Vista3D.update(R);
+    return Vista3D.snapshot();
+  }
+
+  function datosInforme(conExplica) {
+    clearTimeout(temporizadorMemoria);
+    secciones = MemoriaAisladaMomento.generar(R);
+    return { info: infoInforme(), tipoNombre: T.nombre, R, secciones, datos: datosEntrada(), chequeos: R.chequeos, resumen: resumenTexto(), conExplica };
+  }
+
+  // Pie de página propio: al definir cajas de margen el navegador omite su encabezado con URL y título.
+  function estiloPagina(titulo) {
+    const t = String(titulo).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ');
+    let el = document.getElementById('estilo-pagina');
+    if (!el) { el = document.createElement('style'); el.id = 'estilo-pagina'; document.head.appendChild(el); }
+    el.textContent = '@media print { @page { size: letter; margin: 18mm 17mm 20mm;' +
+      ' @top-left { content: ""; } @bottom-left { content: "' + t + '"; font: 8pt "Geist", sans-serif; color: #66717c; }' +
+      ' @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8pt "Geist", sans-serif; color: #66717c; } }' +
+      ' @page :first { @bottom-left { content: none; } @bottom-right { content: none; } } }';
+  }
+
+  let tituloOriginal = document.title;
+  function construirInforme(conExplica) {
+    const d = datosInforme(conExplica);
+    const img = captura3d();
+    d.figuras = [
+      { html: Dibujo.planta(R, 'presion', 'inf'), cap: 'Planta: presiones de servicio' },
+      { html: Dibujo.planta(R, 'acero', 'inf'), cap: 'Planta: refuerzo' },
+      { html: Dibujo.corte(R, 'X', 'inf'), cap: 'Corte X' },
+      { html: Dibujo.corte(R, 'Y', 'inf'), cap: 'Corte Y' },
+    ];
+    if (img) d.figuras.push({ src: img, cap: 'Vista 3D' });
+    $('#informe').innerHTML = Informe.html(d);
+    estiloPagina(d.info.titulo);
+    tituloOriginal = document.title;
+    document.title = d.info.titulo; // también es el nombre sugerido del PDF
+    document.body.classList.add('con-informe');
+  }
+  function limpiarInforme() {
+    document.body.classList.remove('con-informe');
+    $('#informe').innerHTML = '';
+    document.title = tituloOriginal;
+  }
+
+  async function descargarMarkdown(conExplica) {
+    const d = datosInforme(conExplica);
+    const taller = $('#taller-png');
+    const planos = [
+      ['planos/planta-presiones.png', Dibujo.planta(R, 'presion', 'png'), 'Planta: presiones de servicio'],
+      ['planos/planta-refuerzo.png', Dibujo.planta(R, 'acero', 'png'), 'Planta: refuerzo'],
+      ['planos/corte-x.png', Dibujo.corte(R, 'X', 'png'), 'Corte X'],
+      ['planos/corte-y.png', Dibujo.corte(R, 'Y', 'png'), 'Corte Y'],
+    ];
+    const archivos = [];
+    d.figuras = [];
+    for (const [nombre, svg, cap] of planos) {
+      const blob = await Informe.svgAPng(svg, taller, 2);
+      archivos.push({ nombre, datos: new Uint8Array(await blob.arrayBuffer()) });
+      d.figuras.push({ archivo: nombre, cap });
+    }
+    const img = captura3d();
+    if (img) {
+      archivos.push({ nombre: 'planos/vista-3d.png', datos: new Uint8Array(await Informe.dataUrlABlob(img).arrayBuffer()) });
+      d.figuras.push({ archivo: 'planos/vista-3d.png', cap: 'Vista 3D' });
+    }
+    const base = Informe.slug(d.info.titulo);
+    archivos.unshift({ nombre: base + '.md', datos: new TextEncoder().encode(Informe.markdown(d)) });
+    Informe.descargar(Informe.zip(archivos), base + '.zip');
+    return base + '.zip';
+  }
+
+  // ------------------------------------------------------------ ventana del documento
+  function abrirDialogo() {
+    const dlg = $('#dlg-informe');
+    const i = infoInforme();
+    $('#inf-titulo').value = i.titulo;
+    $('#inf-proyecto').value = i.proyecto;
+    $('#inf-elemento').value = i.elemento;
+    $('#inf-elaboro').value = i.elaboro;
+    $('#inf-responsables').value = i.responsables;
+    $('#inf-fecha').value = i.fecha;
+    $('#inf-explica').checked = $('#chk-explica').checked;
+    $('#inf-error').textContent = '';
+    dlg.showModal();
+    requestAnimationFrame(() => dlg.classList.add('abierto'));
+    $('#inf-titulo').select();
+  }
+  function cerrarDialogo() {
+    const dlg = $('#dlg-informe');
+    dlg.classList.remove('abierto');
+    setTimeout(() => { if (dlg.open) dlg.close(); }, Mov.reducido() ? 0 : 160);
+  }
+  // Guarda lo escrito en la ventana; los campos de proyecto y elemento son los mismos del panel.
+  function guardarDialogo() {
+    const titulo = $('#inf-titulo').value.trim();
+    if (!titulo) { $('#inf-error').textContent = 'Escriba el título del documento.'; $('#inf-titulo').focus(); return false; }
+    estado.proyecto.nombre = $('#inf-proyecto').value.trim();
+    estado.proyecto.elemento = $('#inf-elemento').value.trim();
+    estado.informe = {
+      titulo: titulo === tituloPorDefecto() ? '' : titulo,
+      elaboro: $('#inf-elaboro').value.trim(),
+      responsables: $('#inf-responsables').value.trim(),
+      fecha: $('#inf-fecha').value === hoyIso() ? '' : $('#inf-fecha').value,
+    };
+    aFormulario();
+    guardarLocal();
+    return true;
+  }
+
+  function prepararImpresion() {
+    // Si se imprime con Ctrl+P sin pasar por la ventana, se arma el informe con los datos guardados.
+    if (!document.body.classList.contains('con-informe')) construirInforme($('#chk-explica').checked);
+  }
+  function terminarImpresion() { limpiarInforme(); }
+
 
   // ------------------------------------------------------------ eventos
   function seleccionarEn(contSel, attr, valor) {
@@ -405,7 +524,9 @@
     $('#btn-cerrar').addEventListener('click', () => { $$('#memoria details.paso').forEach((d) => { d.open = false; }); abiertos.clear(); });
 
     $('#btn-ejemplo').addEventListener('click', () => {
+      const informe = estado.informe; // los datos de la portada no son parte del ejemplo
       estado = T.clone(T.EJEMPLO);
+      if (informe) estado.informe = informe;
       aFormulario();
       recalcular('programa');
       if (hay3d) Vista3D.encuadrar(R, true);
@@ -468,9 +589,34 @@
       lector.readAsText(file);
     });
 
-    $('#btn-imprimir').addEventListener('click', () => window.print());
+    $('#btn-imprimir').addEventListener('click', abrirDialogo);
     window.addEventListener('beforeprint', prepararImpresion);
     window.addEventListener('afterprint', terminarImpresion);
+    $('#inf-cancelar').addEventListener('click', cerrarDialogo);
+    $('#dlg-informe').addEventListener('cancel', (e) => { e.preventDefault(); cerrarDialogo(); });
+    $('#dlg-informe').addEventListener('click', (e) => { if (e.target === e.currentTarget) cerrarDialogo(); }); // clic en el fondo
+    $('#form-informe').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!guardarDialogo()) return;
+      const conExplica = $('#inf-explica').checked;
+      cerrarDialogo();
+      // Se espera a que la ventana se cierre para que no quede en el PDF
+      setTimeout(() => { construirInforme(conExplica); window.print(); }, Mov.reducido() ? 30 : 190);
+    });
+    $('#inf-md').addEventListener('click', async () => {
+      if (!guardarDialogo()) return;
+      const b = $('#inf-md');
+      b.disabled = true; b.textContent = 'Preparando…';
+      try {
+        const nombre = await descargarMarkdown($('#inf-explica').checked);
+        cerrarDialogo();
+        avisar('Descargado ' + nombre + ' con la memoria en Markdown y los planos en PNG.');
+      } catch (err) {
+        $('#inf-error').textContent = 'No se pudo generar el archivo: ' + err.message;
+      } finally {
+        b.disabled = false; b.textContent = 'Descargar Markdown + LaTeX';
+      }
+    });
 
     $('#btn-tema').addEventListener('click', () => {
       const raiz = document.documentElement;

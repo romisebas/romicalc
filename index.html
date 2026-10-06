@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#12161b" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/informe.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke-width='3.2' stroke-linejoin='round'%3E%3Cpath d='M8 40 L32 52 L56 40 L32 28 Z M8 40 V46 L32 58 L56 46 V40 M32 52 V58' stroke='%231b232c'/%3E%3Cpath d='M26 31 L32 34 L38 31 V10 L32 7 L26 10 Z M32 34 V13' stroke='%23c2502a'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -37,7 +38,7 @@
       <button type="button" class="btn btn-quieto" id="btn-exportar">Exportar</button>
       <label class="btn btn-quieto" for="archivo-importar">Importar</label>
       <input type="file" id="archivo-importar" accept=".json,application/json" hidden>
-      <button type="button" class="btn btn-acento" id="btn-imprimir">Imprimir</button>
+      <button type="button" class="btn btn-acento" id="btn-imprimir" aria-haspopup="dialog">Imprimir</button>
       <button type="button" class="btn-icono" id="btn-tema" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
       </button>
@@ -247,8 +248,6 @@
         </details>
       </section>
 
-      <section class="solo-print" id="print-extra"></section>
-
       <footer class="pie">
         <p>Método del curso Diseño de Concreto II (Ing. Gustavo Chang Nieto, Universidad del Magdalena) y NSR-10. Mallas según la ficha técnica Diaco NTC 5806.</p>
         <p>Herramienta académica: verifique los resultados antes de usarlos en un proyecto real.</p>
@@ -256,12 +255,51 @@
     </main>
   </div>
 
+  <dialog class="dialogo" id="dlg-informe" aria-labelledby="dlg-titulo">
+    <form method="dialog" class="dlg-form" id="form-informe">
+      <div class="dlg-cab">
+        <h2 id="dlg-titulo">Documento de la memoria</h2>
+        <p class="ayuda">Estos datos van en la portada. Se guardan con el proyecto.</p>
+      </div>
+      <div class="dlg-cuerpo">
+        <label class="ancho">Título del documento
+          <input type="text" id="inf-titulo" required placeholder="Memoria de cálculo de cimentación Z-1">
+        </label>
+        <div class="campos dos">
+          <label>Proyecto<input type="text" id="inf-proyecto" placeholder="Edificio Las Acacias"></label>
+          <label>Elemento<input type="text" id="inf-elemento" placeholder="Z-1, eje B-3"></label>
+        </div>
+        <label class="ancho">Elaboró
+          <input type="text" id="inf-elaboro" placeholder="Nombre de quien elaboró la memoria">
+        </label>
+        <label class="ancho">Ingenieros responsables <small>uno por línea, con su matrícula si aplica</small>
+          <textarea id="inf-responsables" rows="3" placeholder="Ing. Laura Pérez, MP 25202-123456"></textarea>
+        </label>
+        <div class="campos dos">
+          <label>Fecha<input type="date" id="inf-fecha"></label>
+          <label class="check check-dlg"><input type="checkbox" id="inf-explica" checked> Incluir explicaciones</label>
+        </div>
+        <p class="msg mal" id="inf-error" role="alert"></p>
+      </div>
+      <div class="dlg-pie">
+        <button type="button" class="btn btn-quieto" id="inf-cancelar">Cancelar</button>
+        <span class="dlg-espacio"></span>
+        <button type="button" class="btn" id="inf-md">Descargar Markdown + LaTeX</button>
+        <button type="submit" class="btn btn-acento" id="inf-imprimir">Imprimir o guardar PDF</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="informe" class="informe forzar-claro" aria-hidden="true"></div>
+  <div id="taller-png" class="taller-png forzar-claro" aria-hidden="true"></div>
+
   <script src="vendor/three.min.js"></script>
   <script src="vendor/OrbitControls.js"></script>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="js/nucleo/movimiento.js"></script>
   <script src="js/nucleo/refuerzo.js"></script>
   <script src="js/nucleo/memoria.js"></script>
+  <script src="js/nucleo/informe.js"></script>
   <script src="js/nucleo/dibujo.js"></script>
   <script src="js/nucleo/vista3d.js"></script>
   <script src="js/tipos/catalogo.js"></script>
