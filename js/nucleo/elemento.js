@@ -1,25 +1,37 @@
-/* Vista del refuerzo elegido (v3.3): un 3D pequeño y un dibujo acotado.
+/* Vista del refuerzo elegido (v1.1): un 3D pequeño y un dibujo acotado.
  * Barra corrugada: tramo con corrugas transversales y dos nervios longitudinales; sección con db y área.
  * Malla electrosoldada: trozo de panel con alambres soldados; planta con separaciones y diámetros.
  * El 3D gira despacio solo mientras se ve (y queda quieto con las animaciones desactivadas).
+ * Acero metálico con luz de entorno; la pieza nueva entra girando y se puede arrastrar para girarla.
  */
 (function (global) {
   'use strict';
-  let cont = null, renderer = null, scene = null, camera = null, grupo = null, clave = '';
+  let cont = null, renderer = null, scene = null, camera = null, grupo = null, clave = '', entrada = 0;
+  let giro = 0, inclina = 0.25, vel = 0, arrastre = null;
   const ACERO = 0x6b7480;
 
   function montar(el) {
     const THREE = global.THREE;
     if (!THREE || !el) return;
     cont = el;
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
-    cont.appendChild(renderer.domElement);
-    scene = new THREE.Scene();
+    const e = global.Escena3D.crear(cont, { exposicion: 1.05 });
+    renderer = e.renderer; scene = e.scene;
     camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f96, 0.9));
-    const sol = new THREE.DirectionalLight(0xffffff, 0.9); sol.position.set(3, 5, 4); scene.add(sol);
-    const contra = new THREE.DirectionalLight(0xffffff, 0.35); contra.position.set(-4, -2, -3); scene.add(contra);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f96, 1.4));
+    const sol = new THREE.DirectionalLight(0xffffff, 2.4); sol.position.set(3, 5, 4); scene.add(sol);
+    const contra = new THREE.DirectionalLight(0xc9d6ea, 1.0); contra.position.set(-4, -2, -3); scene.add(contra);
+    // Arrastrar para girar (con inercia al soltar)
+    const lienzo = renderer.domElement;
+    lienzo.style.touchAction = 'pan-y'; lienzo.style.cursor = 'grab';
+    lienzo.addEventListener('pointerdown', (ev) => { arrastre = { x: ev.clientX, y: ev.clientY }; vel = 0; lienzo.setPointerCapture(ev.pointerId); lienzo.style.cursor = 'grabbing'; });
+    lienzo.addEventListener('pointermove', (ev) => {
+      if (!arrastre) return;
+      const dx = (ev.clientX - arrastre.x) / 120, dy = (ev.clientY - arrastre.y) / 160;
+      giro += dx; vel = dx; inclina = Math.max(-0.6, Math.min(1.1, inclina + dy));
+      arrastre = { x: ev.clientX, y: ev.clientY };
+    });
+    const soltar = () => { arrastre = null; lienzo.style.cursor = 'grab'; };
+    lienzo.addEventListener('pointerup', soltar); lienzo.addEventListener('pointercancel', soltar);
     let t0 = performance.now();
     const cuadro = (t) => {
       requestAnimationFrame(cuadro);
@@ -28,7 +40,13 @@
       if (renderer.domElement.width !== Math.round(w * renderer.getPixelRatio()) || renderer.domElement.height !== Math.round(h * renderer.getPixelRatio())) {
         renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
       }
-      if (!(global.Mov && global.Mov.reducido())) grupo.rotation.y += Math.min(t - t0, 64) / 1000 * 0.35;
+      const dt = Math.min(t - t0, 64) / 1000, quieto = global.Mov && global.Mov.reducido();
+      if (!arrastre) { giro += quieto ? vel : vel + dt * 0.35; vel *= 0.92; }
+      // Entrada: la pieza nueva llega girando y crece con un leve rebote
+      const k = quieto ? 1 : Math.min(1, (t - entrada) / 700), c = 1.70158;
+      const s = 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2);
+      grupo.scale.setScalar(0.4 + 0.6 * s);
+      grupo.rotation.set(inclina, giro - (1 - k) * 2.4, 0);
       t0 = t;
       renderer.render(scene, camera);
     };
@@ -40,7 +58,7 @@
   // Tramo de barra corrugada (unidades: 1 = 10 mm)
   function barra3d(THREE, e) {
     const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: ACERO, metalness: 0.65, roughness: 0.38 });
+    const mat = new THREE.MeshStandardMaterial({ color: ACERO, metalness: 0.9, roughness: 0.3 });
     const r = e.db / 20, L = 6;
     const nucleo = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 32), mat);
     nucleo.rotation.z = Math.PI / 2; g.add(nucleo);
@@ -63,7 +81,7 @@
   // Trozo de malla: 4 × 4 alambres soldados (separaciones a escala)
   function malla3d(THREE, e) {
     const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: ACERO, metalness: 0.6, roughness: 0.4 });
+    const mat = new THREE.MeshStandardMaterial({ color: ACERO, metalness: 0.9, roughness: 0.32 });
     const k = 1 / 60; // 60 mm = 1 unidad
     const nL = 4, nT = 4, sL = e.sL * k, sT = e.sT * k;
     const anchoL = (nT - 1) * sT + sT * 0.8, anchoT = (nL - 1) * sL + sL * 0.8;
@@ -90,6 +108,7 @@
     if (grupo) { scene.remove(grupo); liberar(grupo); }
     grupo = e.tipo === 'malla' ? malla3d(THREE, e) : barra3d(THREE, e);
     scene.add(grupo);
+    entrada = performance.now();
     renderer.render(scene, camera);
   }
 

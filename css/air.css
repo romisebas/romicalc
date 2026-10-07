@@ -582,3 +582,9 @@ sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; }
   .an-nom { font-size: 12px; }
   .ficha-tit { font-size: 24px; }
 }
+
+/* ===================================================================== v1.1 etiqueta de la vista 3D */
+.lienzo-3d { position: relative; }
+.tip3d { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; max-width: 260px; padding: 7px 10px; border-radius: var(--r-ctl);
+  background: #1b1b1b; color: #fff; font: 500 13px/1.3 var(--sans); white-space: nowrap; }
+.tip3d[hidden] { display: none; }

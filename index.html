@@ -488,8 +488,8 @@
     </div>
   </div>
 
-  <script src="vendor/three.min.js"></script>
-  <script src="vendor/OrbitControls.js"></script>
+  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+  <script type="module" src="js/nucleo/three-puente.js"></script>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="js/nucleo/movimiento.js"></script>
   <script src="js/nucleo/unidades.js"></script>
@@ -502,6 +502,7 @@
   <script src="js/nucleo/figuras.js"></script>
   <script src="js/nucleo/elemento.js"></script>
   <script src="js/nucleo/diapositivas.js"></script>
+  <script src="js/nucleo/escena3d.js"></script>
   <script src="js/nucleo/vista3d.js"></script>
   <script src="js/nucleo/intro3d.js"></script>
   <script src="js/nucleo/escultura.js"></script>

@@ -34,8 +34,10 @@ La forma más fácil es abrir [zapatapp.netlify.app](https://zapatapp.netlify.ap
 2. Abre una terminal en la carpeta y levanta un servidor local (los navegadores bloquean algunos scripts si se abre `index.html` directamente):
 
    ```bash
-   python -m http.server 8765
+   python herramientas/servidor.py
    ```
+
+   (Es como `python -m http.server 8765`, pero sin caché: cada recarga muestra los últimos cambios).
 
 3. Abre `http://localhost:8765` en el navegador.
 

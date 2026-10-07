@@ -41,8 +41,20 @@ def navegador():
         b.close()
 
 
+CONTEXTOS = []
+
+
+@pytest.fixture(autouse=True)
+def cerrar_contextos():
+    """Cierra las páginas de cada prueba: si quedan abiertas, sus escenas 3D siguen consumiendo CPU."""
+    yield
+    while CONTEXTOS:
+        CONTEXTOS.pop().close()
+
+
 def abrir(navegador, url, ancho=1440, alto=900, tema="light", intro=False, anim="desactivadas"):
     ctx = navegador.new_context(viewport={"width": ancho, "height": alto}, color_scheme=tema)
+    CONTEXTOS.append(ctx)
     pagina = ctx.new_page()
     errores = []
     pagina.on("pageerror", lambda e: errores.append(str(e)))
@@ -381,6 +393,31 @@ def test_opciones_permite_scroll(navegador, url):
         pagina.wait_for_function("window.scrollY > 0")
         assert pagina.is_visible(".reciente") and pagina.locator(".reciente").bounding_box()["y"] < alto
         assert not errores, errores
+
+
+def test_three_moderno_y_escena_compartida(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    r = pagina.evaluate("""() => {
+      const c = document.createElement('div'); c.style.cssText = 'width:200px;height:150px'; document.body.appendChild(c);
+      const e = Escena3D.crear(c);
+      const out = [Number(THREE.REVISION), e.renderer.outputColorSpace, e.renderer.toneMapping === THREE.ACESFilmicToneMapping, !!e.scene.environment, typeof THREE.OrbitControls];
+      e.renderer.dispose(); c.remove(); return out; }""")
+    assert r[0] >= 170 and r[1] == "srgb" and r[2] and r[3] and r[4] == "function", r
+    assert not errores, errores
+
+
+def test_intro_de_la_tierra_al_logo(navegador, url):
+    pagina, errores = abrir(navegador, url, intro=True, anim="activadas")
+    pagina.wait_for_selector("#intro:not([hidden]) canvas")
+    pagina.evaluate("""() => { window.__fases = []; new MutationObserver(() => { const f = document.querySelector('#intro').dataset.fase;
+      if (f && window.__fases[window.__fases.length - 1] !== f) window.__fases.push(f); }).observe(document.querySelector('#intro'), { attributes: true, attributeFilter: ['data-fase'] }); }""")
+    t0 = pagina.evaluate("performance.now()")
+    pagina.wait_for_selector("#bv-portada:not([hidden])", timeout=90000)  # el WebGL por software de las pruebas es lento
+    fases = pagina.evaluate("window.__fases")
+    for f in ["excavacion", "parrilla", "columna", "vaciado", "carga", "logo", "fin"]:
+        assert f in fases, fases
+    assert pagina.locator("#intro canvas").count() == 0
+    assert not errores, errores
 
 
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
