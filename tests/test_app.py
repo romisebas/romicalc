@@ -153,6 +153,23 @@ def test_carga_al_continuar_proyecto(navegador, url):
     assert not errores, errores
 
 
+def test_pie_creditos_y_sin_validacion(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    assert pagina.locator("#validacion").count() == 0
+    pie = pagina.text_content(".pie")
+    assert "© 2026 Sebastian Romario Martinez Guerrero" in pie
+    assert "Gustavo Chang" not in pie and "Herramienta académica" not in pie
+    enlace = pagina.locator("a.pie-github")
+    assert enlace.get_attribute("href") == "https://github.com/romisebas"
+    assert enlace.get_attribute("target") == "_blank" and "noopener" in enlace.get_attribute("rel")
+    pagina.evaluate("window.open = (u) => { window.__abierto = u; }")
+    enlace.click()
+    assert "gira" in enlace.get_attribute("class")
+    pagina.wait_for_function("window.__abierto === 'https://github.com/romisebas'")
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

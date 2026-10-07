@@ -279,17 +279,6 @@
   }
   function abrirPaso(d) { Memoria.completar(d, secciones); d.open = true; abiertos.add(d.id.replace('paso-', '')); }
 
-  function pintarValidacion() {
-    const res = T.validarContraPdf();
-    const okTodos = res.every((r) => r.ok);
-    const tag = $('#tag-validacion');
-    tag.className = 'tag ' + (okTodos ? 'tag-ok' : 'tag-mal');
-    tag.textContent = res.filter((r) => r.ok).length + ' de ' + res.length;
-    $('#tabla-validacion').innerHTML = res.map((r) =>
-      '<tr><td>' + r.lbl + '</td><td class="num">' + r.v + ' <span class="u">' + r.u + '</span></td><td class="num">' + f(r.calc, 3) + '</td>' +
-      '<td class="num">' + f(r.err * 100, 2) + ' %</td><td><span class="tag ' + (r.ok ? 'tag-ok' : 'tag-mal') + '">' + (r.ok ? 'Coincide' : 'Revisar') + '</span></td></tr>').join('');
-  }
-
   // ============================================================ asistente
   const wz = { i: 0, modo: 'nuevo' };
   const asistenteAbierto = () => $('#asistente').open;
@@ -461,7 +450,7 @@
     recalcular('inicio');
     if (R && conCarga) Cargando.mostrar('Abriendo proyecto').then(animarVeredicto);
     else if (R) animarVeredicto();
-    Mov.revelar($$('.vistas .vista, #bloque-refuerzo, #bloque-memoria, .pie'));
+    Mov.revelar($$('.vistas .vista, #bloque-refuerzo, #bloque-memoria'));
     window.scrollTo(0, 0);
   }
 
@@ -743,7 +732,6 @@
       if (d.open && d.dataset.cerrando !== '1') abiertos.add(id); else if (!d.open) abiertos.delete(id);
     }, true);
     Mov.detallesSuaves($('#memoria'), (d) => Memoria.completar(d, secciones));
-    Mov.detallesSuaves($('#validacion').parentElement);
     $('#chk-explica').addEventListener('change', (e) => document.body.classList.toggle('sin-explica', !e.target.checked));
     $('#btn-abrir').addEventListener('click', () => $$('#memoria details.paso').forEach(abrirPaso));
     $('#btn-cerrar').addEventListener('click', () => { $$('#memoria details.paso').forEach((d) => { d.open = false; }); abiertos.clear(); });
@@ -891,11 +879,18 @@
     Proyectos.migrar();
     $('#bv-marca').innerHTML = Logo.svg('logo-grande dibujar', 'ZapatAPP');
     $('#marca-logo').innerHTML = Logo.svg('logo');
+    $('#pie-logo').innerHTML = Logo.svg('logo');
+    // GitHub: el ícono gira con un aro que se expande y luego se abre el perfil
+    $('.pie-github').addEventListener('click', (e) => {
+      const a = e.currentTarget;
+      e.preventDefault();
+      a.classList.remove('gira'); void a.offsetWidth; a.classList.add('gira');
+      setTimeout(() => window.open(a.href, '_blank', 'noopener'), Mov.reducido() ? 0 : 600);
+    });
     llenarSelectBarras();
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));
-    pintarValidacion();
     Escultura.montar($('#escultura'));
     if (a.sinIntro || a.anim === 'desactivadas' || typeof THREE === 'undefined') mostrarPantalla('portada');
     else reproducirIntro();

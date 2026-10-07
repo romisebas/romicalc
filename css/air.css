@@ -265,3 +265,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
   .bv-lema { font-size: 17px; }
 }
 .sim { text-transform: none; } /* σ en minúscula: en mayúsculas sería Σ */
+
+/* Pie con créditos y enlace a GitHub */
+.pie { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--linea); color: var(--tinta-2); font-size: 14px; }
+.pie p { margin: 0; }
+.pie-marca .logo-dz { width: 22px; height: 22px; }
+.pie-autor { flex: 1; }
+.pie-github { position: relative; display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-tag); color: var(--tinta); text-decoration: none; transition: border-color .2s ease, background-color .2s ease; }
+@media (hover: hover) and (pointer: fine) { .pie-github:hover { border-color: var(--tinta); background: color-mix(in srgb, var(--tinta) 8%, transparent); } }
+.gh-icono { width: 22px; height: 22px; fill: currentColor; }
+.gh-txt { font: 500 14px var(--sans); }
+.gh-aro { position: absolute; left: 10px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; border: 2px solid var(--acento-10); opacity: 0; pointer-events: none; }
+.pie-github.gira .gh-icono { animation: ghGira .6s var(--ease-io) both; }
+.pie-github.gira .gh-aro { animation: ghAro .6s var(--ease-out) both; }
+@keyframes ghGira { from { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } to { transform: rotate(360deg) scale(1); } }
+@keyframes ghAro { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
