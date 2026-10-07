@@ -86,9 +86,12 @@
           <button type="button" role="tab" id="tab-refuerzo" data-tab="refuerzo" aria-controls="panel-refuerzo" aria-selected="false" tabindex="-1">Refuerzo</button>
           <button type="button" role="tab" id="tab-memoria" data-tab="memoria" aria-controls="panel-memoria" aria-selected="false" tabindex="-1">Memoria</button>
         </div>
-        <nav class="categorias" id="categorias" aria-label="Editar datos por categoría"></nav>
       </div>
     </header>
+
+    <!-- Riel de datos: escondido en el borde izquierdo, se despliega al acercar el mouse -->
+    <nav class="riel" id="categorias" aria-label="Editar datos por categoría"></nav>
+    <button type="button" class="btn btn-acento btn-datos" id="btn-datos" aria-controls="categorias" aria-expanded="false">Datos</button>
 
     <main class="principal" id="principal" tabindex="-1">
       <section class="estado-vacio" id="estado-vacio" hidden>

@@ -171,11 +171,22 @@
     else tMemoria = setTimeout(pintarMemoria, origen === 'usuario' ? 120 : 60);
   }
 
+  // Íconos del riel de datos (trazos de 24 × 24); cada uno tiene su animación al pasar el mouse
+  const ICONOS = {
+    proyecto: '<path d="M4 6h6l2 2h8v11H4z"/><path class="ic-mov" d="M8 13h8M8 16h5"/>',
+    cargas: '<path class="ic-mov" d="M12 2v8M8.5 6.5 12 10l3.5-3.5"/><path d="M9 12h6v4H9zM5 16h14v4H5z"/>',
+    suelo: '<path d="M3 9h18"/><path class="ic-mov" d="M5 13l3 3M10 13l3 3M15 13l3 3M5 18l2 2M11 18l2 2M17 18l2 2"/>',
+    columna: '<path d="M5 20h14"/><path class="ic-mov" d="M9 4h6v16H9z"/><path d="M11 7v10M13 7v10"/>',
+    materiales: '<path class="ic-mov" d="M12 3 4 7l8 4 8-4z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4"/>',
+    planta: '<path d="M4 4h16v16H4z"/><path class="ic-mov" d="M9.5 9.5h5v5h-5z"/>',
+    altura: '<path d="M4 15h16v5H4z"/><path class="ic-mov" d="M12 3v9M9.5 5.5 12 3l2.5 2.5M9.5 9.5 12 12l2.5-2.5"/>',
+  };
   function pintarCategorias(falt) {
-    $('#categorias').innerHTML = PASOS.map((p) => {
+    $('#categorias').innerHTML = '<span class="riel-tit">Datos</span>' + PASOS.map((p) => {
       const ok = !falt[p.id];
-      return '<button type="button" class="cat" data-cat="' + p.id + '"><span class="cat-punto ' + (ok ? 'ok' : 'falta') + '" aria-hidden="true"></span>' +
-        p.nombre + '<span class="sr-only">' + (ok ? ', completo' : ', faltan datos') + '</span></button>';
+      return '<button type="button" class="cat" data-cat="' + p.id + '" title="' + p.nombre + '">' +
+        '<span class="cat-ico" aria-hidden="true"><svg viewBox="0 0 24 24">' + ICONOS[p.id] + '</svg><span class="cat-punto ' + (ok ? 'ok' : 'falta') + '"></span></span>' +
+        '<span class="cat-nom">' + p.nombre + '</span><span class="sr-only">' + (ok ? ', completo' : ', faltan datos') + '</span></button>';
     }).join('');
   }
 
@@ -340,11 +351,21 @@
     if (primero) setTimeout(() => primero.focus({ preventScroll: true }), 30);
   }
 
-  function abrirAsistente(i, modo) {
+  function abrirAsistente(i, modo, desde) {
     wz.modo = modo || 'nuevo';
     aFormulario();
     const dlg = $('#asistente');
-    if (!dlg.open) { dlg.showModal(); requestAnimationFrame(() => dlg.classList.add('abierto')); }
+    if (!dlg.open) {
+      dlg.showModal();
+      if (desde && !Mov.reducido() && dlg.animate) {
+        // La ventana crece desde el botón del riel que se pulsó
+        const b = desde.getBoundingClientRect(), d = dlg.getBoundingClientRect();
+        const dx = (b.left + b.width / 2) - (d.left + d.width / 2), dy = (b.top + b.height / 2) - (d.top + d.height / 2);
+        dlg.classList.add('abierto');
+        dlg.animate([{ opacity: 0, transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.08)' }, { opacity: 1, transform: 'none' }],
+          { duration: 460, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+      } else requestAnimationFrame(() => dlg.classList.add('abierto'));
+    }
     mostrarPaso(i, 0);
   }
   function cerrarAsistente() {
@@ -673,8 +694,26 @@
     $('#btn-inicio').addEventListener('click', volverAlInicio);
     $('#categorias').addEventListener('click', (e) => {
       const b = e.target.closest('[data-cat]');
-      if (b) abrirAsistente(PASOS.findIndex((p) => p.id === b.dataset.cat), 'editar');
+      if (!b) return;
+      // Onda desde el punto del clic y rebote del botón; luego se abre el paso
+      const r = b.getBoundingClientRect(), onda = document.createElement('span');
+      onda.className = 'cat-onda';
+      onda.style.left = ((e.clientX || r.left + r.width / 2) - r.left) + 'px';
+      onda.style.top = ((e.clientY || r.top + r.height / 2) - r.top) + 'px';
+      b.appendChild(onda);
+      setTimeout(() => onda.remove(), 700);
+      b.classList.remove('pulsado'); void b.offsetWidth; b.classList.add('pulsado');
+      cerrarRiel();
+      abrirAsistente(PASOS.findIndex((p) => p.id === b.dataset.cat), 'editar', b);
     });
+    // Celular: el botón "Datos" abre el riel como hoja inferior
+    function cerrarRiel() { $('#categorias').classList.remove('abierto'); $('#btn-datos').setAttribute('aria-expanded', 'false'); }
+    $('#btn-datos').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abierto = $('#categorias').classList.toggle('abierto');
+      $('#btn-datos').setAttribute('aria-expanded', String(abierto));
+    });
+    document.addEventListener('click', (e) => { if (!e.target.closest('#categorias, #btn-datos')) cerrarRiel(); });
     $('#faltan').addEventListener('click', (e) => {
       const b = e.target.closest('[data-cat]');
       if (b) abrirAsistente(PASOS.findIndex((p) => p.id === b.dataset.cat), 'editar');

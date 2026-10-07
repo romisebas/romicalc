@@ -238,6 +238,24 @@ def test_diapositivas_rapidas_no_se_solapan(navegador, url):
     assert not errores, errores
 
 
+def test_riel_de_datos(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    riel = pagina.locator("#categorias")
+    assert riel.locator(".cat svg").count() == 7
+    angosto = riel.bounding_box()["width"]
+    assert angosto < 70 and riel.bounding_box()["x"] < 20
+    pagina.hover('#categorias [data-cat="cargas"]')
+    pagina.wait_for_timeout(450)
+    assert riel.bounding_box()["width"] > 180
+    assert pagina.locator('#categorias [data-cat="cargas"] .cat-nom').evaluate("e => getComputedStyle(e).opacity") == "1"
+    pagina.click('#categorias [data-cat="cargas"]')
+    assert "pulsado" in pagina.get_attribute('#categorias [data-cat="cargas"]', "class")
+    pagina.wait_for_selector("#asistente[open]")
+    assert "Cargas" in pagina.text_content("#wz-titulo")
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
@@ -403,6 +421,10 @@ def test_capturas_y_sin_scroll_horizontal(navegador, url):
         pagina.wait_for_timeout(300)
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-dashboard.png"), full_page=True)
         assert pagina.evaluate("document.documentElement.scrollWidth") <= ancho
+        if ancho < 900:
+            pagina.click("#btn-datos")
+            pagina.wait_for_timeout(400)
+            pagina.screenshot(path=str(CAPTURAS / f"{nombre}-riel.png"))
         pagina.click('#categorias [data-cat="planta"]')
         pagina.wait_for_selector("#asistente[open]")
         pagina.wait_for_timeout(250)
