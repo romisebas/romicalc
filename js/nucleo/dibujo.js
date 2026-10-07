@@ -55,13 +55,20 @@
   function cota(x1, y1, x2, y2, texto, lado, cls) {
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const horiz = Math.abs(y2 - y1) < Math.abs(x2 - x1);
-    const tick = (x, y) => '<line x1="' + (x - 4) + '" y1="' + (y + 4) + '" x2="' + (x + 4) + '" y2="' + (y - 4) + '"/>';
+    // Flechas en los extremos, apuntando hacia afuera de la cota
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const punta = (x, y, a) => {
+      const l = 7, w = 2.6, c = Math.cos(a), s = Math.sin(a);
+      return '<path class="punta" d="M' + x.toFixed(1) + ' ' + y.toFixed(1) + 'L' + (x - l * c - w * s).toFixed(1) + ' ' + (y - l * s + w * c).toFixed(1) +
+        'L' + (x - l * c + w * s).toFixed(1) + ' ' + (y - l * s - w * c).toFixed(1) + 'Z"/>';
+    };
+    const tick = (x, y) => (x === x1 && y === y1 ? punta(x, y, ang + Math.PI) : punta(x, y, ang));
     const tx = horiz ? mx : mx + lado;
     const ty = horiz ? my + lado : my;
     const rot = horiz ? '' : ' transform="rotate(-90 ' + tx + ' ' + ty + ')"';
     return '<g class="cota ' + (cls || '') + '"><line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"/>' +
       tick(x1, y1) + tick(x2, y2) +
-      '<text x="' + tx + '" y="' + ty + '" text-anchor="middle" dominant-baseline="middle"' + rot + '>' + texto + '</text></g>';
+      '<text class="halo" x="' + tx + '" y="' + ty + '" text-anchor="middle" dominant-baseline="middle"' + rot + '>' + texto + '</text></g>';
   }
 
   function defs(id) {
@@ -72,18 +79,29 @@
       '</defs>';
   }
 
-  // Color de una parada del gradiente según σ/σadm (rojo si excede o si hay tensión).
+  // Color de presión según σ/σadm: de azul muy claro a azul crepúsculo; rojo si excede o si hay tensión.
+  const BAJO = [223, 232, 243], ALTO = [66, 97, 136];
+  function colorPresion(sigma, qadm) {
+    if (sigma > qadm + 1e-9 || sigma <= 0) return 'var(--mal)';
+    const k = Math.pow(Math.max(0, Math.min(1, sigma / qadm)), 2.4);
+    return 'rgb(' + BAJO.map((b, i) => Math.round(b + (ALTO[i] - b) * k)).join(',') + ')';
+  }
   function paradaPresion(offset, sigma, qadm) {
-    if (sigma > qadm + 1e-9 || sigma <= 0) return '<stop offset="' + offset + '" style="stop-color:var(--mal)"/>';
-    // Escala suave: el tono pleno se reserva para cuando σ se acerca a σadm
-    const pct = Math.round(Math.pow(Math.max(0, Math.min(1, sigma / qadm)), 2.2) * 78);
-    return '<stop offset="' + offset + '" style="stop-color:color-mix(in srgb, var(--presion-hi) ' + pct + '%, var(--presion-lo))"/>';
+    return '<stop offset="' + offset.toFixed(4) + '" style="stop-color:' + colorPresion(sigma, qadm) + '"/>';
+  }
+
+  // Segmento de la recta gx·x + gy·y = c dentro del rectángulo |x| ≤ a, |y| ≤ b (para las isóbaras)
+  function recortar(gx, gy, c, a, b) {
+    const pts = [];
+    if (Math.abs(gy) > 1e-12) [-a, a].forEach((x) => { const y = (c - gx * x) / gy; if (Math.abs(y) <= b + 1e-9) pts.push([x, y]); });
+    if (Math.abs(gx) > 1e-12) [-b, b].forEach((y) => { const x = (c - gy * y) / gx; if (Math.abs(x) <= a + 1e-9) pts.push([x, y]); });
+    return pts.length >= 2 ? [pts[0], pts[pts.length - 1]] : null;
   }
 
   // ---------------------------------------------------------------- Planta
   // prefijo: distingue los id internos (gradientes, tramas) cuando hay varias plantas en la página
   function planta(R, capa, prefijo) {
-    const W = 640, H = 540, M = 78;
+    const W = 700, H = 540, M = 78;
     const { Lx, Ly, d, r } = R;
     const { Cx, Cy } = R.inp.columna;
     const k = Math.min((W - 2 * M) / Lx, (H - 2 * M) / Ly);
@@ -92,17 +110,39 @@
     const rect = (x1, y1, x2, y2, cls, extra) =>
       '<rect x="' + X(Math.min(x1, x2)) + '" y="' + Y(Math.max(y1, y2)) + '" width="' + Math.abs(x2 - x1) * k + '" height="' + Math.abs(y2 - y1) * k + '" class="' + cls + '"' + (extra || '') + '/>';
     const id = (prefijo || 'pl') + '-' + capa;
-    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="dibujo planta" role="img" aria-label="Planta de la zapata, capa ' + capa + '">' + defs(id);
+    const sv0 = R.serv;
+    // Datos para la lectura interactiva de σ (planta-interactiva.js)
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="dibujo planta" role="img" aria-label="Planta de la zapata, capa ' + capa + '"' +
+      ' data-cx="' + W / 2 + '" data-cy="' + H / 2 + '" data-k="' + k + '" data-lx="' + Lx + '" data-ly="' + Ly + '"' +
+      ' data-p="' + sv0.p + '" data-gx="' + sv0.gx + '" data-gy="' + sv0.gy + '" data-qadm="' + R.inp.suelo.qadm + '">' + defs(id);
 
     // Campo lineal de presiones: un solo gradiente lineal es exacto
     const sv = R.serv;
     const gn = Math.hypot(sv.gx, sv.gy);
     const u = gn > 1e-12 ? [sv.gx / gn, sv.gy / gn] : [1, 0];
     const t = Math.abs(u[0]) * Lx / 2 + Math.abs(u[1]) * Ly / 2;
+    const qadm = R.inp.suelo.qadm;
+    // Varias paradas: así el paso a rojo (σ > σadm) queda en su sitio exacto
+    let paradas = '';
+    for (let i = 0; i <= 16; i++) { const f = i / 16; paradas += paradaPresion(f, sv.smin + (sv.smax - sv.smin) * f, qadm); }
     s += '<defs><linearGradient id="' + id + '-grad" gradientUnits="userSpaceOnUse" x1="' + X(-u[0] * t) + '" y1="' + Y(-u[1] * t) + '" x2="' + X(u[0] * t) + '" y2="' + Y(u[1] * t) + '">' +
-      paradaPresion(0, sv.smin, R.inp.suelo.qadm) + paradaPresion(1, sv.smax, R.inp.suelo.qadm) + '</linearGradient></defs>';
+      paradas + '</linearGradient>' +
+      '<linearGradient id="' + id + '-escala" x1="0" y1="1" x2="0" y2="0">' +
+      [0, 0.25, 0.5, 0.75, 1].map((f) => paradaPresion(f, Math.max(1e-6, f * Math.max(qadm, sv.smax)), qadm)).join('') + '</linearGradient></defs>';
 
     s += rect(-Lx / 2, -Ly / 2, Lx / 2, Ly / 2, 'zapata', capa === 'presion' ? ' style="fill:url(#' + id + '-grad)"' : '');
+
+    // Isóbaras: rectas de igual presión (el campo es lineal), con su valor
+    if (capa === 'presion' && gn > 1e-9 && sv.smax - sv.smin > 1e-6) {
+      for (let i = 1; i <= 4; i++) {
+        const v = sv.smin + (sv.smax - sv.smin) * i / 5;
+        const seg = recortar(sv.gx, sv.gy, v - sv.p, Lx / 2, Ly / 2);
+        if (!seg) continue;
+        const [a, b] = seg;
+        s += '<g class="isobara"><line x1="' + X(a[0]) + '" y1="' + Y(a[1]) + '" x2="' + X(b[0]) + '" y2="' + Y(b[1]) + '"/>' +
+          '<text class="halo" x="' + ((X(a[0]) + X(b[0])) / 2) + '" y="' + ((Y(a[1]) + Y(b[1])) / 2 - 5) + '" text-anchor="middle">' + nP(v) + '</text></g>';
+      }
+    }
 
     if (capa === 'punz') {
       const mal = !R.pz.ok;
@@ -146,6 +186,9 @@
         s += '<line class="barra' + (rd.Y.mal ? ' mal' : '') + '" x1="' + X(x) + '" y1="' + Y(-Ly / 2 + r) + '" x2="' + X(x) + '" y2="' + Y(Ly / 2 - r) + '" style="stroke-width:' + grosor(rd.Y.db) + '"/>';
       });
       s += '<text class="etq-acero" x="' + (W - 18) + '" y="24" text-anchor="end">' + rd.etq + '</text>';
+      const ys = posicionesParrilla(Ly, r, rd.X), xs = posicionesParrilla(Lx, r, rd.Y);
+      if (ys.length > 1) s += cota(X(-Lx / 2) - 22, Y(ys[ys.length - 1]), X(-Lx / 2) - 22, Y(ys[ys.length - 2]), 's = ' + nL(rd.X.s), -12, 'interna');
+      if (xs.length > 1) s += cota(X(xs[0]), Y(-Ly / 2) + 20, X(xs[1]), Y(-Ly / 2) + 20, 's = ' + nL(rd.Y.s), 12, 'interna');
     }
 
     // Columna
@@ -164,10 +207,14 @@
     [[1, Lx / 2, Ly / 2, 'start', -1], [2, Lx / 2, -Ly / 2, 'start', 1], [3, -Lx / 2, -Ly / 2, 'end', 1], [4, -Lx / 2, Ly / 2, 'end', -1]].forEach(([i, x, y, anc, vy]) => {
       const val = R.serv['s' + i];
       const mal = val > R.inp.suelo.qadm || val <= 0;
-      const ox = anc === 'start' ? 8 : -8;
+      const ox = anc === 'start' ? 10 : -10;
+      const txt = 'σ' + i + ' ' + nP(val), ancho = txt.length * 7 + 14, py = Y(y) + vy * 18;
+      const px = anc === 'start' ? X(x) + ox : X(x) + ox - ancho;
       s += '<g class="esquina' + (mal ? ' mal' : '') + '"><circle cx="' + X(x) + '" cy="' + Y(y) + '" r="3.5"/>' +
-        '<text x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14) + '" text-anchor="' + anc + '"><tspan class="sig">σ' + i + '</tspan> ' + nP(val) + '</text>' +
-        '<text class="sub" x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14 + 14) + '" text-anchor="' + anc + '">σ' + i + 'u ' + nP(R.ult['s' + i]) + '</text></g>';
+        '<line class="guia" x1="' + X(x) + '" y1="' + Y(y) + '" x2="' + (anc === 'start' ? px : px + ancho) + '" y2="' + py + '"/>' +
+        '<rect class="pildora" x="' + px + '" y="' + (py - 10) + '" width="' + ancho + '" height="20" rx="10"/>' +
+        '<text class="pildora-txt" x="' + (px + ancho / 2) + '" y="' + (py + 4) + '" text-anchor="middle">' + txt + '</text>' +
+        '<text class="sub" x="' + (px + ancho / 2) + '" y="' + (py + vy * 22 + 4) + '" text-anchor="middle">σ' + i + 'u ' + nP(R.ult['s' + i]) + '</text></g>';
     });
 
     s += cota(X(-Lx / 2), Y(-Ly / 2) + 46, X(Lx / 2), Y(-Ly / 2) + 46, 'Lx = ' + uL(Lx), 13);
@@ -177,7 +224,15 @@
     s += '<g class="ejes"><line x1="' + ox + '" y1="' + oy + '" x2="' + (ox + 30) + '" y2="' + oy + '"/><line x1="' + ox + '" y1="' + oy + '" x2="' + ox + '" y2="' + (oy - 30) + '"/>' +
       '<text x="' + (ox + 36) + '" y="' + (oy + 4) + '">X</text><text x="' + (ox - 4) + '" y="' + (oy - 36) + '">Y</text></g>';
     if (capa === 'presion') {
-      s += '<text class="leyenda" x="' + (W - 18) + '" y="24" text-anchor="end">Servicio: ' + nP(sv.smin) + ' a ' + nP(sv.smax) + ' ' + uP() + ' (σadm ' + nP(R.inp.suelo.qadm) + ')</text>';
+      s += '<text class="leyenda" x="' + (W - 18) + '" y="24" text-anchor="end">Servicio: ' + nP(sv.smin) + ' a ' + nP(sv.smax) + ' ' + uP() + ' (σadm ' + nP(qadm) + ')</text>';
+      // Escala de color: de 0 a max(σadm, σmax), con la marca de σadm
+      const top = M + 64, alto = H - 2 * M - 90, xe = W - 26, tope = Math.max(qadm, sv.smax);
+      const ye = (v) => top + alto * (1 - v / tope);
+      s += '<g class="escala-color"><rect x="' + xe + '" y="' + top + '" width="10" height="' + alto + '" rx="5" style="fill:url(#' + id + '-escala)"/>' +
+        '<line class="marca" x1="' + (xe - 4) + '" y1="' + ye(qadm) + '" x2="' + (xe + 14) + '" y2="' + ye(qadm) + '"/>' +
+        '<text x="' + (xe - 6) + '" y="' + (ye(qadm) + 4) + '" text-anchor="end">σadm</text>' +
+        '<text x="' + (xe + 5) + '" y="' + (top + alto + 16) + '" text-anchor="middle">0</text>' +
+        '<path class="nivel" d="M' + (xe - 2) + ' ' + ye(sv.smin) + 'H' + (xe + 12) + 'M' + (xe - 2) + ' ' + ye(sv.smax) + 'H' + (xe + 12) + '"/></g>';
     }
     return s + '</svg>';
   }

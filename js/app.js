@@ -294,7 +294,7 @@
     } else abrirNuevo();
   }
 
-  function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); }
+  function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); PlantaInteractiva.aplicar(); }
 
   function pintarVista2() {
     $('#vista3d').hidden = vista2 !== '3d';
@@ -1069,6 +1069,7 @@
     llenarSelectBarras();
     Diapositivas.montar($('#memoria'));
     Elemento.montar($('#elegido-3d'));
+    PlantaInteractiva.montar($('#planta'));
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));

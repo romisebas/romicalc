@@ -633,3 +633,33 @@ html.mov-reducido .bv-cinta-pista { animation: none; }
   .bv-version { display: none; }
   .bv-portada .bv-titulo { font-size: 20vw; }
 }
+
+/* ===================================================================== v1.1 planta moderna */
+.dibujo .punta { fill: var(--tinta-2); stroke: none; }
+.dibujo .cota.interna .punta { fill: var(--azul); }
+.dibujo .halo { paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.dibujo .isobara line { stroke: #fff; stroke-width: 1.2; stroke-dasharray: 5 4; opacity: .9; }
+.dibujo .isobara text { font: 500 11px var(--sans); fill: var(--tinta); }
+.dibujo .escala-color text { font: 500 10px var(--sans); fill: var(--tinta-3); }
+.dibujo .escala-color .marca { stroke: var(--mal); stroke-width: 1.5; }
+.dibujo .escala-color .nivel { stroke: var(--tinta); stroke-width: 2; }
+.dibujo .pildora { fill: #1b1b1b; }
+.dibujo .esquina.mal .pildora { fill: var(--mal); }
+.dibujo .pildora-txt { font: 500 11.5px var(--sans); fill: #fff; }
+.dibujo .guia { stroke: var(--tinta-3); stroke-width: 1; }
+.dibujo .esquina .sub { font-size: 10.5px; fill: var(--tinta-3); }
+.dibujo.planta .perimetro { animation: hormigas 1.2s linear infinite; }
+@keyframes hormigas { to { stroke-dashoffset: -22; } }
+html.mov-reducido .dibujo.planta .perimetro { animation: none; }
+.lienzo.cambio .dibujo { animation: capaEntra .32s var(--ease-out); }
+@keyframes capaEntra { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+#planta { cursor: crosshair; touch-action: pan-y; }
+#planta.moviendo { cursor: grabbing; }
+.dibujo .cruz line { stroke: #1b1b1b; stroke-width: 1; stroke-dasharray: 3 3; }
+.dibujo .cruz circle { fill: #fff; stroke: #1b1b1b; stroke-width: 1.5; }
+.tip-planta { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; padding: 7px 10px; border-radius: var(--r-ctl); background: #1b1b1b; color: #fff; font: 500 13px/1.3 var(--sans); white-space: nowrap; }
+.tip-planta.mal { background: var(--mal); }
+.tip-planta[hidden] { display: none; }
+#planta-encuadre { position: absolute; right: 14px; bottom: 14px; z-index: 3; }
+#planta-encuadre[hidden] { display: none; }
+@media print { .dibujo .cruz { display: none; } .dibujo.planta .perimetro { animation: none; } }

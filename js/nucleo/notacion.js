@@ -38,7 +38,7 @@
       const [base, sub] = T[m[1]];
       frag.appendChild(document.createTextNode(txt.slice(ultimo, m.index) + base));
       let el;
-      if (enSvg) { el = document.createElementNS(SVGNS, 'tspan'); el.setAttribute('class', 'sub'); el.setAttribute('baseline-shift', 'sub'); el.setAttribute('font-size', '72%'); }
+      if (enSvg) { el = document.createElementNS(SVGNS, 'tspan'); el.setAttribute('class', 'subi'); el.setAttribute('baseline-shift', 'sub'); el.setAttribute('font-size', '72%'); }
       else el = document.createElement('sub');
       el.textContent = sub;
       frag.appendChild(el);
@@ -51,7 +51,7 @@
   function aplicar(raiz) {
     if (!raiz || raiz.nodeType !== 1 || raiz.closest(SALTAR)) return;
     const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => (n.parentElement && (n.parentElement.closest(SALTAR) || n.parentElement.matches('sub, tspan.sub')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+      acceptNode: (n) => (n.parentElement && (n.parentElement.closest(SALTAR) || n.parentElement.matches('sub, tspan.subi')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
     });
     const lista = [];
     while (w.nextNode()) lista.push(w.currentNode);

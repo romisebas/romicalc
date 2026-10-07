@@ -358,7 +358,7 @@ def test_subindices_en_textos_y_dibujos(navegador, url):
     pagina.click('#chequeos [data-paso="serv"]')
     assert pagina.locator(".detalle sub").count() >= 2
     pagina.click("#tab-planos")
-    assert pagina.locator("#planta svg tspan.sub").count() >= 4
+    assert pagina.locator("#planta svg tspan.subi").count() >= 4
     pagina.click("#tab-refuerzo")
     assert pagina.locator("#acero-x sub").count() >= 1
     pagina.click("#tab-memoria")
@@ -435,6 +435,34 @@ def test_portada_editorial(navegador, url):
     assert movil.evaluate("document.documentElement.scrollWidth") <= 390
     assert movil.is_visible("#btn-disenar")
     assert not errores2, errores2
+
+
+def test_planta_moderna_e_interactiva(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-planos")
+    assert pagina.locator("#planta .isobara").count() >= 3
+    assert pagina.locator("#planta .escala-color").count() == 1
+    assert pagina.locator("#planta .cota .punta").count() >= 4
+    assert pagina.locator("#planta .pildora").count() == 4
+    # Lectura de σ bajo el mouse, en el centro de la zapata ≈ P/A
+    caja = pagina.locator("#planta svg").bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] / 2 + 3, caja["y"] + caja["height"] / 2 + 3)
+    pagina.wait_for_selector(".tip-planta:not([hidden])")
+    valor = float(pagina.text_content(".tip-planta").split("=")[1].split()[0])
+    assert abs(valor - 10.56) < 0.15, valor
+    # Acercar con la rueda y volver al encuadre
+    vb0 = pagina.get_attribute("#planta svg", "viewBox")
+    pagina.mouse.wheel(0, -400)
+    pagina.wait_for_function("vb => document.querySelector('#planta svg').getAttribute('viewBox') !== vb", arg=vb0)
+    pagina.click("#planta-encuadre")
+    assert pagina.get_attribute("#planta svg", "viewBox") == vb0
+    # Al cambiar de capa se conserva el acercamiento
+    pagina.mouse.wheel(0, -400)
+    vb1 = pagina.get_attribute("#planta svg", "viewBox")
+    pagina.click('#capas [data-capa="punz"]')
+    assert pagina.get_attribute("#planta svg", "viewBox") == vb1
+    assert not errores, errores
 
 
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
