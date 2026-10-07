@@ -536,6 +536,18 @@
       (cw ? '<rect class="rc-col" x="' + (24 - cw / 2) + '" y="' + (24 - ch / 2) + '" width="' + cw + '" height="' + ch + '"/>' : '') + '</svg>';
   }
 
+  // Ola del titular: cada letra crece y se eleva según su distancia horizontal al cursor
+  function olaTitular(x, y) {
+    const h1 = $('#titulo-app'), r = h1.getBoundingClientRect();
+    const cerca = x !== null && y > r.top - 80 && y < r.bottom + 40;
+    const ancho = r.width * 0.09;
+    $$('#titulo-app .letra').forEach((l) => {
+      let f = 0;
+      if (cerca && !Mov.reducido()) { const b = l.getBoundingClientRect(), d = (b.left + b.width / 2 - x) / ancho; f = Math.exp(-d * d); }
+      l.style.setProperty('--f', f.toFixed(3));
+    });
+  }
+
   // Animación propia de cada opción antes de continuar
   function elegir(boton, clase, siguiente) {
     if (Mov.reducido()) { siguiente(); return; }
@@ -745,8 +757,17 @@
       const dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy);
       const f = d < 140 ? (1 - d / 140) * 0.3 : 0;
       cta.style.transform = 'translate(' + (dx * f).toFixed(1) + 'px,' + (dy * f).toFixed(1) + 'px)';
+      Escultura.armar(d < 170); // el despiece se arma al acercarse a Diseñar
+      olaTitular(e.clientX, e.clientY);
     });
-    $('#bv-portada').addEventListener('pointerleave', () => { cta.style.transform = ''; });
+    $('#bv-portada').addEventListener('pointerleave', () => { cta.style.transform = ''; Escultura.armar(false); olaTitular(null); });
+    // En pantallas táctiles la ola recorre el titular sola de vez en cuando
+    if (matchMedia('(hover: none)').matches) setInterval(() => {
+      if (Mov.reducido() || $('#bv-portada').hidden) return;
+      const r = $('#titulo-app').getBoundingClientRect(), t0 = performance.now();
+      const paso = (t) => { const k = (t - t0) / 1400; if (k > 1) { olaTitular(null); return; } olaTitular(r.left + r.width * k, r.top + r.height / 2); requestAnimationFrame(paso); };
+      requestAnimationFrame(paso);
+    }, 6000);
     cta.addEventListener('click', () => {
       cta.style.transform = '';
       if (Mov.reducido()) { mostrarPantalla('opciones'); return; }
