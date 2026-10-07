@@ -89,9 +89,12 @@
   function pintar(dir) {
     if (!lista.length) { escena.innerHTML = ''; return; }
     const x = lista[i];
-    const viejo = escena.firstElementChild;
     const reducido = global.Mov && global.Mov.reducido();
+    // Un clic durante una transición: cancelar no dispara onfinish, así que la diapositiva
+    // que salía se quita a mano. Solo queda la última (la que estaba entrando).
     if (anim) { anim.forEach((a) => a.cancel()); anim = null; }
+    while (escena.children.length > 1) escena.firstElementChild.remove();
+    const viejo = escena.firstElementChild;
     if (!dir || !viejo || reducido || !Element.prototype.animate) {
       escena.innerHTML = html(x);
     } else {

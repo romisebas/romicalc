@@ -222,6 +222,19 @@ def test_ajuste_de_unidades(navegador, url):
     assert not errores, errores
 
 
+def test_diapositivas_rapidas_no_se_solapan(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-memoria")
+    for _ in range(10):
+        pagina.click("#diapo-sig", delay=0)
+        assert pagina.locator("#memoria .diapo").count() <= 2
+    pagina.wait_for_timeout(700)
+    assert pagina.locator("#memoria .diapo").count() == 1
+    assert pagina.text_content("#diapo-contador").startswith("11 de")
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
