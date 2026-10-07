@@ -500,6 +500,88 @@ def test_figuras_de_memoria_enlazadas(navegador, url):
     assert not errores, errores
 
 
+def test_portada_titular_despiece_creditos(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    pagina.wait_for_timeout(1200)  # termina la entrada de las letras
+    # Ola: la letra bajo el cursor crece
+    letra = pagina.locator("#titulo-app .letra").nth(3)
+    caja = letra.bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
+    pagina.wait_for_timeout(400)
+    escala = pagina.evaluate("""() => { const m = new DOMMatrix(getComputedStyle(document.querySelectorAll('#titulo-app .letra')[3]).transform); return m.a; }""")
+    assert escala > 1.1, escala
+    # Despiece: se arma al acercarse a Diseñar
+    assert pagina.evaluate("Escultura.estado().armado") < 0.2
+    cta = pagina.locator("#btn-disenar").bounding_box()
+    pagina.mouse.move(cta["x"] + cta["width"] / 2, cta["y"] + cta["height"] / 2)
+    pagina.wait_for_function("Escultura.estado().armado > 0.9", timeout=5000)
+    # Créditos y ajustes con ícono
+    assert "Sebastian Romario Martinez Guerrero" in pagina.text_content(".bv-pie")
+    assert pagina.locator(".bv-ajustes-ico svg").count() == 1
+    pagina.click(".bv-ajustes-ico")
+    pagina.wait_for_selector("#dlg-ajustes[open]")
+    assert not errores, errores
+
+
+def test_opciones_volver_y_recientes_con_deshacer(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    pagina.wait_for_timeout(500)
+    pagina.click("#btn-inicio")
+    pagina.wait_for_selector(".rc-tarjeta")
+    assert pagina.locator("#bv-opciones .bv-volver-ico svg").count() == 1
+    assert "hace" in pagina.text_content(".rc-tarjeta .rc-fecha") or "ahora" in pagina.text_content(".rc-tarjeta .rc-fecha")
+    pagina.click(".rc-tarjeta [data-borrar]")
+    assert pagina.locator(".rc-tarjeta").count() == 0
+    pagina.click("#aviso .aviso-accion")
+    pagina.wait_for_selector(".rc-tarjeta")
+    assert pagina.locator(".rc-tarjeta").count() == 1
+    pagina.click("#bv-opciones .bv-volver-ico")
+    pagina.wait_for_selector("#bv-portada:not([hidden])")
+    assert not errores, errores
+
+
+def test_carga_dibuja_el_proyecto(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    pagina.wait_for_timeout(500)
+    pagina.click("#btn-inicio")
+    pagina.click(".reciente")
+    pagina.wait_for_selector("#cargando:not([hidden]) .cg-plano svg")
+    assert pagina.locator(".cg-chequeo").count() == 6
+    pagina.wait_for_function("document.querySelectorAll('.cg-chequeo.listo').length === 6", timeout=8000)
+    assert pagina.locator(".cg-sello").count() == 1
+    pagina.wait_for_selector("#cargando", state="hidden", timeout=8000)
+    assert not errores, errores
+
+
+def test_cortes_modernos(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-planos")
+    pagina.click('#vistas2 [data-vista="X"]')
+    assert pagina.locator("#corte .nivel-marca").count() >= 2
+    assert pagina.locator("#corte .cota .punta").count() >= 6
+    assert pagina.locator("#corte .presion-diag").count() == 1
+    assert pagina.locator("#corte .estribo").count() >= 2
+    vb0 = pagina.get_attribute("#corte svg", "viewBox")
+    caja = pagina.locator("#corte svg").bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
+    pagina.mouse.wheel(0, -400)
+    pagina.wait_for_function("vb => document.querySelector('#corte svg').getAttribute('viewBox') !== vb", arg=vb0)
+    assert not errores, errores
+
+
+def test_memoria_sin_observaciones(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    titulos = pagina.evaluate("MemoriaAisladaMomento.generar(Tipos['aislada-momento'].calcular(Tipos['aislada-momento'].preparar(Tipos['aislada-momento'].EJEMPLO))).flatMap(c => c.diapos.map(d => d.titulo + ' | ' + d.items.filter(i => i.t === 'nota').map(i => i.html).join(' ')))")
+    assert not any(t.startswith("Observaciones") for t in titulos), titulos
+    assert not any("documento del curso (pág" in t for t in titulos)
+    assert any(t.startswith("Refuerzo en") and "banda central" in t for t in titulos), titulos
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

@@ -176,19 +176,18 @@
         items.push(eq('Acero requerido por unidad de ancho', 'a_{s' + dl + '}', '\\dfrac{A_{s' + dl + '}}{b}', '\\dfrac{' + v(F.As, 'acero') + '}{' + v(bVal, 'longitud') + '}', v(req, 'aceroM'), U('aceroM')));
         items.push(ver('Malla ' + (rf.sel.capas > 1 ? '2 × ' : '') + rf.sel.ref, 'a_{s,prov} = ' + v(prov, 'aceroM') + U('aceroM') + ' \\;' + ge(prov >= req - 1e-9) + '\\; a_{s' + dl + '} = ' + v(req, 'aceroM') + U('aceroM'), prov >= req - 1e-9));
       }
+      // Avisos que importan para construir (antes iban en una diapositiva aparte)
+      if (Math.abs(R.Lx - R.Ly) > 1e-6 && R.banda.corta === dir) items.push(nota('info', 'Zapata rectangular: la NSR-10 C.15.4.4.2 pide concentrar en una banda central, de ancho igual al lado corto, la fracción γ<sub>s</sub> = 2/(β + 1) = ' + R.banda.gamma.toFixed(3) + ' de este acero. El método del curso lo reparte de forma uniforme.'));
+      if (rf.tipo === 'malla' && dir === 'X') {
+        if (rf.sel.traslapo) items.push(nota('aviso', 'La zapata excede el panel Diaco de 6.00 × 2.35 m: se requieren traslapos entre paneles (NSR-10 C.12.18).'));
+        items.push(nota('aviso', 'El uso de malla electrosoldada en zapatas debe aprobarlo el diseñador estructural.'));
+      }
       diapo(c4, 'Refuerzo en ' + dir,
         rf.tipo === 'barras' ? 'Se elige la barra y la separación que cubren el acero requerido sin pasar la separación máxima s<sub>max</sub> = min(3h, 45 cm).' : 'Se elige la malla electrosoldada cuyo acero por metro cubre el requerido en esta dirección.',
         items, { tipo: 'planta', capa: 'acero' });
     };
     flex('X', fx, R.Lx, c.Cx, 'L_y', R.Ly);
     flex('Y', fy, R.Ly, c.Cy, 'L_x', R.Lx);
-    const notas = [];
-    if (rf.tipo === 'malla') notas.push(nota('info', 'Refuerzo con malla electrosoldada: se diseña con f<sub>y</sub> = ' + UN.fmt(fx.fy, 'esfuerzo', sis) + (fx.fy > 4200 ? ', por lo que ρ<sub>min</sub> = 0.0018·420/f<sub>y</sub> (MPa) = ' + fx.rhoMin.toFixed(5) : '') + '.'));
-    if (Math.abs(R.Lx - R.Ly) > 1e-6) notas.push(nota('info', 'Zapata rectangular: la NSR-10 C.15.4.4.2 pide concentrar en una banda central, de ancho igual al lado corto, la fracción γ<sub>s</sub> = 2/(β + 1) = ' + R.banda.gamma.toFixed(3) + ' del acero paralelo al lado corto. El documento del curso lo reparte de forma uniforme y aquí se sigue el documento.'));
-    if (rf.tipo === 'malla' && rf.sel.traslapo) notas.push(nota('aviso', 'La zapata excede el panel Diaco de 6.00 × 2.35 m: se requieren traslapos entre paneles, según NSR-10 C.12.18.'));
-    if (rf.tipo === 'malla') notas.push(nota('aviso', 'El uso de malla electrosoldada como refuerzo de zapatas debe aprobarlo el diseñador estructural.'));
-    notas.push(nota('pdf', 'Corrección respecto al documento del curso (pág. 10): allí se escribe A<sub>yf</sub> = L<sub>x</sub>·K<sub>y</sub> pero se calcula L<sub>y</sub>·K<sub>y</sub>. Con L<sub>x</sub>·K<sub>y</sub> el momento correcto es <b>' + UN.fmt(fy.Mu, 'momento', sis) + '</b> (el documento obtiene ' + UN.fmt(fy.MuPdf, 'momento', sis) + '). Además, ρ<sub>y</sub> se calcula con R<sub>ny</sub>.'));
-    diapo(c4, 'Observaciones del refuerzo', 'Condiciones adicionales que conviene tener presentes al detallar el refuerzo.', notas, { tipo: 'planta', capa: 'flexion' });
 
     // ---------------------------------------------------------------- 5. Aplastamiento
     const c5 = capitulo('ap', 'Resistencia al aplastamiento', en ? 'ACI 318 22.8' : 'NSR-10 C.10.14', ap.ok1 && ap.ok2);
