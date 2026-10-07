@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Diseño de Zapatas</title>
-  <meta name="description" content="Diseño de zapatas de concreto reforzado según NSR-10: esfuerzos en el suelo, punzonamiento, cortante, flexión con barras o mallas electrosoldadas, aplastamiento y longitud de desarrollo, con memoria de cálculo.">
-  <meta name="theme-color" content="#e5e4e0" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1d1d1d" media="(prefers-color-scheme: dark)">
+  <title>ZapatAPP</title>
+  <meta name="description" content="ZapatAPP: diseño de zapatas de concreto reforzado según NSR-10: esfuerzos en el suelo, punzonamiento, cortante, flexión con barras o mallas electrosoldadas, aplastamiento y longitud de desarrollo, con memoria de cálculo.">
+  <meta name="theme-color" content="#000000">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/flujo.css">
   <link rel="stylesheet" href="css/informe.css">
-  <link rel="stylesheet" href="css/editorial.css">
+  <link rel="stylesheet" href="css/air.css">
   <link rel="icon" href="assets/logo/logo.svg" type="image/svg+xml">
 </head>
 <body class="en-bienvenida">
@@ -24,13 +23,10 @@
     </div>
 
     <section class="bv-pantalla bv-portada" id="bv-portada" aria-labelledby="titulo-app">
-      <div class="esfera-escena" aria-hidden="true">
-        <span class="anillo a3"></span><span class="anillo a2"></span><span class="anillo a1"></span>
-        <div class="esfera"></div>
-      </div>
+      <div class="escultura" id="escultura" aria-hidden="true"></div>
       <div class="bv-marca" id="bv-marca"></div>
-      <h1 class="bv-titulo" id="titulo-app">Diseño de Zapatas</h1>
-      <p class="bv-lema">Memorias de cálculo de cimentaciones según la NSR-10</p>
+      <h1 class="bv-titulo" id="titulo-app">ZapatAPP</h1>
+      <p class="bv-lema">Memorias de cálculo de <em>cimentaciones</em> según la NSR-10</p>
       <button type="button" class="btn btn-acento btn-grande" id="btn-disenar">Diseñar</button>
       <button type="button" class="btn btn-quieto bv-ajustes" data-abrir-ajustes>Ajustes</button>
     </section>
@@ -68,7 +64,7 @@
       <div class="barra-fila">
         <button type="button" class="marca" id="btn-inicio" aria-label="Volver al inicio">
           <span id="marca-logo"></span>
-          <span class="marca-nombre">Diseño de Zapatas</span>
+          <span class="marca-nombre">ZapatAPP</span>
         </button>
         <span class="tipo-actual" id="tipo-actual">Aislada con momento</span>
         <nav class="acciones" aria-label="Acciones">
@@ -83,7 +79,15 @@
           </button>
         </nav>
       </div>
-      <nav class="categorias" id="categorias" aria-label="Editar datos por categoría"></nav>
+      <div class="barra-fila2">
+        <div class="pestanas" role="tablist" aria-label="Secciones del diseño" id="pestanas">
+          <button type="button" role="tab" id="tab-veredicto" data-tab="veredicto" aria-controls="panel-veredicto" aria-selected="true">Veredicto</button>
+          <button type="button" role="tab" id="tab-planos" data-tab="planos" aria-controls="panel-planos" aria-selected="false" tabindex="-1">Planos</button>
+          <button type="button" role="tab" id="tab-refuerzo" data-tab="refuerzo" aria-controls="panel-refuerzo" aria-selected="false" tabindex="-1">Refuerzo</button>
+          <button type="button" role="tab" id="tab-memoria" data-tab="memoria" aria-controls="panel-memoria" aria-selected="false" tabindex="-1">Memoria</button>
+        </div>
+        <nav class="categorias" id="categorias" aria-label="Editar datos por categoría"></nav>
+      </div>
     </header>
 
     <main class="principal" id="principal" tabindex="-1">
@@ -94,19 +98,31 @@
       </section>
 
       <div id="contenido">
-        <section class="resumen" id="resumen" aria-live="polite">
+        <section class="panel" id="panel-veredicto" role="tabpanel" aria-labelledby="tab-veredicto">
+        <div class="resumen" id="resumen" aria-live="polite">
           <div class="veredicto" id="veredicto">
-            <h1 class="v-tit" id="v-tit">El diseño cumple</h1>
-            <p class="v-det" id="v-det"></p>
+            <svg class="v-icono" viewBox="0 0 96 96" aria-hidden="true">
+              <circle class="vi-aro" cx="48" cy="48" r="42" pathLength="1"/>
+              <path class="vi-check" d="M30 49 L43 62 L67 36" pathLength="1"/>
+              <path class="vi-x1" d="M34 34 L62 62" pathLength="1"/>
+              <path class="vi-x2" d="M62 34 L34 62" pathLength="1"/>
+            </svg>
+            <div class="v-txt">
+              <h1 class="v-tit" id="v-tit">El diseño cumple</h1>
+              <p class="v-det" id="v-det"></p>
+            </div>
           </div>
           <dl class="cifras" id="cifras">
             <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">0.00</span> × <span class="num" data-cifra="Ly">0.00</span> <small>m</small></dd></div>
             <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.00</span> <small>m</small></dd></div>
-            <div><dt>σmax de servicio</dt><dd><span class="num" data-cifra="smax">0.00</span> <small>de <span data-cifra-txt="qadm">0</span> tonf/m²</small></dd></div>
+            <div><dt><span class="sim">σ</span>max de servicio</dt><dd><span class="num" data-cifra="smax">0.00</span> <small>de <span data-cifra-txt="qadm">0</span> tonf/m²</small></dd></div>
             <div><dt>Utilización máxima</dt><dd><span class="num" data-cifra="util">0</span><small>%</small></dd></div>
           </dl>
-          <ol class="chequeos" id="chequeos"></ol>
-        </section>
+          <div class="tabla-chequeos">
+            <div class="tc-cab" aria-hidden="true"><span>Chequeo</span><span>Demanda y capacidad</span><span>Utilización</span><span>Estado</span></div>
+            <ol class="chequeos" id="chequeos"></ol>
+          </div>
+        </div>
 
         <section class="dims" aria-label="Ajuste rápido de dimensiones">
           <span class="dims-tit">Ajuste rápido</span>
@@ -114,8 +130,10 @@
           <div class="paso-num"><span class="pn-lbl">Ly</span><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="-0.05" aria-label="Reducir Ly 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Ly" aria-label="Ly en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="0.05" aria-label="Aumentar Ly 5 cm">+</button><small>m</small></div>
           <div class="paso-num"><span class="pn-lbl">d</span><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="-0.025" aria-label="Reducir d 2.5 cm">−</button><input type="number" step="0.025" data-k="zapata.d" aria-label="d en metros"><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="0.025" aria-label="Aumentar d 2.5 cm">+</button><small>m</small></div>
         </section>
+        </section>
 
-        <section class="vistas">
+        <section class="panel" id="panel-planos" role="tabpanel" aria-labelledby="tab-planos" hidden>
+        <div class="vistas">
           <figure class="vista">
             <div class="vista-cab">
               <h2>Planta</h2>
@@ -144,9 +162,11 @@
             </div>
             <div class="lienzo" id="corte" hidden></div>
           </figure>
+        </div>
         </section>
 
-        <section class="bloque" id="bloque-refuerzo">
+        <section class="panel bloque" id="panel-refuerzo" role="tabpanel" aria-labelledby="tab-refuerzo" hidden>
+        <div id="bloque-refuerzo">
           <div class="bloque-cab">
             <h2>Refuerzo inferior</h2>
             <div class="seg" role="tablist" aria-label="Tipo de refuerzo" id="tipo-refuerzo">
@@ -182,9 +202,11 @@
             <div class="acero-dir" id="tabla-mallas"></div>
             <p class="ayuda fuente">Catálogo: Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026. Panel de 6.00 × 2.35 m.</p>
           </div>
+        </div>
         </section>
 
-        <section class="bloque" id="bloque-memoria">
+        <section class="panel bloque" id="panel-memoria" role="tabpanel" aria-labelledby="tab-memoria" hidden>
+        <div id="bloque-memoria">
           <div class="bloque-cab">
             <h2>Memoria de cálculo</h2>
             <div class="fila-btn">
@@ -194,9 +216,8 @@
             </div>
           </div>
           <div id="memoria" class="memoria"></div>
-        </section>
-
-        <section class="bloque">
+        </div>
+        <div class="bloque">
           <details class="paso" id="validacion">
             <summary><span class="paso-tit">Validación contra el ejemplo del PDF</span><span class="tag" id="tag-validacion"></span></summary>
             <div class="paso-cuerpo"><div class="paso-int">
@@ -204,6 +225,7 @@
               <p class="ayuda">Compara el motor de cálculo con los resultados del documento, con tolerancia del 1 %. Muy se compara con el valor corregido.</p>
             </div></div>
           </details>
+        </div>
         </section>
       </div>
 
@@ -423,6 +445,16 @@
   <div id="informe" class="informe forzar-claro" aria-hidden="true"></div>
   <div id="medidor-informe" class="inf-medidor forzar-claro" aria-hidden="true"></div>
 
+  <!-- Carga: se muestra al terminar el asistente o al continuar un proyecto -->
+  <div class="cargando" id="cargando" role="status" aria-live="polite" hidden>
+    <div class="cg-cuerpo">
+      <div class="cg-logo" id="cg-logo"></div>
+      <p class="cg-tit" id="cg-tit">Calculando</p>
+      <div class="cg-barra" aria-hidden="true"><span class="cg-relleno" id="cg-relleno"></span></div>
+      <div class="cg-pie"><span class="cg-paso" id="cg-paso"></span><span class="cg-pct" id="cg-pct">0 %</span></div>
+    </div>
+  </div>
+
   <script src="vendor/three.min.js"></script>
   <script src="vendor/OrbitControls.js"></script>
   <script src="vendor/katex/katex.min.js"></script>
@@ -434,6 +466,8 @@
   <script src="js/nucleo/dibujo.js"></script>
   <script src="js/nucleo/vista3d.js"></script>
   <script src="js/nucleo/intro3d.js"></script>
+  <script src="js/nucleo/escultura.js"></script>
+  <script src="js/nucleo/cargando.js"></script>
   <script src="js/tipos/catalogo.js"></script>
   <script src="js/tipos/aislada-momento.js"></script>
   <script src="js/tipos/aislada-momento-memoria.js"></script>

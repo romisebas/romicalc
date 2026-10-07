@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>A huella</title>
+<g transform="rotate(-15 128 128)">
+<path fill="#000" d="M84 124 C72 70 96 18 140 18 C184 18 200 70 184 124 Z"/>
+<path fill="#000" fill-rule="evenodd" d="M88 142 H172 V226 Q172 238 160 238 H100 Q88 238 88 226 Z M114 172 V204 H146 V172 Z"/>
+</g></svg>

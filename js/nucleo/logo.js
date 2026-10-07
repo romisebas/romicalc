@@ -1,20 +1,13 @@
-/* Logo: zapata y columna en isométrico, caras rellenas con tres tonos.
- * Las separaciones entre caras usan el color de fondo, así funciona en claro, oscuro y monocromo.
- * Fuente maestra: assets/logo/logo.svg (auditado con la skill logo-design).
+/* Logo de ZapatAPP (v3.2): una varilla corrugada doblada en Z, con ganchos a 135° en los extremos.
+ * Un solo trazo en currentColor: funciona en oscuro, claro, monocromo y en el PDF.
+ * Fuente maestra: assets/logo/logo.svg (concepto C, elegido con la skill logo-design).
  */
 (function (global) {
   'use strict';
-  const CARAS = [
-    ['lg-zt', 'M8 38 L32 26 L56 38 L32 50 Z'],
-    ['lg-zl', 'M8 38 L32 50 L32 57 L8 45 Z'],
-    ['lg-zr', 'M32 50 L56 38 L56 45 L32 57 Z'],
-    ['lg-ct', 'M26 12 L32 9 L38 12 L32 15 Z'],
-    ['lg-cl', 'M26 12 L32 15 L32 41 L26 38 Z'],
-    ['lg-cr', 'M32 15 L38 12 L38 38 L32 41 Z'],
-  ];
+  const TRAZO = 'M102 106 L66 70 Q54 56 74 56 H200 L56 200 H182 Q202 200 190 186 L154 150';
   function svg(clase, titulo) {
-    return '<svg class="logo-dz ' + (clase || '') + '" viewBox="0 0 64 64"' + (titulo ? ' role="img" aria-label="' + titulo + '"' : ' aria-hidden="true"') + '>' +
-      '<g transform="translate(0 -1.5)">' + CARAS.map((c) => '<path class="' + c[0] + '" d="' + c[1] + '"/>').join('') + '</g></svg>';
+    return '<svg class="logo-dz ' + (clase || '') + '" viewBox="0 0 256 256"' + (titulo ? ' role="img" aria-label="' + titulo + '"' : ' aria-hidden="true"') + '>' +
+      '<path class="lg-varilla" pathLength="1" d="' + TRAZO + '"/></svg>';
   }
-  global.Logo = { svg, CARAS };
+  global.Logo = { svg, TRAZO };
 })(window);

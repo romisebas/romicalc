@@ -1,4 +1,4 @@
-/* Diseño de Zapatas v3: bienvenida con intro 3D, asistente paso a paso, dashboard por categorías,
+/* ZapatAPP v3.2: bienvenida con intro 3D, asistente paso a paso, dashboard por categorías,
  * proyectos recientes, informe PDF. El cálculo vive en el módulo del tipo de zapata (js/tipos/).
  */
 (function () {
@@ -8,14 +8,14 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const f = (x, d = 2) => Number(x).toFixed(d);
   const CLAVE_AJUSTES = 'dz-ajustes';
-  const CLAVE_TEMA = 'diseno-zapatas-v2-tema';
+  const CLAVE_TEMA = 'zapatapp-tema'; // v3.2: clave nueva para que todos arranquen en oscuro
 
   const T = window.Tipos['aislada-momento'];
   let estado = T.clone(T.VACIO);
   let proyectoId = null;
   let R = null;            // resultados cuando el proyecto está completo
   let enApp = false;
-  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null;
+  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false;
   const movers = {};
   const abiertos = new Set(['serv']);
 
@@ -129,6 +129,7 @@
     if (!enApp) return;
     $('#estado-vacio').hidden = !!R;
     $('#contenido').hidden = !R;
+    $('#pestanas').hidden = !R;
     if (!R) { pintarVacio(falt, error); return; }
     const animar = origen === 'programa';
     pintarResumen(animar);
@@ -165,7 +166,7 @@
     const ok = R.todoOk;
     v.className = 'veredicto ' + (ok ? 'ok' : 'mal');
     $('#v-tit').textContent = ok ? 'El diseño cumple' : 'El diseño no cumple';
-    if (okPrevio !== null && okPrevio !== ok) { v.classList.remove('pulso'); void v.offsetWidth; v.classList.add('pulso'); }
+    if (okPrevio !== null && okPrevio !== ok) animarVeredicto();
     okPrevio = ok;
     const fallas = R.chequeos.filter((c) => !c.ok).map((c) => c.titulo.toLowerCase());
     $('#v-det').textContent = ok
@@ -181,9 +182,39 @@
       const ancho = Math.max(2, Math.min(1, c.util) * 100);
       return '<li><a href="#paso-' + c.id + '" class="chequeo ' + (c.ok ? 'ok' : 'mal') + '" data-paso="' + c.id + '">' +
         '<span class="ch-tit">' + c.titulo + '</span><span class="ch-det">' + c.det + '</span>' +
-        '<span class="ch-util ' + cls + '" title="Demanda / capacidad"><span class="ch-barra" style="width:' + ancho + '%"></span><span class="num">' + f(c.util * 100, 0) + '%</span></span>' +
+        '<span class="ch-util ' + cls + '" title="Demanda / capacidad"><span class="ch-pista"><span class="ch-barra" style="width:' + ancho + '%"></span></span><span class="num">' + f(c.util * 100, 0) + '%</span></span>' +
         '<span class="tag ' + (c.ok ? 'tag-ok' : 'tag-mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</span></a></li>';
     }).join('');
+  }
+
+  // Animación del veredicto: el aro se dibuja; si cumple aparece el check y un latido verde,
+  // si no cumple se trazan las dos líneas de la X y el bloque tiembla.
+  function animarVeredicto() {
+    const v = $('#veredicto');
+    v.classList.remove('anima');
+    void v.offsetWidth;
+    v.classList.add('anima');
+  }
+
+  // ---------------------------------------------------------------- pestañas
+  function mostrarPestana(id, foco) {
+    const cambia = id !== pestana;
+    pestana = id;
+    $$('#pestanas [role="tab"]').forEach((b) => {
+      const sel = b.dataset.tab === id;
+      b.setAttribute('aria-selected', String(sel));
+      b.tabIndex = sel ? 0 : -1;
+      if (sel && foco) b.focus();
+    });
+    $$('#contenido > .panel').forEach((pn) => {
+      const sel = pn.id === 'panel-' + id;
+      pn.hidden = !sel;
+      if (sel && cambia) { pn.classList.remove('entra'); void pn.offsetWidth; pn.classList.add('entra'); }
+    });
+    if (movers.pestanas) movers.pestanas();
+    Object.keys(movers).forEach((k) => { if (k !== 'pestanas' && movers[k]) movers[k](true); });
+    if (id === 'planos' && hay3d && R && !encuadrado) { Vista3D.encuadrar(R, false); encuadrado = true; }
+    if (cambia) window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); }
@@ -296,9 +327,16 @@
   }
   function cerrarAsistente() {
     const dlg = $('#asistente');
+    const terminoNuevo = wz.modo === 'nuevo';
     dlg.classList.remove('abierto');
     setTimeout(() => { if (dlg.open) dlg.close(); }, Mov.reducido() ? 0 : 170);
     recalcular('programa');
+    // Al terminar de ingresar los datos de una zapata nueva: carga y veredicto animado
+    if (terminoNuevo && R) {
+      wz.modo = 'editar';
+      mostrarPestana('veredicto');
+      Cargando.mostrar('Calculando').then(animarVeredicto);
+    }
   }
 
   function ocultarError() { $('#wz-error').hidden = true; }
@@ -410,7 +448,7 @@
     setTimeout(() => { intro.hidden = true; intro.classList.remove('sale'); }, 600);
   }
 
-  function abrirApp() {
+  function abrirApp(conCarga) {
     document.body.classList.remove('en-bienvenida');
     $('#bienvenida').hidden = true;
     $('#app').hidden = false;
@@ -418,8 +456,11 @@
     if (!hay3d) hay3d = Vista3D.init($('#vista3d'));
     Object.values(movers).forEach((m) => m && m(true));
     aFormulario();
+    encuadrado = false;
+    mostrarPestana('veredicto');
     recalcular('inicio');
-    if (R && hay3d) Vista3D.encuadrar(R, false);
+    if (R && conCarga) Cargando.mostrar('Abriendo proyecto').then(animarVeredicto);
+    else if (R) animarVeredicto();
     Mov.revelar($$('.vistas .vista, #bloque-refuerzo, #bloque-memoria, .pie'));
     window.scrollTo(0, 0);
   }
@@ -434,12 +475,12 @@
     mostrarPantalla('opciones');
   }
 
-  function cargarProyecto(datos, id) {
+  function cargarProyecto(datos, id, conCarga) {
     estado = normalizar(datos);
     proyectoId = id || Proyectos.nuevoId();
     okPrevio = null;
     abiertos.clear(); abiertos.add('serv');
-    abrirApp();
+    abrirApp(conCarga);
   }
 
   // ============================================================ informe PDF
@@ -603,7 +644,7 @@
       const r = e.target.closest('.reciente');
       if (!r) return;
       const p = Proyectos.obtener(r.dataset.id);
-      if (p) cargarProyecto(p.datos, p.id);
+      if (p) cargarProyecto(p.datos, p.id, true);
     });
 
     // --- dashboard
@@ -626,6 +667,19 @@
 
     movers.capas_planta = Mov.segmentado($('#capas'));
     movers.vistas = Mov.segmentado($('#vistas2'));
+    movers.pestanas = Mov.segmentado($('#pestanas'));
+    $('#pestanas').addEventListener('click', (e) => {
+      const b = e.target.closest('[role="tab"]');
+      if (b) mostrarPestana(b.dataset.tab);
+    });
+    $('#pestanas').addEventListener('keydown', (e) => {
+      const tabs = $$('#pestanas [role="tab"]');
+      const i = tabs.findIndex((b) => b.dataset.tab === pestana);
+      const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (j === undefined) return;
+      e.preventDefault();
+      mostrarPestana(tabs[(j + tabs.length) % tabs.length].dataset.tab, true);
+    });
     movers.ref = Mov.segmentado($('#tipo-refuerzo'));
     movers.capas = Mov.segmentado($('#capas-malla'));
 
@@ -675,6 +729,7 @@
       const a = e.target.closest('a[data-paso]');
       if (!a) return;
       e.preventDefault();
+      mostrarPestana('memoria');
       clearTimeout(tMemoria);
       pintarMemoria();
       const d = document.getElementById('paso-' + a.dataset.paso);
@@ -817,7 +872,7 @@
     });
     $('#btn-tema').addEventListener('click', () => {
       const raiz = document.documentElement;
-      const oscuro = raiz.dataset.theme ? raiz.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      const oscuro = raiz.dataset.theme !== 'light'; // oscuro por defecto
       raiz.classList.add('cambiando-tema');
       raiz.dataset.theme = oscuro ? 'light' : 'dark';
       setTimeout(() => raiz.classList.remove('cambiando-tema'), 320);
@@ -834,13 +889,14 @@
     const a = ajustes();
     Mov.configurar(a.anim);
     Proyectos.migrar();
-    $('#bv-marca').innerHTML = Logo.svg('logo-grande', 'Diseño de Zapatas');
+    $('#bv-marca').innerHTML = Logo.svg('logo-grande dibujar', 'ZapatAPP');
     $('#marca-logo').innerHTML = Logo.svg('logo');
     llenarSelectBarras();
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));
     pintarValidacion();
+    Escultura.montar($('#escultura'));
     if (a.sinIntro || a.anim === 'desactivadas' || typeof THREE === 'undefined') mostrarPantalla('portada');
     else reproducirIntro();
   }

@@ -1,11 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <title>Diseño de Zapatas</title>
-  <g transform="translate(0 -1.5)" stroke="#e5e4e0" stroke-width="1.4" stroke-linejoin="round">
-    <path d="M8 38 L32 26 L56 38 L32 50 Z" fill="#bfbebe"/>
-    <path d="M8 38 L32 50 L32 57 L8 45 Z" fill="#6a6965"/>
-    <path d="M32 50 L56 38 L56 45 L32 57 Z" fill="#1d1d1d"/>
-    <path d="M26 12 L32 9 L38 12 L32 15 Z" fill="#ffffff"/>
-    <path d="M26 12 L32 15 L32 41 L26 38 Z" fill="#8f8e8a"/>
-    <path d="M32 15 L38 12 L38 38 L32 41 Z" fill="#3f3f3c"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t"><title id="t">ZapatAPP</title>
+<style>path{stroke:#1b1b1b}@media (prefers-color-scheme: dark){path{stroke:#ffffff}}</style>
+<path fill="none" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" d="M102 106 L66 70 Q54 56 74 56 H200 L56 200 H182 Q202 200 190 186 L154 150"/></svg>

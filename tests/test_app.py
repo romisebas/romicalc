@@ -1,4 +1,4 @@
-"""Pruebas automáticas de Diseño de Zapatas (v3) con Playwright.
+"""Pruebas automáticas de ZapatAPP (v3.2) con Playwright.
 
 Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests -q
@@ -25,7 +25,9 @@ EJEMPLO = {
 def url():
     manejador = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(RAIZ))
     manejador.log_message = lambda *a, **k: None
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), manejador)
+    # Cola amplia: el navegador pide muchos archivos a la vez y la cola por defecto (5) rechaza conexiones
+    servidor = type("Servidor", (http.server.ThreadingHTTPServer,), {"request_queue_size": 128})
+    srv = servidor(("127.0.0.1", 0), manejador)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}/index.html"
     srv.shutdown()
@@ -88,7 +90,66 @@ def test_intro_y_saltar(navegador, url):
     pagina.wait_for_timeout(600)
     pagina.click("#btn-saltar")
     pagina.wait_for_selector("#bv-portada:not([hidden])", timeout=4000)
-    assert "DISEÑO" in pagina.text_content("#titulo-app").upper()
+    assert "ZAPATAPP" in pagina.text_content("#titulo-app").upper()
+    assert not errores, errores
+
+
+def test_identidad_zapatapp_oscura(navegador, url):
+    """v3.2: nombre ZapatAPP, tema oscuro por defecto (aunque el sistema pida claro), fuentes y escultura de vidrio."""
+    pagina, errores = abrir(navegador, url, tema="light")
+    assert pagina.title() == "ZapatAPP"
+    assert "ZAPATAPP" in pagina.text_content("#titulo-app").upper()
+    assert pagina.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(0, 0, 0)"
+    for f in ['500 16px "Inter"', '400 40px "Anton"', 'italic 400 20px "Instrument Serif"']:
+        assert pagina.evaluate(f"document.fonts.check({json.dumps(f)})"), f
+    assert pagina.evaluate("[...document.fonts].filter(f => f.status === 'loaded').map(f => f.family).join()").count("Manrope") == 0
+    assert pagina.locator("#bv-portada .escultura canvas").count() == 1
+    assert pagina.locator(".esfera").count() == 0
+    pagina.click("#btn-disenar")
+    pagina.click("#op-ejemplo")
+    pagina.wait_for_selector("#chequeos .chequeo")
+    assert pagina.text_content(".marca-nombre").strip() == "ZapatAPP"
+    pagina.click("#btn-tema")
+    pagina.wait_for_function("getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)'")
+    assert not errores, errores
+
+
+def test_pestanas_veredicto_y_logo(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    assert pagina.locator("#marca-logo path.lg-varilla").count() == 1
+    assert pagina.is_visible("#panel-veredicto") and not pagina.is_visible("#panel-planos")
+    assert pagina.get_attribute("#veredicto", "class").split() == ["veredicto", "ok", "anima"]
+    pagina.click("#tab-planos")
+    assert pagina.is_visible("#panel-planos") and not pagina.is_visible("#panel-veredicto")
+    assert pagina.locator("#planta svg").count() == 1
+    pagina.keyboard.press("ArrowRight")
+    assert pagina.get_attribute("#tab-refuerzo", "aria-selected") == "true"
+    assert pagina.is_visible("#acero-x")
+    # Un chequeo lleva a su paso en la pestaña Memoria
+    pagina.click("#tab-veredicto")
+    pagina.click('#chequeos [data-paso="pz"]')
+    assert pagina.is_visible("#panel-memoria")
+    # Al dejar de cumplir: veredicto en rojo con su propia animación
+    pagina.click("#tab-veredicto")
+    pagina.fill('.dims [data-k="zapata.Lx"]', "1.5")
+    pagina.wait_for_function("document.querySelector('#veredicto').classList.contains('mal')")
+    assert "anima" in pagina.get_attribute("#veredicto", "class")
+    assert not errores, errores
+
+
+def test_carga_al_continuar_proyecto(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    pagina.wait_for_timeout(500)  # guardado diferido
+    pagina.click("#btn-inicio")
+    pagina.click(".reciente")
+    pagina.wait_for_selector("#cargando:not([hidden])")
+    assert "ABRIENDO" in pagina.text_content("#cg-tit").upper()
+    pagina.wait_for_function("parseInt(document.querySelector('#cg-pct').textContent) >= 40")
+    pagina.wait_for_selector("#cargando", state="hidden", timeout=5000)
+    assert pagina.text_content("#cg-pct").strip() == "100 %"
+    assert "anima" in pagina.get_attribute("#veredicto", "class")
     assert not errores, errores
 
 
@@ -97,6 +158,7 @@ def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     entrar_ejemplo(pagina)
     assert "cumple" in pagina.text_content("#v-tit")
     assert pagina.locator(".chequeo.mal").count() == 0
+    pagina.click("#tab-memoria")
     pagina.click("#btn-abrir")
     pagina.wait_for_function("document.querySelectorAll('#memoria .katex').length > 60")
     assert pagina.locator("#memoria .katex-error").count() == 0
@@ -172,6 +234,7 @@ def test_zapata_pequena_falla(navegador, url):
 def test_malla_insuficiente_en_el_ejemplo(navegador, url):
     pagina, _ = abrir(navegador, url)
     entrar_ejemplo(pagina)
+    pagina.click("#tab-refuerzo")
     pagina.click('#tipo-refuerzo [data-ref="malla"]')
     assert pagina.locator("#tabla-mallas tbody tr").count() == 20
     assert "Ninguna malla" in pagina.text_content("#malla-req")
@@ -184,6 +247,7 @@ def test_malla_en_zapata_liviana(navegador, url):
     editar(pagina, "columna", {"columna.Cx": "0.3", "columna.Cy": "0.3", "columna.barra": "4"})
     editar(pagina, "planta", {"zapata.Lx": "1.0", "zapata.Ly": "1.0"})
     pagina.fill('.dims [data-k="zapata.d"]', "0.15")
+    pagina.click("#tab-refuerzo")
     pagina.click('#tipo-refuerzo [data-ref="malla"]')
     assert pagina.locator("#tabla-mallas tr.sel.est-ok").count() == 1
 

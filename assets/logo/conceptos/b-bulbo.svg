@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>B bulbo</title>
+<rect x="108" y="20" width="40" height="64" fill="#000"/>
+<rect x="36" y="84" width="184" height="36" fill="#000"/>
+<g fill="none" stroke="#000" stroke-width="16">
+<path d="M52 136 A76 96 0 0 0 204 136"/>
+<path d="M84 136 A44 56 0 0 0 172 136"/>
+<path d="M114 136 A14 18 0 0 0 142 136"/>
+</g></svg>

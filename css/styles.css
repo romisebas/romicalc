@@ -1,80 +1,100 @@
-/* Diseño de Zapatas v3.1
- * Mundo: imprenta editorial. Tinta sobre pergamino, una sola familia (Manrope), sin sombras.
- * Formas: esquinas rectas en tarjetas y paneles; radio de 10px solo en lo que se toca.
- * Color: monocromo. Verde y rojo apagados solo para el estado; la esfera iridiscente solo en la portada.
+/* ZapatAPP v3.2
+ * Mundo: cielo de medianoche a través de vidrio (adaptado de la referencia Air). Lienzo negro, islas claras (haze).
+ * Tipos: Inter 500 para todo; Anton en mayúsculas para el titular de portada; una sola palabra en cursiva (Instrument Serif).
+ * Formas: tarjetas 12px, botones 8px, campos 4px, píldoras solo en filtros y segmentados. Sin sombras ni degradados.
+ * Color: monocromo; azul crepúsculo solo en titulares sobre lo oscuro, azul señal solo en enlaces; verde/rojo apagados para el estado.
  */
 
-@font-face { font-family: "Manrope"; src: url("../vendor/fonts/manrope-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("../vendor/fonts/inter-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Anton"; src: url("../vendor/fonts/anton-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Instrument Serif"; src: url("../vendor/fonts/instrument-serif-latin-400-italic.woff2") format("woff2"); font-style: italic; font-weight: 400; font-display: swap; }
 
+/* Oscuro por defecto: el lienzo es negro sin importar el tema del sistema */
 :root {
-  --fondo: #e5e4e0;          /* pergamino */
-  --superficie: #ffffff;     /* papel */
-  --superficie-2: #cdcdc9;   /* piedra */
-  --tinta: #1d1d1d;
-  --tinta-2: #3f3f3c;
-  --tinta-3: #5f5e5a;
-  --linea: #bfbebe;          /* ceniza */
-  --linea-fuerte: #8f8e8a;
-  --acento: #1d1d1d;         /* acción principal: relleno de tinta */
-  --acento-hover: #000000;
-  --acento-tinta: #e5e4e0;
-  --acento-suave: #d6d5d0;
-  --acero: #1d1d1d;
-  --dovela: #3f3f3c;
-  --concreto: #d6d5d0;
-  --concreto-borde: #3f3f3c;
-  --columna: #a3a29e;
-  --presion-lo: #f4f3f0;
-  --presion-hi: #8f8e8a;
-  --azul: #3f3f3c;           /* trazos de análisis (antes azul): tinta suave */
-  --ok: #3d6b47;
-  --ok-fondo: #d9e2d6;
-  --mal: #a3392c;
-  --mal-fondo: #ecd8d2;
-  --aviso: #6e5520;
-  --aviso-fondo: #e8dfca;
-  --foco: #1d1d1d;
+  --fondo: #000000;          /* black void */
+  --superficie: #111111;
+  --superficie-2: #1b1b1b;
+  --tinta: #ffffff;          /* whiteout */
+  --tinta-2: #c8c8c8;
+  --tinta-3: #8c8c8c;
+  --linea: #262626;
+  --linea-fuerte: #4d4d4d;
+  --acento: #ffffff;
+  --acento-hover: #f5f5f5;
+  --acento-tinta: #000000;
+  --acento-suave: #262626;
+  --titular: #6f8db5;        /* azul crepúsculo, aclarado para leerse sobre negro */
+  --acento-10: #6f8db5;      /* 60-30-10: el 10 % (pestaña activa, barra de carga, progreso) */
+  --enlace: #2b7fff;         /* azul señal: solo enlaces */
+  --vidrio: #8fa9cc;
+  --acero: #ffffff;
+  --dovela: #c8c8c8;
+  --concreto: #2a2a2a;
+  --concreto-borde: #8c8c8c;
+  --columna: #4d4d4d;
+  --presion-lo: #161616;
+  --presion-hi: #8c8c8c;
+  --azul: #c8c8c8;
+  --ok: #8fc29a;
+  --ok-fondo: #1c2b20;
+  --mal: #ec8b7e;
+  --mal-fondo: #3a1f1b;
+  --aviso: #d9bd7c;
+  --aviso-fondo: #33301f;
+  --foco: #ffffff;
   --sombra: none;
   --sombra-pop: none;
   --material: var(--fondo);
-  --sans: "Manrope", system-ui, "Segoe UI", sans-serif;
+  --sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --display: "Anton", "Inter", sans-serif;
+  --cursiva: "Instrument Serif", Georgia, serif;
   --serif: var(--sans);
   --mono: var(--sans);
-  --r-cont: 0px;
-  --r-ctl: 10px;
-  --r-tag: 10px;
+  --r-cont: 12px;
+  --r-ctl: 8px;
+  --r-campo: 4px;
+  --r-tag: 9999px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-io: cubic-bezier(0.77, 0, 0.175, 1);
-  --alto-barra: 60px;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --fondo: #1d1d1d; --superficie: #262624; --superficie-2: #33322f;
-    --tinta: #e5e4e0; --tinta-2: #c4c3be; --tinta-3: #9c9b96;
-    --linea: #3d3c39; --linea-fuerte: #6a6965;
-    --acento: #e5e4e0; --acento-hover: #ffffff; --acento-tinta: #1d1d1d; --acento-suave: #3d3c39;
-    --acero: #e5e4e0; --dovela: #c4c3be;
-    --concreto: #3d3c39; --concreto-borde: #9c9b96; --columna: #5f5e5a;
-    --presion-lo: #2a2a28; --presion-hi: #b8b7b2; --azul: #c4c3be;
-    --ok: #93bd9a; --ok-fondo: #26332a; --mal: #e08a7d; --mal-fondo: #3d2622;
-    --aviso: #d6b977; --aviso-fondo: #353020; --foco: #e5e4e0;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --fondo: #1d1d1d; --superficie: #262624; --superficie-2: #33322f;
-  --tinta: #e5e4e0; --tinta-2: #c4c3be; --tinta-3: #9c9b96;
-  --linea: #3d3c39; --linea-fuerte: #6a6965;
-  --acento: #e5e4e0; --acento-hover: #ffffff; --acento-tinta: #1d1d1d; --acento-suave: #3d3c39;
-  --acero: #e5e4e0; --dovela: #c4c3be;
-  --concreto: #3d3c39; --concreto-borde: #9c9b96; --columna: #5f5e5a;
-  --presion-lo: #2a2a28; --presion-hi: #b8b7b2; --azul: #c4c3be;
-  --ok: #93bd9a; --ok-fondo: #26332a; --mal: #e08a7d; --mal-fondo: #3d2622;
-  --aviso: #d6b977; --aviso-fondo: #353020; --foco: #e5e4e0;
+  --alto-barra: 64px;
   color-scheme: dark;
 }
+
+/* Claro (botón de tema) y las islas haze sobre el lienzo oscuro comparten la misma paleta de tinta */
+:root[data-theme="light"], .isla {
+  --superficie: #f5f5f5;     /* haze */
+  --superficie-2: #e8e8e8;
+  --tinta: #1b1b1b;          /* ink */
+  --tinta-2: #3d3d3d;
+  --tinta-3: #6b6b6b;
+  --linea: #e0e0e0;
+  --linea-fuerte: #b3b3b3;
+  --acento: #1b1b1b;
+  --acento-hover: #000000;
+  --acento-tinta: #ffffff;
+  --acento-suave: #e0e0e0;
+  --titular: #426188;
+  --acento-10: #426188;
+  --vidrio: #426188;
+  --acero: #1b1b1b;
+  --dovela: #3d3d3d;
+  --concreto: #dcdcdc;
+  --concreto-borde: #3d3d3d;
+  --columna: #a6a6a6;
+  --presion-lo: #fafafa;
+  --presion-hi: #8c8c8c;
+  --azul: #3d3d3d;
+  --ok: #3d6b47;
+  --ok-fondo: #dde8dc;
+  --mal: #a3392c;
+  --mal-fondo: #f1dcd7;
+  --aviso: #6e5520;
+  --aviso-fondo: #efe6cf;
+  --foco: #1b1b1b;
+  color-scheme: light;
+}
+:root[data-theme="light"] { --fondo: #ffffff; }
+.isla { --fondo: #f5f5f5; color: var(--tinta); }
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }

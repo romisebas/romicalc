@@ -16,7 +16,7 @@
   function colores() {
     const cs = getComputedStyle(document.documentElement);
     const c = (n, d) => (cs.getPropertyValue(n).trim() || d);
-    return { acero: c('--acero', '#1d1d1d'), concreto: c('--concreto', '#d5dade'), borde: c('--concreto-borde', '#56606b'), linea: c('--linea-fuerte', '#b3bcc5'), tinta: c('--tinta', '#1b232c') };
+    return { acero: c('--acero', '#1d1d1d'), concreto: c('--vidrio', '#8fa9cc'), borde: c('--concreto-borde', '#56606b'), linea: c('--linea-fuerte', '#b3bcc5'), tinta: c('--tinta', '#1b232c') };
   }
 
   function reproducir(cont, opciones) {
@@ -100,7 +100,7 @@
 
     // Concreto de la zapata: crece desde el fondo
     const gZ = new THREE.BoxGeometry(Lx, h, Ly); gZ.translate(0, h / 2, 0);
-    const matZ = new THREE.MeshStandardMaterial({ color: col.concreto, roughness: 0.92, transparent: true, opacity: 0 });
+    const matZ = new THREE.MeshStandardMaterial({ color: col.concreto, roughness: 0.1, transparent: true, opacity: 0, depthWrite: false });
     const zap = new THREE.Mesh(gZ, matZ);
     const bordeZ = new THREE.LineSegments(new THREE.EdgesGeometry(gZ), new THREE.LineBasicMaterial({ color: col.borde, transparent: true, opacity: 0 }));
     zap.add(bordeZ);
@@ -109,7 +109,7 @@
 
     // Columna: crece hacia arriba; estribos aparecen en secuencia
     const gC = new THREE.BoxGeometry(Cx, altoCol, Cy); gC.translate(0, altoCol / 2, 0);
-    const matC = new THREE.MeshStandardMaterial({ color: col.concreto, roughness: 0.9, transparent: true, opacity: 0.55 });
+    const matC = new THREE.MeshStandardMaterial({ color: col.concreto, roughness: 0.1, transparent: true, opacity: 0.25, depthWrite: false });
     const colm = new THREE.Mesh(gC, matC);
     colm.add(new THREE.LineSegments(new THREE.EdgesGeometry(gC), new THREE.LineBasicMaterial({ color: col.borde })));
     colm.position.y = h;
@@ -149,7 +149,7 @@
       if (!suave) dovelas.position.y = 1.6 * (1 - eOut(kd));
       const kz = eOut(fase(t, 2.7, 3.5));
       zap.scale.y = Math.max(0.001, kz);
-      matZ.opacity = 0.2 + 0.6 * kz;
+      matZ.opacity = 0.1 + 0.18 * kz; // vidrio: el acero se ve por dentro
       bordeZ.material.opacity = kz;
       const kc = eOut(fase(t, 3.4, 4.2));
       colm.visible = kc > 0;
