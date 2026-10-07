@@ -737,3 +737,41 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .aviso-flotante.con-accion { pointer-events: auto; display: flex; align-items: center; gap: 14px; }
 .aviso-accion { border: 0; background: none; color: var(--acento-10); font: 600 14px var(--sans); cursor: pointer; padding: 4px 6px; border-radius: var(--r-ctl); }
 .aviso-accion:hover { text-decoration: underline; }
+
+/* ===================================================================== v1.1 carga: el proyecto se dibuja */
+.cargando .cg-cuerpo { width: min(720px, 100%); }
+.cg-escena { width: 100%; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px 32px; align-items: center; position: relative; }
+.cg-escena[hidden] { display: none; }
+.cg-plano svg { width: 100%; height: auto; display: block; }
+.cg-plano text { font: 500 11px var(--sans); fill: var(--tinta-2); }
+.cg-contorno { fill: none; stroke: var(--tinta); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.cg-presion { opacity: 0; }
+.cg-cotas path { stroke: var(--tinta-3); stroke-width: 1; fill: none; }
+.cg-cotas { opacity: 0; }
+.cg-columna { fill: var(--tinta-3); stroke: var(--tinta); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; transform: scale(0); }
+.cargando.dibuja .cg-contorno { animation: trazo .7s var(--ease-out) .1s forwards; }
+.cargando.dibuja .cg-cotas { animation: detalleAparece .4s ease .6s forwards; }
+.cargando.dibuja .cg-columna { animation: columnaAparece .45s cubic-bezier(.34, 1.56, .64, 1) .75s forwards; }
+.cargando.dibuja .cg-presion { animation: detalleAparece .7s ease 1s forwards; }
+@keyframes columnaAparece { to { transform: none; } }
+.cg-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cg-chequeo { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 10px; font: 500 15px/1 var(--sans); color: var(--tinta-3); opacity: .35; transition: opacity .3s ease, color .3s ease; }
+.cg-ico { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--linea-fuerte); transition: background-color .3s ease, border-color .3s ease; }
+.cg-ico svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; }
+.cg-u { font-feature-settings: "tnum" 1; color: var(--tinta-3); }
+.cg-chequeo.listo { opacity: 1; color: var(--tinta); }
+.cg-chequeo.listo .cg-ico { border-color: transparent; background: #3d6b47; }
+.cg-chequeo.mal.listo .cg-ico { background: var(--mal); }
+.cg-chequeo.listo .cg-ico svg { transition: stroke-dashoffset .35s var(--ease-out) .1s; stroke-dashoffset: 0; }
+.cg-sello {
+  position: absolute; left: 30%; top: 50%; translate: -50% -50%; rotate: -12deg; scale: 2.2; opacity: 0; pointer-events: none;
+  padding: 10px 20px; border: 4px solid #3d6b47; border-radius: 12px; color: #3d6b47; font: 400 40px/1 var(--display); text-transform: uppercase; letter-spacing: .04em;
+  background: color-mix(in srgb, var(--fondo) 75%, transparent);
+}
+.cg-sello.mal { border-color: var(--mal); color: var(--mal); }
+.cg-escena.con-sello .cg-sello { animation: selloCae .45s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+@keyframes selloCae { to { scale: 1; opacity: 1; } }
+@media (max-width: 700px) {
+  .cg-escena { grid-template-columns: minmax(0, 1fr); }
+  .cg-sello { left: 50%; top: 30%; font-size: 30px; }
+}

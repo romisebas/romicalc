@@ -432,7 +432,7 @@
     if (terminoNuevo && R) {
       wz.modo = 'editar';
       mostrarPestana('veredicto');
-      Cargando.mostrar('Calculando').then(animarVeredicto);
+      Cargando.mostrar('Calculando', R).then(animarVeredicto);
     }
   }
 
@@ -599,7 +599,7 @@
     encuadrado = false;
     mostrarPestana('veredicto');
     recalcular('inicio');
-    if (R && conCarga) Cargando.mostrar('Abriendo proyecto').then(animarVeredicto);
+    if (R && conCarga) Cargando.mostrar('Abriendo proyecto', R).then(animarVeredicto);
     else if (R) animarVeredicto();
     Mov.revelar($$('.vistas .vista, #bloque-refuerzo, #bloque-memoria'));
     window.scrollTo(0, 0);
