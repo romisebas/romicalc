@@ -170,6 +170,32 @@ def test_pie_creditos_y_sin_validacion(navegador, url):
     assert not errores, errores
 
 
+def test_unidades_y_coeficientes_por_sistema(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    r = pagina.evaluate("""() => {
+      const U = Unidades, T = Tipos['aislada-momento'];
+      const calc = (s) => { const e = T.clone(T.EJEMPLO); e.unid = s; return T.calcular(T.preparar(e)); };
+      const c = calc('curso'), si = calc('si'), en = calc('ingles');
+      return {
+        fcMPa: U.a(280, 'esfuerzo', 'si'), fcPsi: U.a(280, 'esfuerzo', 'ingles'), pKip: U.a(1, 'fuerza', 'ingles'),
+        qKpa: U.a(12, 'presion', 'si'), lFt: U.a(2.5, 'longitud', 'ingles'),
+        k: [U.coef('curso').pz1, U.coef('si').pz1, U.coef('ingles').pz3],
+        pz: [c.pz.phiVc, si.pz.phiVc, en.pz.phiVc], cu: [c.cu.x.phiVc, si.cu.x.phiVc, en.cu.x.phiVc],
+        ld: [c.ld.ldc, si.ld.ldc, en.ld.ldc], det: [c.chequeos[1].det, si.chequeos[1].det, en.chequeos[1].det],
+      };
+    }""")
+    assert abs(r["fcMPa"] - 27.46) < 0.01 and abs(r["fcPsi"] - 3982.5) < 1 and abs(r["pKip"] - 2.2046) < 1e-3
+    assert abs(r["qKpa"] - 117.68) < 0.01 and abs(r["lFt"] - 8.2021) < 1e-3
+    assert r["k"] == [0.53, 0.17, 4]
+    # Las ecuaciones en MPa y en psi dan resultados cercanos (no idénticos) a los del curso
+    for lista in (r["pz"], r["cu"]):
+        assert all(abs(x / lista[0] - 1) < 0.07 for x in lista), lista  # el curso usa 1.0√f'c en C.11-33
+    assert r["pz"][1] != r["pz"][0]
+    assert all(abs(x / r["ld"][0] - 1) < 0.1 for x in r["ld"]), r["ld"]
+    assert "tonf" in r["det"][0] and "kN" in r["det"][1] and "kip" in r["det"][2]
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

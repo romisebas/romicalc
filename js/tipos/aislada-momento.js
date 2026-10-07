@@ -69,6 +69,7 @@
   function preparar(e) {
     const c = clone(e);
     ['D', 'L'].forEach((t) => ['Mx', 'My'].forEach((m) => { if (vacio(c.cargas[t][m])) c.cargas[t][m] = 0; }));
+    if (!c.unid) c.unid = global.Unidades ? global.Unidades.actual() : 'curso'; // sistema de las ecuaciones
     return c;
   }
 
@@ -173,6 +174,11 @@
     return Object.assign({ lista, gob }, gob);
   }
 
+  // Coeficientes de la norma según el sistema de unidades (ver js/nucleo/unidades.js)
+  function coef(inp) {
+    return global.Unidades ? global.Unidades.coef(inp.unid || 'curso') : { sistema: 'curso', eq: { pz1: 0.53, pz2: 0.27, pz3: 1.0, cu: 0.53 } };
+  }
+
   // Resistencia a cortante en tonf: k·λ·√f'c·b·d con b, d en cm y f'c en kgf/cm².
   function vc(k, lambda, fc, b_m, d_m) {
     return k * lambda * Math.sqrt(fc) * (b_m * 100) * (d_m * 100) / 1000;
@@ -185,9 +191,10 @@
     const bo = 2 * (Cx + d) + 2 * (Cy + d);
     const A2D = Math.max(Lx * Ly - (Cx + d) * (Cy + d), 0);
     const Vu = su * A2D;
-    const Vc1 = vc(0.53 * (1 + 2 / beta), lambda, fc, bo, d);
-    const Vc2 = vc(0.27 * (alpha * d / bo + 2), lambda, fc, bo, d);
-    const Vc3 = vc(1.0, lambda, fc, bo, d);
+    const C = coef(inp).eq;
+    const Vc1 = vc(C.pz1 * (1 + 2 / beta), lambda, fc, bo, d);
+    const Vc2 = vc(C.pz2 * (alpha * d / bo + 2), lambda, fc, bo, d);
+    const Vc3 = vc(C.pz3, lambda, fc, bo, d);
     const Vc = Math.min(Vc1, Vc2, Vc3);
     const phiVc = phiV * Vc;
     const dentro = (Cx + d) < Lx && (Cy + d) < Ly;
@@ -198,8 +205,9 @@
     const { Cx, Cy } = inp.columna;
     const { fc, lambda, phiV } = inp.materiales;
     const kx = (Lx - Cx) / 2 - d, ky = (Ly - Cy) / 2 - d;
-    const x = { k: kx, A: Ly * Math.max(kx, 0), phiVc: phiV * vc(0.53, lambda, fc, Ly, d) };
-    const y = { k: ky, A: Lx * Math.max(ky, 0), phiVc: phiV * vc(0.53, lambda, fc, Lx, d) };
+    const kc = coef(inp).eq.cu;
+    const x = { k: kx, A: Ly * Math.max(kx, 0), phiVc: phiV * vc(kc, lambda, fc, Ly, d) };
+    const y = { k: ky, A: Lx * Math.max(ky, 0), phiVc: phiV * vc(kc, lambda, fc, Lx, d) };
     [x, y].forEach((o) => { o.Vu = su * o.A; o.ok = o.Vu <= o.phiVc; o.util = o.Vu / o.phiVc; });
     return { x, y, util: Math.max(x.util, y.util) };
   }
@@ -243,12 +251,24 @@
     const { fc, fy, lambda } = inp.materiales;
     const bar = RF.BARS[inp.columna.barra];
     const fyM = fy * KGFCM2_A_MPA, fcM = fc * KGFCM2_A_MPA;
-    const l1 = 0.24 * bar.db * fyM / (lambda * Math.sqrt(fcM));
-    const l2 = 0.043 * bar.db * fyM;
-    const ldc = Math.max(l1, l2, 200);
+    let l1, l2, lmin;
+    if (inp.unid === 'ingles') {
+      // ACI 318 25.4.9.2 en psi y pulgadas: 0.02·fy·db/(λ√f'c) ≥ 0.0003·fy·db ≥ 8 in
+      const aPsi = global.Unidades.a(1, 'esfuerzo', 'ingles');
+      const fyP = fy * aPsi, fcP = fc * aPsi, dbIn = bar.db / 25.4;
+      l1 = 0.02 * fyP * dbIn / (lambda * Math.sqrt(fcP)) * 25.4;
+      l2 = 0.0003 * fyP * dbIn * 25.4;
+      lmin = 8 * 25.4;
+    } else {
+      // NSR-10 C.12.3.2 en MPa y mm (el curso también la usa en MPa)
+      l1 = 0.24 * bar.db * fyM / (lambda * Math.sqrt(fcM));
+      l2 = 0.043 * bar.db * fyM;
+      lmin = 200;
+    }
+    const ldc = Math.max(l1, l2, lmin);
     const disponible = d * 1000; // h − r, como en el esquema del PDF (pág. 14)
     const tabla = Math.abs(fyM - 412) < 15 ? RF.interpTabla(inp.columna.barra, fcM) : null;
-    return { barra: inp.columna.barra, db: bar.db, fyM, fcM, l1, l2, ldc, disponible, tabla, ok: disponible >= ldc, util: ldc / disponible };
+    return { barra: inp.columna.barra, db: bar.db, fyM, fcM, l1, l2, lmin, ldc, disponible, tabla, ok: disponible >= ldc, util: ldc / disponible };
   }
 
   function seleccionRefuerzo(inp, fx, fyv, Lx, Ly, h, r) {
@@ -310,34 +330,37 @@
     const flexOk = fx.ok && fyv.ok && ref.ok;
     const flexUtil = Math.max(ref.util, fx.rho / fx.rhoMax, fyv.rho / fyv.rhoMax);
 
+    const sis = inp.unid || 'curso';
+    const N = (x, mag) => (global.Unidades ? global.Unidades.num(x, mag, sis) : Number(x).toFixed(2));
+    const Uu = (mag) => (global.Unidades ? global.Unidades.u(mag, sis) : '');
     const chequeos = [
       { id: 'serv', titulo: 'Esfuerzos sobre el suelo', ok: serv.okMax && serv.okMin, util: serv.util,
-        det: 'σmax ' + serv.smax.toFixed(2) + ' de ' + qadm.toFixed(2) + ' tonf/m², caso ' + serv.caso },
+        det: 'σmax ' + N(serv.smax, 'presion') + ' de ' + N(qadm, 'presion') + ' ' + Uu('presion') + ', caso ' + serv.caso },
       { id: 'pz', titulo: 'Cortante en dos direcciones', ok: pz.ok, util: pz.util,
-        det: 'Vu ' + pz.Vu.toFixed(2) + ' de φVc ' + pz.phiVc.toFixed(2) + ' tonf' },
+        det: 'Vu ' + N(pz.Vu, 'fuerza') + ' de φVc ' + N(pz.phiVc, 'fuerza') + ' ' + Uu('fuerza') },
       { id: 'cu', titulo: 'Cortante en una dirección', ok: cu.x.ok && cu.y.ok, util: cu.util,
-        det: 'X ' + cu.x.Vu.toFixed(2) + ' de ' + cu.x.phiVc.toFixed(2) + ', Y ' + cu.y.Vu.toFixed(2) + ' de ' + cu.y.phiVc.toFixed(2) + ' tonf' },
+        det: 'X ' + N(cu.x.Vu, 'fuerza') + ' de ' + N(cu.x.phiVc, 'fuerza') + ', Y ' + N(cu.y.Vu, 'fuerza') + ' de ' + N(cu.y.phiVc, 'fuerza') + ' ' + Uu('fuerza') },
       { id: 'fl', titulo: 'Flexión y refuerzo', ok: flexOk, util: flexUtil,
         det: ref.tipo === 'malla' ? 'Malla ' + ref.resumenX : 'X ' + ref.resumenX + ', Y ' + ref.resumenY },
       { id: 'ap', titulo: 'Aplastamiento', ok: ap.ok1 && ap.ok2, util: ap.util,
-        det: 'Pu ' + ult.P.toFixed(2) + ' de ' + Math.min(ap.phiPnb1, ap.phiPnb2).toFixed(2) + ' tonf' },
+        det: 'Pu ' + N(ult.P, 'fuerza') + ' de ' + N(Math.min(ap.phiPnb1, ap.phiPnb2), 'fuerza') + ' ' + Uu('fuerza') },
       { id: 'ld', titulo: 'Longitud de desarrollo', ok: ld.ok && dMinOk, util: ld.util,
-        det: 'ldc ' + (ld.ldc / 10).toFixed(1) + ' cm de ' + (ld.disponible / 10).toFixed(1) + ' cm disponibles' },
+        det: 'ldc ' + N(ld.ldc, 'ldmm') + ' de ' + N(ld.disponible, 'ldmm') + ' ' + Uu('ldmm') + ' disponibles' },
     ];
 
     // Desigualdad de cada chequeo en LaTeX (para el resumen del PDF)
-    const n2 = (x) => Number(x).toFixed(2);
     const rel = (ok) => (ok ? '\\le' : '>');
     const relG = (ok) => (ok ? '\\ge' : '<');
-    const T = '\\,\\text{tonf}';
-    chequeos[0].tex = '\\sigma_{max} = ' + n2(serv.smax) + ' \\;' + rel(serv.okMax) + '\\; \\sigma_{adm} = ' + n2(qadm) + '\\,\\text{tonf/m}^2';
-    chequeos[1].tex = 'V_u = ' + n2(pz.Vu) + ' \\;' + rel(pz.ok) + '\\; \\phi V_c = ' + n2(pz.phiVc) + T;
-    chequeos[2].tex = 'V_{ux} = ' + n2(cu.x.Vu) + ' \\;' + rel(cu.x.ok) + '\\; ' + n2(cu.x.phiVc) + ',\\quad V_{uy} = ' + n2(cu.y.Vu) + ' \\;' + rel(cu.y.ok) + '\\; ' + n2(cu.y.phiVc) + T;
+    const UT = (mag) => (global.Unidades ? global.Unidades.tex(mag, sis) : '');
+    const T = UT('fuerza');
+    chequeos[0].tex = '\\sigma_{max} = ' + N(serv.smax, 'presion') + ' \\;' + rel(serv.okMax) + '\\; \\sigma_{adm} = ' + N(qadm, 'presion') + UT('presion');
+    chequeos[1].tex = 'V_u = ' + N(pz.Vu, 'fuerza') + ' \\;' + rel(pz.ok) + '\\; \\phi V_c = ' + N(pz.phiVc, 'fuerza') + T;
+    chequeos[2].tex = 'V_{ux} = ' + N(cu.x.Vu, 'fuerza') + ' \\;' + rel(cu.x.ok) + '\\; ' + N(cu.x.phiVc, 'fuerza') + ',\\quad V_{uy} = ' + N(cu.y.Vu, 'fuerza') + ' \\;' + rel(cu.y.ok) + '\\; ' + N(cu.y.phiVc, 'fuerza') + T;
     chequeos[3].tex = ref.tipo === 'malla'
-      ? 'a_{s,prov} = ' + n2(Math.min(ref.sel.provX, ref.sel.provY)) + ' \\;' + relG(ref.ok) + '\\; a_{s,req} = ' + n2(Math.max(ref.reqX, ref.reqY)) + '\\,\\text{cm}^2/\\text{m}'
-      : 'A_{sx} = ' + n2(ref.selX.AsProv) + ' \\;' + relG(ref.selX.AsProv >= fx.As) + '\\; ' + n2(fx.As) + ',\\quad A_{sy} = ' + n2(ref.selY.AsProv) + ' \\;' + relG(ref.selY.AsProv >= fyv.As) + '\\; ' + n2(fyv.As) + '\\,\\text{cm}^2';
-    chequeos[4].tex = 'P_u = ' + n2(ult.P) + ' \\;' + rel(ap.ok1 && ap.ok2) + '\\; \\phi P_{nb} = ' + n2(Math.min(ap.phiPnb1, ap.phiPnb2)) + T;
-    chequeos[5].tex = 'l_{dc} = ' + (ld.ldc / 10).toFixed(1) + ' \\;' + rel(ld.ok) + '\\; h - r = ' + (ld.disponible / 10).toFixed(1) + '\\,\\text{cm}';
+      ? 'a_{s,prov} = ' + N(Math.min(ref.sel.provX, ref.sel.provY), 'aceroM') + ' \\;' + relG(ref.ok) + '\\; a_{s,req} = ' + N(Math.max(ref.reqX, ref.reqY), 'aceroM') + UT('aceroM')
+      : 'A_{sx} = ' + N(ref.selX.AsProv, 'acero') + ' \\;' + relG(ref.selX.AsProv >= fx.As) + '\\; ' + N(fx.As, 'acero') + ',\\quad A_{sy} = ' + N(ref.selY.AsProv, 'acero') + ' \\;' + relG(ref.selY.AsProv >= fyv.As) + '\\; ' + N(fyv.As, 'acero') + UT('acero');
+    chequeos[4].tex = 'P_u = ' + N(ult.P, 'fuerza') + ' \\;' + rel(ap.ok1 && ap.ok2) + '\\; \\phi P_{nb} = ' + N(Math.min(ap.phiPnb1, ap.phiPnb2), 'fuerza') + T;
+    chequeos[5].tex = 'l_{dc} = ' + N(ld.ldc, 'ldmm') + ' \\;' + rel(ld.ok) + '\\; h - r = ' + N(ld.disponible, 'ldmm') + UT('ldmm');
 
     return {
       inp, Lx, Ly, d, r, h, serv, ult, pz, cu, fx, fy: fyv, banda, ref,
