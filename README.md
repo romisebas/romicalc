@@ -2,6 +2,8 @@
 
 Diseño de zapatas de concreto reforzado según la **NSR-10** (Reglamento Colombiano de Construcción Sismo Resistente, Título C), con memoria de cálculo paso a paso, planos y vista 3D.
 
+**Úsala en línea: [zapatapp.netlify.app](https://zapatapp.netlify.app/)**
+
 ![Portada de ZapatAPP](docs/capturas/portada.png)
 
 ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La versión 1.0 diseña **zapatas aisladas con carga axial y momento en dos direcciones**; los demás tipos (concéntrica, medianera, esquinera, combinada y corrida) llegarán en próximas versiones.
@@ -25,6 +27,8 @@ ZapatAPP es una aplicación web estática: no necesita servidor ni instalación 
 | ![Veredicto](docs/capturas/veredicto.png) | ![Memoria por diapositivas](docs/capturas/memoria.png) | ![Refuerzo elegido](docs/capturas/refuerzo.png) |
 
 ## Cómo usarla
+
+La forma más fácil es abrir [zapatapp.netlify.app](https://zapatapp.netlify.app/). Para usarla en tu computador:
 
 1. Descarga o clona el repositorio.
 2. Abre una terminal en la carpeta y levanta un servidor local (los navegadores bloquean algunos scripts si se abre `index.html` directamente):
