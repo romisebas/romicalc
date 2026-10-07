@@ -56,9 +56,40 @@
     })(base, obj);
     return base;
   }
+  // Magnitud física de cada campo numérico (para convertir al sistema de unidades activo)
+  const MAGNITUD = {
+    'cargas.D.P': 'fuerza', 'cargas.L.P': 'fuerza', 'cargas.D.Mx': 'momento', 'cargas.D.My': 'momento', 'cargas.L.Mx': 'momento', 'cargas.L.My': 'momento',
+    'suelo.qadm': 'presion', 'suelo.Df': 'longitud', 'suelo.gs': 'peso', 'suelo.gc': 'peso',
+    'columna.Cx': 'longitud', 'columna.Cy': 'longitud', 'materiales.fc': 'esfuerzo', 'materiales.fy': 'esfuerzo',
+    'zapata.Lx': 'longitud', 'zapata.Ly': 'longitud', 'zapata.d': 'longitud', 'zapata.r': 'longitud',
+  };
+  // Valor interno → texto del campo en el sistema activo (sin ruido de coma flotante)
+  function mostrar(k, v) {
+    if (v == null || v === '') return '';
+    const mag = MAGNITUD[k];
+    return mag && Unidades.actual() !== 'curso' ? String(Number(Unidades.a(v, mag).toPrecision(6))) : String(v);
+  }
+  function aInterno(k, v) { const mag = MAGNITUD[k]; return mag && v != null && Unidades.actual() !== 'curso' ? Number(Unidades.de(v, mag).toPrecision(12)) : v; }
+  // Etiquetas de unidades y paso de los campos según el sistema
+  function pintarUnidades() {
+    $$('[data-u]').forEach((el) => { el.textContent = Unidades.u(el.dataset.u); });
+    $$('input[type="number"][data-k]').forEach((el) => {
+      if (!MAGNITUD[el.dataset.k]) return;
+      if (!el.dataset.paso) el.dataset.paso = el.getAttribute('step') || 'any';
+      el.setAttribute('step', Unidades.actual() === 'curso' ? el.dataset.paso : 'any');
+    });
+  }
+
+  function cambiarUnidades(id) {
+    Unidades.usar(id);
+    pintarUnidades();
+    aFormulario();
+    recalcular('programa');
+  }
+
   function ajustes() {
-    try { return Object.assign({ anim: 'activadas', sinIntro: false }, JSON.parse(localStorage.getItem(CLAVE_AJUSTES)) || {}); }
-    catch (e) { return { anim: 'activadas', sinIntro: false }; }
+    try { return Object.assign({ anim: 'activadas', sinIntro: false, unid: 'curso' }, JSON.parse(localStorage.getItem(CLAVE_AJUSTES)) || {}); }
+    catch (e) { return { anim: 'activadas', sinIntro: false, unid: 'curso' }; }
   }
   function guardarAjustes(a) { try { localStorage.setItem(CLAVE_AJUSTES, JSON.stringify(a)); } catch (e) { /* sin almacenamiento */ } }
 
@@ -82,7 +113,7 @@
     $$('[data-k]').forEach((el) => {
       const v = leer(el.dataset.k);
       if (el.type === 'checkbox') el.checked = !!v;
-      else el.value = v == null ? '' : v;
+      else el.value = mostrar(el.dataset.k, v);
       el.classList.remove('invalido');
     });
     $('#campos-peso').classList.toggle('apagado', !estado.suelo.pesoPropio);
@@ -103,10 +134,10 @@
     }
     el.classList.remove('invalido');
     el.removeAttribute('aria-invalid');
-    escribir(el.dataset.k, val);
+    escribir(el.dataset.k, aInterno(el.dataset.k, val));
     if (el.dataset.k === 'suelo.pesoPropio') $('#campos-peso').classList.toggle('apagado', !val);
     // sincroniza el mismo campo si aparece en otro lugar (asistente y ajuste rápido)
-    $$('[data-k="' + el.dataset.k + '"]').forEach((o) => { if (o !== el && o.type !== 'checkbox') o.value = val == null ? '' : val; });
+    $$('[data-k="' + el.dataset.k + '"]').forEach((o) => { if (o !== el && o.type !== 'checkbox') o.value = val == null ? '' : el.value; });
     recalcular('usuario');
   }
 
@@ -170,11 +201,12 @@
     okPrevio = ok;
     const fallas = R.chequeos.filter((c) => !c.ok).map((c) => c.titulo.toLowerCase());
     $('#v-det').textContent = ok
-      ? 'Gobierna ' + R.ult.gob.id + ' con σu = ' + f(R.ult.su) + ' tonf/m². Toda la base trabaja a compresión (caso ' + R.serv.caso + ').'
+      ? 'Gobierna ' + R.ult.gob.id + ' con σu = ' + Unidades.fmt(R.ult.su, 'presion') + '. Toda la base trabaja a compresión (caso ' + R.serv.caso + ').'
       : 'Falla en ' + fallas.join(', ') + '. Revise las dimensiones o el refuerzo.';
-    const cifras = { Lx: [R.Lx, 2], Ly: [R.Ly, 2], h: [R.h, 2], smax: [R.serv.smax, 2], util: [R.utilMax * 100, 0] };
+    const UA = (x, mag) => Unidades.a(x, mag);
+    const cifras = { Lx: [UA(R.Lx, 'longitud'), 2], Ly: [UA(R.Ly, 'longitud'), 2], h: [UA(R.h, 'longitud'), 2], smax: [UA(R.serv.smax, 'presion'), Unidades.dec('presion')], util: [R.utilMax * 100, 0] };
     Object.keys(cifras).forEach((k) => Mov.contar($('[data-cifra="' + k + '"]'), cifras[k][0], cifras[k][1], animar));
-    $('[data-cifra-txt="qadm"]').textContent = f(estado.suelo.qadm);
+    $('[data-cifra-txt="qadm"]').textContent = Unidades.num(estado.suelo.qadm, 'presion');
     $('[data-cifra="smax"]').classList.toggle('es-mal', !R.serv.okMax);
     $('[data-cifra="util"]').classList.toggle('es-mal', R.utilMax > 1);
     $('#chequeos').innerHTML = R.chequeos.map((c) => {
@@ -232,11 +264,11 @@
     const filas = ops.map((o) =>
       '<tr class="est-' + o.estado + (o.barra === sel ? ' sel' : '') + '">' +
       '<td><label class="radio"><input type="radio" name="bar' + dir + '" value="' + o.barra + '"' + (o.barra === sel ? ' checked' : '') + '> #' + o.barra + '</label></td>' +
-      '<td class="num">' + o.n + '</td><td class="num">' + f(o.s) + '</td><td class="num">' + f(o.AsProv) + '</td>' +
+      '<td class="num">' + o.n + '</td><td class="num">' + Unidades.num(o.s, 'longitud') + '</td><td class="num">' + Unidades.num(o.AsProv, 'acero') + '</td>' +
       '<td class="num">' + f(o.ratio * 100, 0) + '%</td>' +
       '<td><span class="punto est-' + o.estado + '" aria-hidden="true"></span><span class="motivo">' + o.motivo + (o.gobiernaSmax && o.estado !== 'mal' ? ', por smax' : '') + '</span></td></tr>').join('');
-    return '<h3>Paralelas a ' + dir + '<small>As requerido ' + f(req) + ' cm², repartido en ' + f(b) + ' m</small></h3>' +
-      '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Barra</th><th>n</th><th>s (m)</th><th>As prov. (cm²)</th><th>Prov./req.</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';
+    return '<h3>Paralelas a ' + dir + '<small>As requerido ' + Unidades.fmt(req, 'acero') + ', repartido en ' + Unidades.fmt(b, 'longitud') + '</small></h3>' +
+      '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Barra</th><th>n</th><th>s (' + Unidades.u('longitud') + ')</th><th>As prov. (' + Unidades.u('acero') + ')</th><th>Prov./req.</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';
   }
 
   function tablaMallas(rf) {
@@ -244,9 +276,9 @@
       '<tr class="est-' + o.estado + (o.ref === rf.ref ? ' sel' : '') + '">' +
       '<td><label class="radio"><input type="radio" name="malla" value="' + o.ref + '"' + (o.ref === rf.ref ? ' checked' : '') + '> ' + o.ref + '</label><span class="alt">' + o.alt + '</span></td>' +
       '<td class="num">' + o.dL + ' / ' + o.dT + '</td><td class="num">' + o.sL + ' / ' + o.sT + '</td>' +
-      '<td class="num">' + f(o.provX) + '</td><td class="num">' + f(o.provY) + '</td><td class="num">' + o.capas + '</td>' +
+      '<td class="num">' + Unidades.num(o.provX, 'aceroM') + '</td><td class="num">' + Unidades.num(o.provY, 'aceroM') + '</td><td class="num">' + o.capas + '</td>' +
       '<td><span class="punto est-' + o.estado + '" aria-hidden="true"></span><span class="motivo">' + o.motivo + '</span></td></tr>').join('');
-    return '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Referencia</th><th>Alambre L / T (mm)</th><th>Separación L / T (mm)</th><th>As en X (cm²/m)</th><th>As en Y (cm²/m)</th><th>Capas</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';
+    return '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Referencia</th><th>Alambre L / T (mm)</th><th>Separación L / T (mm)</th><th>As en X (' + Unidades.u('aceroM') + ')</th><th>As en Y (' + Unidades.u('aceroM') + ')</th><th>Capas</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';
   }
 
   function pintarRefuerzo() {
@@ -264,7 +296,7 @@
     $$('#capas-malla button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.capas === String(estado.acero.capas))));
     if (movers.capas) movers.capas();
     const ninguna = rf.ops.every((o) => o.estado === 'mal');
-    $('#malla-req').innerHTML = 'Acero requerido por metro: <b class="num">' + f(rf.reqX) + '</b> cm²/m en X y <b class="num">' + f(rf.reqY) + '</b> cm²/m en Y, con fy = ' + estado.acero.fyMalla + ' kgf/cm².' +
+    $('#malla-req').innerHTML = 'Acero requerido: <b class="num">' + Unidades.fmt(rf.reqX, 'aceroM') + '</b> en X y <b class="num">' + Unidades.fmt(rf.reqY, 'aceroM') + '</b> en Y, con fy = ' + Unidades.fmt(estado.acero.fyMalla, 'esfuerzo') + '.' +
       (ninguna ? ' <span class="txt-mal">Ninguna malla del catálogo alcanza, ni con 2 capas. Use barras corrugadas o reduzca la demanda.</span>' : '') +
       (rf.sel.traslapo ? ' <span class="txt-aviso">La zapata excede el panel de 6.00 × 2.35 m y requiere traslapos.</span>' : '');
     $('#tabla-mallas').innerHTML = tablaMallas(rf);
@@ -377,7 +409,7 @@
       $('#wz-planta').innerHTML = Dibujo.planta(vp, 'presion', 'wz');
       const ok = vp.serv.okMax && vp.serv.okMin;
       v.className = 'wz-veredicto ' + (ok ? 'ok' : 'mal');
-      v.innerHTML = '<b>' + (ok ? 'Las dimensiones cumplen' : 'Las dimensiones no cumplen') + '</b><span>σmax ' + f(vp.serv.smax) + ' de ' + f(estado.suelo.qadm) + ' tonf/m², σmin ' + f(vp.serv.smin) + (vp.serv.smin > 0 ? ', sin tensión' : ', hay tensión') + '</span>';
+      v.innerHTML = '<b>' + (ok ? 'Las dimensiones cumplen' : 'Las dimensiones no cumplen') + '</b><span>σmax ' + Unidades.num(vp.serv.smax, 'presion') + ' de ' + Unidades.fmt(estado.suelo.qadm, 'presion') + ', σmin ' + Unidades.num(vp.serv.smin, 'presion') + (vp.serv.smin > 0 ? ', sin tensión' : ', hay tensión') + '</span>';
     }
     if (id === 'altura') {
       const ul = $('#wz-altura');
@@ -488,25 +520,27 @@
   function datosEntrada() {
     const e = estado, rd = Dibujo.refuerzoDibujo(R);
     const v = (x) => (x == null ? '0' : String(x));
+    const m = (x, mag) => Unidades.num(x == null ? 0 : x, mag); // valor convertido
+    const u = (mag) => Unidades.u(mag);
     return [
       { grupo: 'Cargas de servicio', filas: [
-        ['Carga axial muerta (PP+CM)', 'P_D', v(e.cargas.D.P), 'tonf'], ['Momento muerto en X', 'M_{x,D}', v(e.cargas.D.Mx), 'tonf·m'], ['Momento muerto en Y', 'M_{y,D}', v(e.cargas.D.My), 'tonf·m'],
-        ['Carga axial viva (CV)', 'P_L', v(e.cargas.L.P), 'tonf'], ['Momento vivo en X', 'M_{x,L}', v(e.cargas.L.Mx), 'tonf·m'], ['Momento vivo en Y', 'M_{y,L}', v(e.cargas.L.My), 'tonf·m']] },
-      { grupo: 'Suelo', filas: [['Esfuerzo admisible', '\\sigma_{adm}', v(e.suelo.qadm), 'tonf/m²'], ['Profundidad de desplante', 'D_f', v(e.suelo.Df), 'm']]
-        .concat(e.suelo.pesoPropio ? [['Peso unitario del suelo', '\\gamma_s', v(e.suelo.gs), 'tonf/m³'], ['Peso unitario del concreto', '\\gamma_c', v(e.suelo.gc), 'tonf/m³']] : []) },
-      { grupo: 'Columna', filas: [['Dimensión en X', 'C_x', v(e.columna.Cx), 'm'], ['Dimensión en Y', 'C_y', v(e.columna.Cy), 'm'],
+        ['Carga axial muerta (PP+CM)', 'P_D', m(e.cargas.D.P, 'fuerza'), u('fuerza')], ['Momento muerto en X', 'M_{x,D}', m(e.cargas.D.Mx, 'momento'), u('momento')], ['Momento muerto en Y', 'M_{y,D}', m(e.cargas.D.My, 'momento'), u('momento')],
+        ['Carga axial viva (CV)', 'P_L', m(e.cargas.L.P, 'fuerza'), u('fuerza')], ['Momento vivo en X', 'M_{x,L}', m(e.cargas.L.Mx, 'momento'), u('momento')], ['Momento vivo en Y', 'M_{y,L}', m(e.cargas.L.My, 'momento'), u('momento')]] },
+      { grupo: 'Suelo', filas: [['Esfuerzo admisible', '\\sigma_{adm}', m(e.suelo.qadm, 'presion'), u('presion')], ['Profundidad de desplante', 'D_f', m(e.suelo.Df, 'longitud'), u('longitud')]]
+        .concat(e.suelo.pesoPropio ? [['Peso unitario del suelo', '\\gamma_s', m(e.suelo.gs, 'peso'), u('peso')], ['Peso unitario del concreto', '\\gamma_c', m(e.suelo.gc, 'peso'), u('peso')]] : []) },
+      { grupo: 'Columna', filas: [['Dimensión en X', 'C_x', m(e.columna.Cx, 'longitud'), u('longitud')], ['Dimensión en Y', 'C_y', m(e.columna.Cy, 'longitud'), u('longitud')],
         ['Barras longitudinales', 'n\\,\\#', e.columna.nBarras + ' #' + e.columna.barra, ''], ['Ubicación', '\\alpha_s', v(e.columna.alpha), '']] },
-      { grupo: 'Materiales y factores', filas: [['Resistencia del concreto', "f'_c", v(e.materiales.fc), 'kgf/cm²'], ['Fluencia del acero', 'f_y', v(e.materiales.fy), 'kgf/cm²'],
+      { grupo: 'Materiales y factores', filas: [['Resistencia del concreto', "f'_c", m(e.materiales.fc, 'esfuerzo'), u('esfuerzo')], ['Fluencia del acero', 'f_y', m(e.materiales.fy, 'esfuerzo'), u('esfuerzo')],
         ['Factor de concreto liviano', '\\lambda', v(e.materiales.lambda), ''], ['Reducción a cortante', '\\phi_v', v(e.materiales.phiV), ''],
         ['Reducción a flexión', '\\phi_f', v(e.materiales.phiF), ''], ['Reducción a aplastamiento', '\\phi_b', v(e.materiales.phiB), '']] },
-      { grupo: 'Zapata', filas: [['Dimensión en X', 'L_x', f(R.Lx), 'm'], ['Dimensión en Y', 'L_y', f(R.Ly), 'm'], ['Altura efectiva', 'd', f(R.d, 3), 'm'],
-        ['Recubrimiento', 'r', f(R.r, 3), 'm'], ['Altura total', 'h', f(R.h, 3), 'm']] },
+      { grupo: 'Zapata', filas: [['Dimensión en X', 'L_x', m(R.Lx, 'longitud'), u('longitud')], ['Dimensión en Y', 'L_y', m(R.Ly, 'longitud'), u('longitud')], ['Altura efectiva', 'd', Unidades.num(R.d, 'longitud', null, 3), u('longitud')],
+        ['Recubrimiento', 'r', Unidades.num(R.r, 'longitud', null, 3), u('longitud')], ['Altura total', 'h', Unidades.num(R.h, 'longitud', null, 3), u('longitud')]] },
       { grupo: 'Refuerzo inferior', filas: [['Refuerzo', '', rd.etq, '']] },
     ];
   }
 
   function resumenTexto() {
-    return 'Zapata de ' + f(R.Lx) + ' × ' + f(R.Ly) + ' m y ' + f(R.h) + ' m de altura. Gobierna ' + R.ult.gob.id + ' con σu = ' + f(R.ult.su) + ' tonf/m²; utilización máxima ' + f(R.utilMax * 100, 0) + ' %.';
+    return 'Zapata de ' + Unidades.num(R.Lx, 'longitud') + ' × ' + Unidades.fmt(R.Ly, 'longitud') + ' y ' + Unidades.fmt(R.h, 'longitud') + ' de altura. Gobierna ' + R.ult.gob.id + ' con σu = ' + Unidades.fmt(R.ult.su, 'presion') + '; utilización máxima ' + f(R.utilMax * 100, 0) + ' %.';
   }
 
   let tituloOriginal = document.title;
@@ -845,12 +879,15 @@
       const a = ajustes();
       $$('input[name="aj-anim"]').forEach((r) => { r.checked = r.value === a.anim; });
       $('#aj-sin-intro').checked = !!a.sinIntro;
+      $$('input[name="aj-unid"]').forEach((r) => { r.checked = r.value === Unidades.actual(); });
       abrirDialogo($('#dlg-ajustes'));
     }));
     $('#dlg-ajustes').addEventListener('change', (e) => {
       const a = ajustes();
       if (e.target.name === 'aj-anim') { a.anim = e.target.value; Mov.configurar(a.anim); }
       if (e.target.id === 'aj-sin-intro') a.sinIntro = e.target.checked;
+      if (e.target.name === 'aj-unid') cambiarUnidades(e.target.value);
+      a.unid = Unidades.actual();
       guardarAjustes(a);
     });
     $('#dlg-ajustes form').addEventListener('submit', (e) => { e.preventDefault(); cerrarDialogo($('#dlg-ajustes')); });
@@ -876,6 +913,8 @@
     try { const t = localStorage.getItem(CLAVE_TEMA); if (t) document.documentElement.dataset.theme = t; } catch (e) { /* sin almacenamiento */ }
     const a = ajustes();
     Mov.configurar(a.anim);
+    Unidades.usar(a.unid);
+    pintarUnidades();
     Proyectos.migrar();
     $('#bv-marca').innerHTML = Logo.svg('logo-grande dibujar', 'ZapatAPP');
     $('#marca-logo').innerHTML = Logo.svg('logo');

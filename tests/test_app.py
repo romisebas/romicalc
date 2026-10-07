@@ -196,6 +196,32 @@ def test_unidades_y_coeficientes_por_sistema(navegador, url):
     assert not errores, errores
 
 
+def test_ajuste_de_unidades(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    def elegir(sistema):
+        pagina.click("#barra-sup [data-abrir-ajustes]")
+        pagina.wait_for_selector("#dlg-ajustes[open]")
+        pagina.check(f'input[name="aj-unid"][value="{sistema}"]')
+        pagina.click("#dlg-ajustes .btn-acento")
+        pagina.wait_for_selector("#dlg-ajustes", state="hidden")
+    elegir("si")
+    assert pagina.text_content('#cifras [data-u="presion"]') == "kPa"
+    assert abs(float(pagina.text_content('[data-cifra="smax"]')) - 10.87 * 9.80665) < 0.2
+    assert "kN" in pagina.text_content("#chequeos")
+    assert abs(float(pagina.input_value('#asistente [data-k="materiales.fc"]')) - 27.4586) < 1e-3
+    elegir("ingles")
+    assert abs(float(pagina.input_value('.dims [data-k="zapata.Lx"]')) - 8.2021) < 1e-3
+    assert "kip" in pagina.text_content("#chequeos")
+    # Editar en pies guarda en metros
+    pagina.fill('.dims [data-k="zapata.Lx"]', "9")
+    assert abs(pagina.evaluate("JSON.parse(localStorage.getItem('dz-ajustes')).unid === 'ingles' ? 1 : 0") - 1) < 1e-9
+    elegir("curso")
+    assert pagina.input_value('.dims [data-k="zapata.Lx"]') == "2.7432"
+    assert pagina.input_value('#asistente [data-k="materiales.fc"]') == "280"
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

@@ -6,6 +6,10 @@
   'use strict';
 
   const f2 = (x) => Number(x).toFixed(2);
+  // Números y unidades del sistema activo (curso, SI o inglés)
+  const UD = () => global.Unidades;
+  const nL = (x) => UD().num(x, 'longitud'), uL = (x) => UD().fmt(x, 'longitud');
+  const nP = (x) => UD().num(x, 'presion'), uP = () => UD().u('presion');
 
   // Posiciones (x, y) de las barras longitudinales de la columna, en su perímetro.
   function barrasColumna(Cx, Cy, nBarras, rec) {
@@ -43,7 +47,7 @@
       X.etq = Y.etq = (m.capas > 1 ? '2 × ' : '') + m.ref;
       return { malla: true, capas: m.capas, X, Y, etq: 'Malla ' + (m.capas > 1 ? '2 × ' : '') + m.ref + ' (' + m.alt + ')' };
     }
-    const cap = (s) => ({ n: s.n, s: s.s, db: s.db, mal: s.estado === 'mal', etq: s.n + ' #' + s.barra + ' @ ' + f2(s.s) });
+    const cap = (s) => ({ n: s.n, s: s.s, db: s.db, mal: s.estado === 'mal', etq: s.n + ' #' + s.barra + ' @ ' + uL(s.s) });
     const X = cap(rf.selX), Y = cap(rf.selY);
     return { malla: false, capas: 1, X, Y, etq: X.etq + ' en X, ' + Y.etq + ' en Y' };
   }
@@ -107,9 +111,9 @@
         'M' + X(-Lx / 2) + ' ' + Y(Ly / 2) + 'H' + X(Lx / 2) + 'V' + Y(-Ly / 2) + 'H' + X(-Lx / 2) + 'Z ' +
         'M' + X(-hx) + ' ' + Y(hy) + 'H' + X(hx) + 'V' + Y(-hy) + 'H' + X(-hx) + 'Z"/>';
       s += rect(-hx, -hy, hx, hy, 'perimetro' + (mal ? ' mal' : ''));
-      s += '<text class="etq-area" x="' + X(-Lx / 2) + '" y="' + (Y(Ly / 2) - 12) + '">A2D = ' + f2(R.pz.A2D) + ' m², bo = ' + f2(R.pz.bo) + ' m</text>';
-      s += cota(X(-hx), Y(-hy) + 22, X(hx), Y(-hy) + 22, 'Cx + d = ' + f2(Cx + d), 12, 'interna');
-      s += cota(X(hx) + 22, Y(hy), X(hx) + 22, Y(-hy), 'Cy + d = ' + f2(Cy + d), 12, 'interna');
+      s += '<text class="etq-area" x="' + X(-Lx / 2) + '" y="' + (Y(Ly / 2) - 12) + '">A2D = ' + UD().fmt(R.pz.A2D, 'area') + ', bo = ' + uL(R.pz.bo) + '</text>';
+      s += cota(X(-hx), Y(-hy) + 22, X(hx), Y(-hy) + 22, 'Cx + d = ' + nL(Cx + d), 12, 'interna');
+      s += cota(X(hx) + 22, Y(hy), X(hx) + 22, Y(-hy), 'Cy + d = ' + nL(Cy + d), 12, 'interna');
     }
 
     if (capa === 'cortante') {
@@ -119,17 +123,17 @@
       s += '<line class="seccion" x1="' + X(Cx / 2 + d) + '" y1="' + Y(Ly / 2) + '" x2="' + X(Cx / 2 + d) + '" y2="' + Y(-Ly / 2) + '"/>';
       s += '<line class="seccion" x1="' + X(-Lx / 2) + '" y1="' + Y(Cy / 2 + d) + '" x2="' + X(Lx / 2) + '" y2="' + Y(Cy / 2 + d) + '"/>';
       s += cota(X(Cx / 2), Y(0), X(Cx / 2 + d), Y(0), 'd', -10, 'interna');
-      if (ax.k > 0) s += '<text class="etq-area" text-anchor="middle" x="' + X((Cx / 2 + d + Lx / 2) / 2) + '" y="' + Y(-Ly / 4) + '">Ax = ' + f2(ax.A) + ' m²</text>';
-      if (ay.k > 0) s += '<text class="etq-area" text-anchor="middle" x="' + X(-Lx / 4) + '" y="' + Y((Cy / 2 + d + Ly / 2) / 2) + '">Ay = ' + f2(ay.A) + ' m²</text>';
+      if (ax.k > 0) s += '<text class="etq-area" text-anchor="middle" x="' + X((Cx / 2 + d + Lx / 2) / 2) + '" y="' + Y(-Ly / 4) + '">Ax = ' + UD().fmt(ax.A, 'area') + '</text>';
+      if (ay.k > 0) s += '<text class="etq-area" text-anchor="middle" x="' + X(-Lx / 4) + '" y="' + Y((Cy / 2 + d + Ly / 2) / 2) + '">Ay = ' + UD().fmt(ay.A, 'area') + '</text>';
     }
 
     if (capa === 'flexion') {
       s += rect(Cx / 2, -Ly / 2, Lx / 2, Ly / 2, 'area', ' style="fill:url(#' + id + '-hatch)"');
       s += rect(-Lx / 2, Cy / 2, Lx / 2, Ly / 2, 'area alt', ' style="fill:url(#' + id + '-hatch)"');
-      s += '<text class="etq-area" text-anchor="middle" x="' + X((Cx / 2 + Lx / 2) / 2) + '" y="' + Y(-Ly / 4) + '">Mux = ' + f2(R.fx.Mu) + '</text>';
-      s += '<text class="etq-area" text-anchor="middle" x="' + X(-Lx / 4) + '" y="' + Y((Cy / 2 + Ly / 2) / 2) + '">Muy = ' + f2(R.fy.Mu) + '</text>';
-      s += cota(X(Cx / 2), Y(-Ly / 2) - 14, X(Lx / 2), Y(-Ly / 2) - 14, 'Kx = ' + f2(R.fx.K), -10, 'interna');
-      s += cota(X(-Lx / 2) + 14, Y(Ly / 2), X(-Lx / 2) + 14, Y(Cy / 2), 'Ky = ' + f2(R.fy.K), 12, 'interna');
+      s += '<text class="etq-area" text-anchor="middle" x="' + X((Cx / 2 + Lx / 2) / 2) + '" y="' + Y(-Ly / 4) + '">Mux = ' + UD().fmt(R.fx.Mu, 'momento') + '</text>';
+      s += '<text class="etq-area" text-anchor="middle" x="' + X(-Lx / 4) + '" y="' + Y((Cy / 2 + Ly / 2) / 2) + '">Muy = ' + UD().fmt(R.fy.Mu, 'momento') + '</text>';
+      s += cota(X(Cx / 2), Y(-Ly / 2) - 14, X(Lx / 2), Y(-Ly / 2) - 14, 'Kx = ' + nL(R.fx.K), -10, 'interna');
+      s += cota(X(-Lx / 2) + 14, Y(Ly / 2), X(-Lx / 2) + 14, Y(Cy / 2), 'Ky = ' + nL(R.fy.K), 12, 'interna');
     }
 
     if (capa === 'acero') {
@@ -162,18 +166,18 @@
       const mal = val > R.inp.suelo.qadm || val <= 0;
       const ox = anc === 'start' ? 8 : -8;
       s += '<g class="esquina' + (mal ? ' mal' : '') + '"><circle cx="' + X(x) + '" cy="' + Y(y) + '" r="3.5"/>' +
-        '<text x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14) + '" text-anchor="' + anc + '"><tspan class="sig">σ' + i + '</tspan> ' + f2(val) + '</text>' +
-        '<text class="sub" x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14 + 14) + '" text-anchor="' + anc + '">σ' + i + 'u ' + f2(R.ult['s' + i]) + '</text></g>';
+        '<text x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14) + '" text-anchor="' + anc + '"><tspan class="sig">σ' + i + '</tspan> ' + nP(val) + '</text>' +
+        '<text class="sub" x="' + (X(x) + ox) + '" y="' + (Y(y) + vy * 14 + 14) + '" text-anchor="' + anc + '">σ' + i + 'u ' + nP(R.ult['s' + i]) + '</text></g>';
     });
 
-    s += cota(X(-Lx / 2), Y(-Ly / 2) + 46, X(Lx / 2), Y(-Ly / 2) + 46, 'Lx = ' + f2(Lx) + ' m', 13);
-    s += cota(X(Lx / 2) + 50, Y(Ly / 2), X(Lx / 2) + 50, Y(-Ly / 2), 'Ly = ' + f2(Ly) + ' m', 13);
-    s += '<text class="etq-col" x="' + X(0) + '" y="' + (Y(-Cy / 2) + 14) + '" text-anchor="middle">' + f2(Cx) + ' × ' + f2(Cy) + '</text>';
+    s += cota(X(-Lx / 2), Y(-Ly / 2) + 46, X(Lx / 2), Y(-Ly / 2) + 46, 'Lx = ' + uL(Lx), 13);
+    s += cota(X(Lx / 2) + 50, Y(Ly / 2), X(Lx / 2) + 50, Y(-Ly / 2), 'Ly = ' + uL(Ly), 13);
+    s += '<text class="etq-col" x="' + X(0) + '" y="' + (Y(-Cy / 2) + 14) + '" text-anchor="middle">' + nL(Cx) + ' × ' + nL(Cy) + '</text>';
     const ox = 22, oy = H - 22;
     s += '<g class="ejes"><line x1="' + ox + '" y1="' + oy + '" x2="' + (ox + 30) + '" y2="' + oy + '"/><line x1="' + ox + '" y1="' + oy + '" x2="' + ox + '" y2="' + (oy - 30) + '"/>' +
       '<text x="' + (ox + 36) + '" y="' + (oy + 4) + '">X</text><text x="' + (ox - 4) + '" y="' + (oy - 36) + '">Y</text></g>';
     if (capa === 'presion') {
-      s += '<text class="leyenda" x="' + (W - 18) + '" y="24" text-anchor="end">Servicio: ' + f2(sv.smin) + ' a ' + f2(sv.smax) + ' tonf/m² (σadm ' + f2(R.inp.suelo.qadm) + ')</text>';
+      s += '<text class="leyenda" x="' + (W - 18) + '" y="24" text-anchor="end">Servicio: ' + nP(sv.smin) + ' a ' + nP(sv.smax) + ' ' + uP() + ' (σadm ' + nP(R.inp.suelo.qadm) + ')</text>';
     }
     return s + '</svg>';
   }
@@ -196,7 +200,7 @@
 
     s += '<rect class="relleno" x="' + X(-L / 2 - 0.35) + '" y="' + Y(Df) + '" width="' + (L + 0.7) * k + '" height="' + Df * k + '" style="fill:url(#' + id + '-suelo)"/>';
     s += '<line class="terreno" x1="' + X(-L / 2 - 0.45) + '" y1="' + Y(Df) + '" x2="' + X(L / 2 + 0.45) + '" y2="' + Y(Df) + '"/>';
-    s += '<text class="etq-mini" x="14" y="' + (Y(Df) - 6) + '">Nivel de terreno, Df = ' + f2(R.inp.suelo.Df) + ' m</text>';
+    s += '<text class="etq-mini" x="14" y="' + (Y(Df) - 6) + '">Nivel de terreno, Df = ' + uL(R.inp.suelo.Df) + '</text>';
     s += '<rect class="zapata" x="' + X(-L / 2) + '" y="' + Y(h) + '" width="' + L * k + '" height="' + h * k + '"/>';
     s += '<rect class="columna" x="' + X(-C / 2) + '" y="' + Y(total) + '" width="' + C * k + '" height="' + (total - h) * k + '"/>';
     const yc = Y(total);
@@ -224,14 +228,14 @@
       s += '<path class="dovela-l' + (R.ld.ok ? '' : ' mal') + '" style="stroke-width:' + Math.max(1.6, dbc * k) + '" d="M' + X(x) + ' ' + Y(total - 0.02) + 'V' + Y(zApoyo) + 'H' + X(x + sgn * lg) + '"/>';
     });
 
-    s += cota(X(-L / 2), Y(0) + 64, X(L / 2), Y(0) + 64, (enX ? 'Lx' : 'Ly') + ' = ' + f2(L) + ' m', 13);
-    s += cota(X(-L / 2) - 30, Y(h), X(-L / 2) - 30, Y(0), 'h = ' + f2(h), -12);
-    s += cota(X(L / 2) + 26, Y(h), X(L / 2) + 26, Y(h - d), 'd = ' + f2(d), 12);
+    s += cota(X(-L / 2), Y(0) + 64, X(L / 2), Y(0) + 64, (enX ? 'Lx' : 'Ly') + ' = ' + uL(L), 13);
+    s += cota(X(-L / 2) - 30, Y(h), X(-L / 2) - 30, Y(0), 'h = ' + nL(h), -12);
+    s += cota(X(L / 2) + 26, Y(h), X(L / 2) + 26, Y(h - d), 'd = ' + nL(d), 12);
     s += cota(X(L / 2) + 26, Y(h - d), X(L / 2) + 26, Y(0), 'r', 10);
-    s += cota(X(-C / 2), Y(total) - 14, X(C / 2), Y(total) - 14, (enX ? 'Cx' : 'Cy') + ' = ' + f2(C), -10);
+    s += cota(X(-C / 2), Y(total) - 14, X(C / 2), Y(total) - 14, (enX ? 'Cx' : 'Cy') + ' = ' + nL(C), -10);
     const xl = X(C / 2 + 0.12);
     s += '<g class="cota ld' + (R.ld.ok ? '' : ' mal') + '"><line x1="' + xl + '" y1="' + Y(h) + '" x2="' + xl + '" y2="' + Y(Math.max(h - R.ld.ldc / 1000, -0.25)) + '"/>' +
-      '<text x="' + (xl + 6) + '" y="' + Y(h / 2) + '" dominant-baseline="middle">ldc ' + (R.ld.ldc / 10).toFixed(1) + ' cm</text></g>';
+      '<text x="' + (xl + 6) + '" y="' + Y(h / 2) + '" dominant-baseline="middle">ldc ' + UD().fmt(R.ld.ldc, 'ldmm') + '</text></g>';
 
     // Presiones de servicio bajo la zapata
     const sv = R.serv;
@@ -242,9 +246,9 @@
     s += '<path class="presion' + (Math.max(izq, der) > R.inp.suelo.qadm ? ' mal' : '') + '" d="M' + X(-L / 2) + ' ' + yB + 'V' + (yB + izq * esc) + 'L' + X(L / 2) + ' ' + (yB + der * esc) + 'V' + yB + 'Z"/>';
     const yAdm = yB + R.inp.suelo.qadm * esc;
     s += '<line class="adm" x1="' + X(-L / 2) + '" y1="' + yAdm + '" x2="' + X(L / 2) + '" y2="' + yAdm + '"/>';
-    s += '<text class="etq-mini" x="' + (X(-L / 2) - 6) + '" y="' + (yB + izq * esc + 12) + '" text-anchor="end">' + f2(izq) + '</text>';
-    s += '<text class="etq-mini" x="' + (X(L / 2) + 6) + '" y="' + (yB + der * esc + 12) + '">' + f2(der) + '</text>';
-    s += '<text class="etq-mini adm-t" x="' + X(L / 2) + '" y="' + (yAdm + 12) + '" text-anchor="end">σadm ' + f2(R.inp.suelo.qadm) + '</text>';
+    s += '<text class="etq-mini" x="' + (X(-L / 2) - 6) + '" y="' + (yB + izq * esc + 12) + '" text-anchor="end">' + nP(izq) + '</text>';
+    s += '<text class="etq-mini" x="' + (X(L / 2) + 6) + '" y="' + (yB + der * esc + 12) + '">' + nP(der) + '</text>';
+    s += '<text class="etq-mini adm-t" x="' + X(L / 2) + '" y="' + (yAdm + 12) + '" text-anchor="end">σadm ' + nP(R.inp.suelo.qadm) + '</text>';
     s += '<text class="etq-acero" x="' + (W - 14) + '" y="22" text-anchor="end">' + rd.etq + ', dovelas #' + R.ld.barra + '</text>';
     return s + '</svg>';
   }

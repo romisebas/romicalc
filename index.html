@@ -113,9 +113,9 @@
             </div>
           </div>
           <dl class="cifras" id="cifras">
-            <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">0.00</span> × <span class="num" data-cifra="Ly">0.00</span> <small>m</small></dd></div>
-            <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.00</span> <small>m</small></dd></div>
-            <div><dt><span class="sim">σ</span>max de servicio</dt><dd><span class="num" data-cifra="smax">0.00</span> <small>de <span data-cifra-txt="qadm">0</span> tonf/m²</small></dd></div>
+            <div><dt>Planta</dt><dd><span class="num" data-cifra="Lx">0.00</span> × <span class="num" data-cifra="Ly">0.00</span> <small data-u="longitud">m</small></dd></div>
+            <div><dt>Altura</dt><dd><span class="num" data-cifra="h">0.00</span> <small data-u="longitud">m</small></dd></div>
+            <div><dt><span class="sim">σ</span>max de servicio</dt><dd><span class="num" data-cifra="smax">0.00</span> <small>de <span data-cifra-txt="qadm">0</span> <span data-u="presion">tonf/m²</span></small></dd></div>
             <div><dt>Utilización máxima</dt><dd><span class="num" data-cifra="util">0</span><small>%</small></dd></div>
           </dl>
           <div class="tabla-chequeos">
@@ -126,9 +126,9 @@
 
         <section class="dims" aria-label="Ajuste rápido de dimensiones">
           <span class="dims-tit">Ajuste rápido</span>
-          <div class="paso-num"><span class="pn-lbl">Lx</span><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="-0.05" aria-label="Reducir Lx 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Lx" aria-label="Lx en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="0.05" aria-label="Aumentar Lx 5 cm">+</button><small>m</small></div>
-          <div class="paso-num"><span class="pn-lbl">Ly</span><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="-0.05" aria-label="Reducir Ly 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Ly" aria-label="Ly en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="0.05" aria-label="Aumentar Ly 5 cm">+</button><small>m</small></div>
-          <div class="paso-num"><span class="pn-lbl">d</span><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="-0.025" aria-label="Reducir d 2.5 cm">−</button><input type="number" step="0.025" data-k="zapata.d" aria-label="d en metros"><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="0.025" aria-label="Aumentar d 2.5 cm">+</button><small>m</small></div>
+          <div class="paso-num"><span class="pn-lbl">Lx</span><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="-0.05" aria-label="Reducir Lx 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Lx" aria-label="Lx en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Lx" data-delta="0.05" aria-label="Aumentar Lx 5 cm">+</button><small data-u="longitud">m</small></div>
+          <div class="paso-num"><span class="pn-lbl">Ly</span><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="-0.05" aria-label="Reducir Ly 5 cm">−</button><input type="number" step="0.05" data-k="zapata.Ly" aria-label="Ly en metros"><button type="button" class="pn-btn" data-paso-k="zapata.Ly" data-delta="0.05" aria-label="Aumentar Ly 5 cm">+</button><small data-u="longitud">m</small></div>
+          <div class="paso-num"><span class="pn-lbl">d</span><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="-0.025" aria-label="Reducir d 2.5 cm">−</button><input type="number" step="0.025" data-k="zapata.d" aria-label="d en metros"><button type="button" class="pn-btn" data-paso-k="zapata.d" data-delta="0.025" aria-label="Aumentar d 2.5 cm">+</button><small data-u="longitud">m</small></div>
         </section>
         </section>
 
@@ -255,7 +255,7 @@
         <section class="wz-paso" data-paso="cargas">
           <p class="ayuda">Reacciones de servicio en la base de la columna. Los momentos vacíos se toman como cero.</p>
           <table class="tabla-cargas">
-            <thead><tr><th></th><th>P <small>tonf</small></th><th>Mx <small>tonf·m</small></th><th>My <small>tonf·m</small></th></tr></thead>
+            <thead><tr><th></th><th>P <small data-u="fuerza">tonf</small></th><th>Mx <small data-u="momento">tonf·m</small></th><th>My <small data-u="momento">tonf·m</small></th></tr></thead>
             <tbody>
               <tr><th scope="row">PP+CM</th>
                 <td><input type="number" step="any" data-k="cargas.D.P" aria-label="P de carga muerta"></td>
@@ -280,20 +280,20 @@
         <section class="wz-paso" data-paso="suelo">
           <p class="ayuda">Capacidad admisible del suelo y profundidad de desplante.</p>
           <div class="campos dos">
-            <label>σadm <small>tonf/m²</small><input type="number" step="any" min="0" data-k="suelo.qadm"></label>
-            <label>Df <small>m</small><input type="number" step="0.05" min="0" data-k="suelo.Df"></label>
+            <label>σadm <small data-u="presion">tonf/m²</small><input type="number" step="any" min="0" data-k="suelo.qadm"></label>
+            <label>Df <small data-u="longitud">m</small><input type="number" step="0.05" min="0" data-k="suelo.Df"></label>
           </div>
           <label class="check"><input type="checkbox" data-k="suelo.pesoPropio" data-tipo="bool"> Incluir peso propio de zapata y suelo en servicio</label>
           <div class="campos dos" id="campos-peso">
-            <label>γ suelo <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gs"></label>
-            <label>γ concreto <small>tonf/m³</small><input type="number" step="any" data-k="suelo.gc"></label>
+            <label>γ suelo <small data-u="peso">tonf/m³</small><input type="number" step="any" data-k="suelo.gs"></label>
+            <label>γ concreto <small data-u="peso">tonf/m³</small><input type="number" step="any" data-k="suelo.gc"></label>
           </div>
         </section>
 
         <section class="wz-paso" data-paso="columna">
           <div class="campos dos">
-            <label>Cx <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cx"></label>
-            <label>Cy <small>m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cy"></label>
+            <label>Cx <small data-u="longitud">m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cx"></label>
+            <label>Cy <small data-u="longitud">m</small><input type="number" step="0.05" min="0.1" data-k="columna.Cy"></label>
             <label>Barra de la columna<select data-k="columna.barra" data-tipo="int" id="sel-barra-col"></select></label>
             <label>Número de barras<input type="number" step="2" min="4" data-k="columna.nBarras" data-tipo="int"></label>
             <label class="ancho">Ubicación (αs)
@@ -309,8 +309,8 @@
 
         <section class="wz-paso" data-paso="materiales">
           <div class="campos tres">
-            <label>f'c <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fc"></label>
-            <label>fy <small>kgf/cm²</small><input type="number" step="any" data-k="materiales.fy"></label>
+            <label>f'c <small data-u="esfuerzo">kgf/cm²</small><input type="number" step="any" data-k="materiales.fc"></label>
+            <label>fy <small data-u="esfuerzo">kgf/cm²</small><input type="number" step="any" data-k="materiales.fy"></label>
             <label>λ<input type="number" step="0.05" data-k="materiales.lambda"></label>
             <label>φ cortante<input type="number" step="0.05" data-k="materiales.phiV"></label>
             <label>φ flexión<input type="number" step="0.05" data-k="materiales.phiF"></label>
@@ -327,8 +327,8 @@
             <div>
               <p class="ayuda">Dimensiones en planta. La presión de servicio debe quedar bajo σadm en las cuatro esquinas y sin tensión.</p>
               <div class="campos dos">
-                <label>Lx <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Lx"></label>
-                <label>Ly <small>m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Ly"></label>
+                <label>Lx <small data-u="longitud">m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Lx"></label>
+                <label>Ly <small data-u="longitud">m</small><input type="number" step="0.05" min="0.3" data-k="zapata.Ly"></label>
               </div>
               <div class="fila-btn"><button type="button" class="btn" id="btn-opt-planta">Proponer Lx y Ly</button></div>
               <p class="msg" id="msg-opt-planta" role="status"></p>
@@ -341,8 +341,8 @@
         <section class="wz-paso" data-paso="altura">
           <p class="ayuda">Altura efectiva d y recubrimiento r. La altura total es h = d + r.</p>
           <div class="campos dos">
-            <label>d <small>m</small><input type="number" step="0.025" min="0.15" data-k="zapata.d"></label>
-            <label>Recubrimiento r <small>m</small><input type="number" step="0.005" data-k="zapata.r"></label>
+            <label>d <small data-u="longitud">m</small><input type="number" step="0.025" min="0.15" data-k="zapata.d"></label>
+            <label>Recubrimiento r <small data-u="longitud">m</small><input type="number" step="0.005" data-k="zapata.r"></label>
           </div>
           <div class="fila-btn"><button type="button" class="btn" id="btn-opt-d">Proponer d</button></div>
           <p class="msg" id="msg-opt-d" role="status"></p>
@@ -431,6 +431,13 @@
           <label class="radio-fila"><input type="radio" name="aj-anim" value="desactivadas"> Desactivadas</label>
         </fieldset>
         <label class="check"><input type="checkbox" id="aj-sin-intro"> No mostrar la animación de inicio</label>
+        <fieldset class="aj-grupo">
+          <legend>Unidades</legend>
+          <label class="radio-fila"><input type="radio" name="aj-unid" value="curso"> Curso <small>tonf · m · kgf/cm², NSR-10 en kgf/cm² como el documento del curso</small></label>
+          <label class="radio-fila"><input type="radio" name="aj-unid" value="si"> Internacional (SI) <small>kN · m · MPa, ecuaciones de la NSR-10 en MPa</small></label>
+          <label class="radio-fila"><input type="radio" name="aj-unid" value="ingles"> Inglés <small>kip · ft · psi, ecuaciones equivalentes del ACI 318 en psi</small></label>
+          <p class="ayuda">Los coeficientes de cortante y de anclaje cambian con el sistema, así que los resultados pueden diferir hasta un 6 % de los del curso. Los proyectos se guardan igual en cualquier sistema.</p>
+        </fieldset>
       </div>
       <div class="dlg-pie"><span class="dlg-espacio"></span><button type="submit" class="btn btn-acento">Listo</button></div>
     </form>
