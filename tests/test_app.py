@@ -465,6 +465,41 @@ def test_planta_moderna_e_interactiva(navegador, url):
     assert not errores, errores
 
 
+def test_figuras_de_memoria_enlazadas(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-memoria")
+    actual = lambda: pagina.locator("#memoria .diapo:not(.saliendo)").last
+    def ir(titulo):
+        for _ in range(30):
+            if titulo in actual().locator(".diapo-tit").text_content():
+                return
+            pagina.click("#diapo-sig")
+            pagina.wait_for_timeout(450)
+        raise AssertionError(titulo)
+    ir("Esfuerzos en las esquinas")
+    assert actual().locator(".diapo-fig .prisma-esq").count() == 4
+    ir("Perímetro crítico")
+    # Al pasar el mouse por la ecuación de bo se resalta el perímetro en la figura
+    fila = actual().locator('.ec[data-liga="perimetro"]').first
+    fila.hover()
+    assert actual().locator(".diapo-fig .perimetro.resaltado").count() >= 1
+    # …y al revés: el perímetro de la figura resalta su ecuación
+    pagina.mouse.move(5, 5)
+    actual().locator(".diapo-fig .perimetro").first.hover(force=True, position={"x": 2, "y": 2})  # el borde: el centro lo tapa la columna
+    assert actual().locator('.ec[data-liga="perimetro"].resaltado').count() >= 1
+    ir("Dirección X")
+    assert actual().locator(".diapo-fig .seccion").count() >= 1
+    ir("Cuantía de acero en X")
+    assert actual().locator(".diapo-fig .diagrama").count() == 1
+    ir("Áreas de contacto")
+    assert actual().locator(".diapo-fig .piramide").count() == 1
+    # La figura se dibuja al entrar la diapositiva
+    pagina.click("#diapo-sig")
+    assert pagina.evaluate("document.querySelector('#memoria .diapo:last-child .diapo-fig svg').getAnimations({ subtree: true }).length") > 0
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

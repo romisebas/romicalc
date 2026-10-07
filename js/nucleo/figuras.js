@@ -95,5 +95,77 @@
     return svg(s, 'Áreas A1 y A2 para el aplastamiento');
   }
 
-  global.Figuras = { cargas, nucleo, vc, voladizo, aplastamiento };
+  // Prisma de presiones en perspectiva: altura de cada esquina proporcional a σ
+  function prisma(R) {
+    const sv = R.serv, Lx = R.Lx, Ly = R.Ly;
+    const k = 150 / Math.max(Lx, Ly), c30 = Math.cos(Math.PI / 6), s30 = 0.5, hMax = 80;
+    const P = (x, y, z) => [W / 2 + (x - y) * c30 * k, 150 + (x + y) * s30 * k * 0.9 - z];
+    const pt = (q) => q[0].toFixed(1) + ',' + q[1].toFixed(1);
+    const esq = [[1, Lx / 2, Ly / 2], [2, Lx / 2, -Ly / 2], [3, -Lx / 2, -Ly / 2], [4, -Lx / 2, Ly / 2]];
+    // Alturas exageradas para que se note la diferencia entre esquinas (los valores reales van en las etiquetas)
+    const rango = sv.smax - sv.smin;
+    const z = (i) => (rango > 1e-9 ? 26 + (hMax - 26) * (sv['s' + i] - sv.smin) / rango : hMax * 0.6);
+    let s = '<polygon class="zapata" points="' + esq.map(([, x, y]) => pt(P(x, y, 0))).join(' ') + '"/>';
+    s += '<polygon class="presion-top" points="' + esq.map(([i, x, y]) => pt(P(x, y, z(i)))).join(' ') + '"/>';
+    esq.forEach(([i, x, y]) => {
+      const a = P(x, y, 0), b = P(x, y, z(i));
+      s += '<g class="prisma-esq esquina"><line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"/><circle cx="' + b[0] + '" cy="' + b[1] + '" r="3"/>' +
+        txt(b[0] + (x > 0 ? 6 : -6), b[1] - 6, 'σ' + i + ' ' + UN().num(sv['s' + i], 'presion'), 'fig-etq', x > 0 ? 'start' : 'end') + '</g>';
+    });
+    s += txt(W / 2, 238, 'Prisma de presiones de servicio, alturas exageradas (' + UN().u('presion') + ')', 'etq-mini', 'middle');
+    return svg(s, 'Prisma de presiones en las esquinas');
+  }
+
+  // Corte con la sección crítica a cortante en una dirección (a d de la cara de la columna)
+  function seccion(R, dir) {
+    const enX = dir !== 'Y', L = enX ? R.Lx : R.Ly, C = enX ? R.inp.columna.Cx : R.inp.columna.Cy, h = R.h, d = R.d;
+    const k = 300 / L, x0 = (W - L * k) / 2, yZ = 96, hz = Math.min(50, Math.max(30, h * k));
+    const X = (x) => x0 + (x + L / 2) * k;
+    const xs = X(C / 2 + d), xb = X(L / 2);
+    let s = '<rect class="zapata" x="' + x0 + '" y="' + yZ + '" width="' + L * k + '" height="' + hz + '"/>';
+    s += '<rect class="columna" x="' + X(-C / 2) + '" y="40" width="' + C * k + '" height="' + (yZ - 40) + '"/>';
+    if (xb > xs) {
+      s += '<rect class="area fig-carga" x="' + xs + '" y="' + (yZ + hz) + '" width="' + (xb - xs) + '" height="34"/>';
+      for (let i = 0; i <= 4; i++) { const x = xs + (xb - xs) * i / 4; s += flecha(x, yZ + hz + 34, x, yZ + hz + 4); }
+    }
+    s += '<line class="seccion" x1="' + xs + '" y1="' + (yZ - 14) + '" x2="' + xs + '" y2="' + (yZ + hz + 44) + '"/>';
+    s += '<line class="fig-flecha" x1="' + X(C / 2) + '" y1="' + (yZ - 8) + '" x2="' + xs + '" y2="' + (yZ - 8) + '"/>' + txt((X(C / 2) + xs) / 2, yZ - 13, 'd', 'etq-area', 'middle');
+    s += txt((xs + xb) / 2, yZ + hz + 52, 'Vu' + dir.toLowerCase() + ' = ' + UN().fmt(enX ? R.cu.x.Vu : R.cu.y.Vu, 'fuerza'), 'fig-etq', 'middle');
+    s += txt(W / 2, 238, 'Sección crítica a cortante en la dirección ' + dir, 'etq-mini', 'middle');
+    return svg(s, 'Sección crítica a cortante en ' + dir);
+  }
+
+  // Voladizo con el diagrama de momento (parábola: máximo en la cara de la columna, cero en el borde)
+  function momento(R, dir) {
+    const F = dir === 'X' ? R.fx : R.fy, L = dir === 'X' ? R.Lx : R.Ly, C = dir === 'X' ? R.inp.columna.Cx : R.inp.columna.Cy;
+    const k = 300 / L, x0 = (W - L * k) / 2, yZ = 70, hz = 30;
+    const X = (x) => x0 + (x + L / 2) * k;
+    const xa = X(C / 2), xb = X(L / 2), base = yZ + hz + 18, prof = 70;
+    let s = '<rect class="zapata" x="' + x0 + '" y="' + yZ + '" width="' + L * k + '" height="' + hz + '"/>';
+    s += '<rect class="columna" x="' + X(-C / 2) + '" y="16" width="' + C * k + '" height="' + (yZ - 16) + '"/>';
+    let d = 'M' + xa + ' ' + base;
+    for (let i = 0; i <= 20; i++) { const f = i / 20, x = xa + (xb - xa) * f; d += 'L' + x.toFixed(1) + ' ' + (base + prof * Math.pow(1 - f, 2)).toFixed(1); }
+    s += '<path class="diagrama" d="' + d + 'L' + xb + ' ' + base + 'Z"/>';
+    s += '<line class="seccion" x1="' + xa + '" y1="' + (yZ - 8) + '" x2="' + xa + '" y2="' + (base + prof + 8) + '"/>';
+    s += txt(xa + 8, base + prof + 2, 'Mu' + dir.toLowerCase() + ' = ' + UN().fmt(F.Mu, 'momento'), 'fig-etq');
+    s += txt(W / 2, 238, 'Diagrama de momento del voladizo en ' + dir, 'etq-mini', 'middle');
+    return svg(s, 'Diagrama de momento en ' + dir);
+  }
+
+  // Corte de la pirámide 1:2 que define A2 bajo la columna
+  function piramide(R) {
+    const ap = R.ap, Lx = R.Lx, Cx = R.inp.columna.Cx, h = R.h;
+    const k = 300 / Lx, x0 = (W - Lx * k) / 2, yZ = 90, hz = Math.max(40, h * k);
+    const X = (x) => x0 + (x + Lx / 2) * k;
+    const a2 = Math.min(ap.a2x, Lx) / 2;
+    let s = '<rect class="zapata" x="' + x0 + '" y="' + yZ + '" width="' + Lx * k + '" height="' + hz + '"/>';
+    s += '<rect class="columna" x="' + X(-Cx / 2) + '" y="20" width="' + Cx * k + '" height="' + (yZ - 20) + '"/>';
+    s += '<g class="piramide perimetro"><path d="M' + X(-Cx / 2) + ' ' + yZ + 'L' + X(-a2) + ' ' + (yZ + hz) + 'H' + X(a2) + 'L' + X(Cx / 2) + ' ' + yZ + '"/></g>';
+    s += txt(X(0), yZ + hz + 18, 'A2 (base de la pirámide 1:2)', 'etq-area', 'middle');
+    s += txt(X(0), yZ - 14, 'A1', 'fig-etq', 'middle');
+    s += txt(W / 2, 238, 'K = min(√(A2/A1), 2) = ' + ap.K.toFixed(2), 'etq-mini', 'middle');
+    return svg(s, 'Pirámide de aplastamiento');
+  }
+
+  global.Figuras = { cargas, nucleo, vc, voladizo, aplastamiento, prisma, seccion, momento, piramide };
 })(window);

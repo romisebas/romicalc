@@ -67,9 +67,47 @@
     if (!f || !R) return '';
     if (f.tipo === 'planta') return global.Dibujo.planta(R, f.capa, 'dp' + (++serie));
     if (f.tipo === 'corte') return global.Dibujo.corte(R, f.dir, 'dp' + (++serie));
-    if (f.tipo === 'cargas') return global.Figuras.cargas(R, f.ult);
-    if (f.tipo === 'voladizo') return global.Figuras.voladizo(R, f.dir);
-    return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R) : '';
+    return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R, f.dir !== undefined ? f.dir : f.ult) : '';
+  }
+
+  // Partes de las figuras que representa cada símbolo de las ecuaciones
+  const LIGA_SEL = {
+    perimetro: '.perimetro', area: '.area', seccion: '.seccion', voladizo: '.fig-carga', diagrama: '.diagrama', columna: '.columna',
+    esquina: '.esquina, .prisma-esq', zapata: '.zapata, .presion-top', ld: '.cota.ld', carga: '.fig-flecha, .fig-punta',
+  };
+  function enlazar(diapo) {
+    const fig = diapo.querySelector('.diapo-fig');
+    const marcar = (liga, si) => {
+      if (!LIGA_SEL[liga]) return;
+      fig.querySelectorAll(LIGA_SEL[liga]).forEach((e) => e.classList.toggle('resaltado', si));
+      diapo.querySelectorAll('.ec[data-liga="' + liga + '"]').forEach((e) => e.classList.toggle('resaltado', si));
+    };
+    diapo.querySelectorAll('.ec[data-liga]').forEach((ec) => {
+      ec.addEventListener('pointerenter', () => marcar(ec.dataset.liga, true));
+      ec.addEventListener('pointerleave', () => marcar(ec.dataset.liga, false));
+    });
+    // Al revés: la parte de la figura resalta sus ecuaciones
+    const ligas = [...new Set([...diapo.querySelectorAll('.ec[data-liga]')].map((e) => e.dataset.liga))];
+    ligas.forEach((liga) => fig.querySelectorAll(LIGA_SEL[liga] || '_').forEach((el) => {
+      el.addEventListener('pointerenter', () => marcar(liga, true));
+      el.addEventListener('pointerleave', () => marcar(liga, false));
+    }));
+  }
+
+  // La figura se dibuja al entrar: los trazos avanzan y los rellenos aparecen, en cascada
+  function dibujar(diapo) {
+    if (global.Mov && global.Mov.reducido()) return;
+    const svg = diapo.querySelector('.diapo-fig svg');
+    if (!svg || !svg.animate) return;
+    const piezas = [...svg.querySelectorAll('line, path, rect, polygon, circle, polyline, text')].filter((e) => !e.closest('defs, pattern, .cruz'));
+    piezas.slice(0, 160).forEach((e, i) => {
+      const retraso = 120 + Math.min(i, 60) * 12;
+      if (e.tagName === 'text') { e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: retraso + 200, fill: 'backwards' }); return; }
+      e.setAttribute('pathLength', '1');
+      e.animate([{ strokeDasharray: '1 1', strokeDashoffset: 1, fillOpacity: 0 }, { strokeDasharray: '1 1', strokeDashoffset: 0, fillOpacity: 1 }],
+        { duration: 620, delay: retraso, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'backwards' })
+        .onfinish = () => e.removeAttribute('pathLength');
+    });
   }
 
   function html(x) {
@@ -97,11 +135,15 @@
     const viejo = escena.firstElementChild;
     if (!dir || !viejo || reducido || !Element.prototype.animate) {
       escena.innerHTML = html(x);
+      enlazar(escena.lastElementChild);
+      if (dir) dibujar(escena.lastElementChild);
     } else {
       // Transición: la anterior sale hacia un lado y la nueva entra desde el otro
       viejo.classList.add('saliendo');
       escena.insertAdjacentHTML('beforeend', html(x));
       const nuevo = escena.lastElementChild;
+      enlazar(nuevo);
+      dibujar(nuevo);
       const d = dir > 0 ? 1 : -1;
       const fuera = viejo.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (-40 * d) + 'px)' }], { duration: 220, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' });
       const dentro = nuevo.animate([{ opacity: 0, transform: 'translateX(' + (48 * d) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 380, delay: 90, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'backwards' });

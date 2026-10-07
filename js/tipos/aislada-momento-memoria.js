@@ -15,8 +15,17 @@
     if (simb) lineas.push(lhs + ' &= ' + simb);
     if (sust) lineas.push((simb ? '' : lhs + ' ') + '&= ' + sust);
     lineas.push((simb || sust ? '' : lhs + ' ') + '&= \\boxed{' + res + u + '}');
-    return Object.assign({ t: 'eq', etq, tex: '\\begin{aligned}' + lineas.join(' \\\\ ') + '\\end{aligned}' }, extra || {});
+    return Object.assign({ t: 'eq', etq, tex: '\\begin{aligned}' + lineas.join(' \\\\ ') + '\\end{aligned}', liga: liga(lhs) }, extra || {});
   }
+
+  // Qué parte de la figura representa cada símbolo (para resaltarla al pasar el mouse)
+  const LIGAS = [
+    [/^b_o/, 'perimetro'], [/^A_\{2D\}|^V_u$/, 'area'], [/^A_[xy]$|^V_\{u[xy]\}/, 'area'], [/^\\phi V_\{c[xy]\}/, 'seccion'],
+    [/^K_[xy]|^A_\{[xy]f\}|^F_[xy]/, 'voladizo'], [/^M_\{u[xy]\}|^R_\{n/, 'diagrama'], [/^A_1$|^\\phi P_\{nb1\}|^\\beta/, 'columna'],
+    [/^A_2$|^K$|^\\phi P_\{nb2\}/, 'perimetro'], [/^\\sigma_\{[1-4]/, 'esquina'], [/^I_|^A$|^A_z/, 'zapata'], [/^l_\{dc/, 'ld'],
+    [/^P_s|^M_\{[xy]s\}|^P_u/, 'carga'],
+  ];
+  function liga(lhs) { const m = LIGAS.find(([re]) => re.test(lhs)); return m ? m[1] : null; }
   const ver = (etq, tex, ok) => ({ t: 'ver', etq, tex, ok });
   const nota = (tipo, html) => ({ t: 'nota', tipo, html });
   const le = (ok) => (ok ? '\\le' : '>');
@@ -75,7 +84,7 @@
     diapo(c1, 'Esfuerzos en las esquinas',
       'La presión es la compresión uniforme más la flexión en cada dirección: σ = P/A ± M<sub>x</sub>(L<sub>y</sub>/2)/I<sub>x</sub> ± M<sub>y</sub>(L<sub>x</sub>/2)/I<sub>y</sub>. σ1 es la esquina de arriba a la derecha y las demás siguen en sentido horario.',
       [sig(1, '+', '+'), sig(2, '-', '+'), sig(3, '-', '-'), sig(4, '+', '-')],
-      { tipo: 'planta', capa: 'presion' });
+      { tipo: 'prisma' });
     diapo(c1, 'Verificación contra el suelo',
       'Ninguna esquina puede superar el esfuerzo admisible del suelo y ninguna puede quedar en tensión, porque el suelo no la resiste.',
       [ver('Esfuerzo máximo', '\\sigma_{max} = ' + v(s.smax, 'presion') + U('presion') + ' \\;' + le(s.okMax) + '\\; \\sigma_{adm} = ' + v(I.suelo.qadm, 'presion') + U('presion'), s.okMax),
@@ -131,7 +140,7 @@
           n(m.phiV, 2) + '\\cdot ' + C.cu + '\\cdot' + n(m.lambda, 2) + '\\sqrt{' + v(m.fc, 'esfuerzo') + '}\\,(' + v(b, 'corto') + ')(' + v(R.d, 'corto') + ')/1000', v(o.phiVc, 'fuerza'), U('fuerza')),
         ver('Cortante en ' + dir, 'V_{u' + dl + '} = ' + v(o.Vu, 'fuerza') + U('fuerza') + ' \\;' + le(o.ok) + '\\; \\phi V_{c' + dl + '} = ' + v(o.phiVc, 'fuerza') + U('fuerza'), o.ok),
         o.k <= 0 ? nota('info', 'La sección crítica queda fuera de la zapata, así que este cortante es cero.') : null],
-        { tipo: 'planta', capa: 'cortante' });
+        { tipo: 'seccion', dir });
     };
     una('X', cu.x, R.Lx, c.Cx, R.Ly, 'L_y');
     una('Y', cu.y, R.Ly, c.Cy, R.Lx, 'L_x');
@@ -155,7 +164,7 @@
           '\\dfrac{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}{' + v(F.fy, 'esfuerzo') + '}\\left(1 - \\sqrt{1 - \\dfrac{2\\cdot' + v(F.Rn, 'esfuerzo', en ? 1 : 3) + '}{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}}\\right)', n(F.rhoCalc, 5), ''),
         eq('Cuantía de diseño', '\\rho', '\\max(\\rho_{' + dl + '},\\ \\rho_{min})', '\\max(' + n(F.rhoCalc, 5) + ',\\ ' + n(F.rhoMin, 5) + ')', n(F.rho, 5), ''),
         ver('Cuantía máxima', '\\rho = ' + n(F.rho, 5) + ' \\;' + le(F.rho <= F.rhoMax) + '\\; \\rho_{max} = ' + n(F.rhoMax, 5), F.rho <= F.rhoMax)],
-        { tipo: 'voladizo', dir });
+        { tipo: 'momento', dir });
       const items = [eq('Acero requerido', 'A_{s' + dl + '}', '\\rho\\,b\\,d', n(F.rho, 5) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto'), v(F.As, 'acero'), U('acero'))];
       if (rf.tipo === 'barras') {
         const sel = dir === 'X' ? rf.selX : rf.selY;
@@ -189,7 +198,7 @@
       [eq('Área cargada', 'A_1', 'C_x\\,C_y', v(c.Cx, 'longitud') + '\\cdot' + v(c.Cy, 'longitud'), v(ap.A1, 'area'), U('area')),
       eq('Base de la pirámide (pendiente 1:2)', 'A_2', '\\min(C_x + 4h,\\ L_x)\\cdot\\min(C_y + 4h,\\ L_y)', '\\min(' + v(ap.a2x, 'longitud', 3) + ',\\ ' + v(R.Lx, 'longitud') + ')\\cdot\\min(' + v(ap.a2y, 'longitud', 3) + ',\\ ' + v(R.Ly, 'longitud') + ')', v(ap.A2, 'area'), U('area')),
       eq('Factor de confinamiento', 'K', '\\min\\left(\\sqrt{A_2/A_1},\\ 2\\right)', '\\min(' + n(ap.raiz) + ',\\ 2)', n(ap.K), '')],
-      { tipo: 'aplastamiento' });
+      { tipo: 'piramide' });
     diapo(c5, 'Verificación al aplastamiento',
       'Se revisa la base de la columna y la cara superior de la zapata, con φ = ' + m.phiB + ' y A<sub>1</sub> en ' + UN.u('corto', sis) + '².',
       [eq('Base de la columna', '\\phi P_{nb1}', '\\phi\\,(0.85\\,f\'_c\\,A_1)', n(m.phiB, 2) + '\\cdot 0.85\\cdot' + v(m.fc, 'esfuerzo') + '\\cdot' + n(A1c, 0) + '/1000', v(ap.phiPnb1, 'fuerza'), U('fuerza')),

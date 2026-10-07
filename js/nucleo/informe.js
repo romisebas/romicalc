@@ -40,9 +40,7 @@
     const pre = 'infc' + k;
     if (f.tipo === 'planta') return global.Dibujo.planta(R, f.capa, pre);
     if (f.tipo === 'corte') return global.Dibujo.corte(R, f.dir, pre);
-    if (f.tipo === 'cargas') return global.Figuras.cargas(R, f.ult);
-    if (f.tipo === 'voladizo') return global.Figuras.voladizo(R, f.dir);
-    return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R) : '';
+    return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R, f.dir !== undefined ? f.dir : f.ult) : '';
   }
 
   function portada(d) {

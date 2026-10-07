@@ -40,7 +40,7 @@
           '<div class="ec-math">' + tex(it.tex) + '</div>' +
           '<span class="tag ' + (it.ok ? 'tag-ok' : 'tag-mal') + '">' + (it.ok ? 'Cumple' : 'No cumple') + '</span></div>';
       default:
-        return '<div class="ec' + (it.etq ? '' : ' ec-cont') + '">' +
+        return '<div class="ec' + (it.etq ? '' : ' ec-cont') + '"' + (it.liga ? ' data-liga="' + it.liga + '"' : '') + '>' +
           '<div class="ec-etq">' + (it.etq || '') + (it.nota ? ' <span class="ec-nota">' + it.nota + '</span>' : '') + '</div>' +
           '<div class="ec-math">' + tex(it.tex) + '</div></div>';
     }

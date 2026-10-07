@@ -663,3 +663,18 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 #planta-encuadre { position: absolute; right: 14px; bottom: 14px; z-index: 3; }
 #planta-encuadre[hidden] { display: none; }
 @media print { .dibujo .cruz { display: none; } .dibujo.planta .perimetro { animation: none; } }
+
+/* ===================================================================== v1.1 figuras de la memoria */
+.dibujo.fig .presion-top { fill: color-mix(in srgb, var(--azul) 22%, transparent); stroke: var(--azul); stroke-width: 1.5; }
+.dibujo.fig .prisma-esq line { stroke: var(--azul); stroke-width: 1.5; }
+.dibujo.fig .prisma-esq circle { fill: var(--azul); }
+.dibujo.fig .diagrama { fill: color-mix(in srgb, var(--azul) 18%, transparent); stroke: var(--azul); stroke-width: 1.8; }
+.dibujo.fig .piramide path { fill: color-mix(in srgb, var(--azul) 10%, transparent); stroke: var(--azul); stroke-width: 1.8; stroke-dasharray: 6 4; }
+/* Ecuación ↔ figura */
+.diapo .ec[data-liga] { border-radius: var(--r-ctl); transition: background-color .2s ease; cursor: default; }
+.diapo .ec.resaltado { background: color-mix(in srgb, var(--azul) 12%, transparent); }
+.diapo-fig .resaltado { stroke: #2b7fff !important; stroke-width: 3px !important; }
+.diapo-fig rect.resaltado, .diapo-fig polygon.resaltado, .diapo-fig path.resaltado { fill-opacity: .9; }
+.diapo-fig .resaltado line, .diapo-fig g.resaltado path { stroke: #2b7fff !important; stroke-width: 3px !important; }
+.diapo-fig [class] { transition: stroke .15s ease, stroke-width .15s ease; }
+.diapo-fig .perimetro, .diapo-fig .seccion { pointer-events: all; } /* se pueden señalar aunque no tengan relleno */
