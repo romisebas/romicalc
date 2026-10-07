@@ -525,3 +525,15 @@ html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:
   .bv-sub { font-size: 16px; margin-bottom: 24px; }
 }
 #bv-opciones .bv-h2, #bv-tipos .bv-h2 { line-height: 1; }
+
+/* ===================================================================== v3.3 encabezado del refuerzo */
+.ref-cab { display: grid; gap: 10px; margin-bottom: 28px; }
+.ref-tit { margin: 0; font: 400 clamp(34px, 4vw, 52px)/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.ref-sub { margin: 0 0 6px; font: 500 15px/1.5 var(--sans); color: var(--tinta-2); }
+.seg-grande { justify-self: start; padding: 4px; }
+.seg-grande button { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; font-size: 14px; }
+.seg-grande svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+@media (max-width: 900px) {
+  .seg-grande { justify-self: stretch; display: grid; grid-template-columns: 1fr 1fr; }
+  .seg-grande button { justify-content: center; padding: 11px 8px; font-size: 13px; }
+}

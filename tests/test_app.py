@@ -268,6 +268,8 @@ def test_refuerzo_elegido_3d_y_dibujo(navegador, url):
     entrar_ejemplo(pagina)
     pagina.click("#tab-refuerzo")
     assert pagina.locator("#elegido-3d canvas").count() == 1
+    sep = pagina.evaluate("document.querySelector('.elegido').getBoundingClientRect().top - document.querySelector('#tipo-refuerzo').getBoundingClientRect().bottom")
+    assert sep >= 24, sep
     assert "#4" in pagina.text_content("#elegido-tit")
     assert "Barra corrugada #4" in pagina.text_content("#elegido-2d")
     pagina.check('#acero-x input[value="6"]')
