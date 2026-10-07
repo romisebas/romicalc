@@ -14,7 +14,8 @@
 html.mov-reducido .logo-dz.dibujar path { stroke-dashoffset: 0; animation: none; }
 
 /* ---------- Bienvenida ---------- */
-.en-bienvenida { overflow: hidden; }
+/* Solo la portada (y la intro) bloquean el scroll; opciones y tipos pueden crecer */
+.en-bienvenida.en-portada { overflow: hidden; }
 .bienvenida { min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; position: relative; isolation: isolate; }
 .bienvenida::before {
   content: ""; position: absolute; inset: 0; z-index: -1;

@@ -369,6 +369,20 @@ def test_detalle_con_anillos(navegador, url):
     assert not errores, errores
 
 
+def test_opciones_permite_scroll(navegador, url):
+    for ancho, alto in ((1440, 700), (390, 844)):
+        pagina, errores = abrir(navegador, url, ancho, alto)
+        entrar_ejemplo(pagina)
+        pagina.wait_for_timeout(500)  # guardado diferido: aparece en recientes
+        pagina.click("#btn-inicio")
+        pagina.wait_for_selector("#recientes:not([hidden]) .reciente")
+        assert pagina.evaluate("document.documentElement.scrollHeight") > alto
+        pagina.mouse.wheel(0, 3000)
+        pagina.wait_for_function("window.scrollY > 0")
+        assert pagina.is_visible(".reciente") and pagina.locator(".reciente").bounding_box()["y"] < alto
+        assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

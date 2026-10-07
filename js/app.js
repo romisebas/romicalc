@@ -502,6 +502,8 @@
 
   // ============================================================ bienvenida
   function mostrarPantalla(nombre) {
+    document.body.classList.toggle('en-portada', nombre === 'portada');
+    window.scrollTo(0, 0);
     ['portada', 'opciones', 'tipos'].forEach((n) => {
       const el = $('#bv-' + n);
       const activo = n === nombre;
@@ -553,6 +555,7 @@
     const intro = $('#intro');
     const a = ajustes();
     $('#bv-portada').hidden = true;
+    document.body.classList.add('en-portada');
     intro.hidden = false;
     intro.classList.remove('sale');
     // Con "Según el sistema" y el sistema pidiendo menos movimiento: versión suave (sin vuelos de cámara)
