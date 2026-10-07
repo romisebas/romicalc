@@ -111,3 +111,29 @@
 .inf-nota-aviso { background: var(--aviso-fondo); }
 .inf-nota-info { background: var(--superficie-2); color: var(--tinta-2); }
 .inf-nota-mal { background: var(--mal-fondo); }
+
+/* ---------- v3.3: encabezado, pie, contenido y secciones de la entrega ---------- */
+.hoja { position: relative; padding-top: 22mm; }
+.hoja-portada { padding-top: 20mm; }
+.hoja-enc, .hoja-pie { position: absolute; left: 18mm; right: 18mm; display: flex; align-items: center; gap: 3mm; font: 500 7.5pt var(--sans); color: var(--tinta-3); }
+.hoja-enc { top: 9mm; padding-bottom: 2mm; border-bottom: 0.3mm solid var(--linea); }
+.hoja-enc span:nth-of-type(1) { flex: 1; color: var(--tinta); }
+.hoja-pie { bottom: 8mm; justify-content: space-between; padding-top: 2mm; border-top: 0.3mm solid var(--linea); }
+.inf-logo-mini { width: 5mm; height: 5mm; color: var(--tinta); }
+.inf-h2 span { color: var(--tinta-3); margin-right: 2mm; }
+.inf-toc { list-style: none; margin: 4mm 0 0; padding: 0; }
+.inf-toc li { display: flex; align-items: baseline; gap: 3mm; padding: 3mm 0; border-bottom: 0.3mm solid var(--linea); font-size: 11pt; }
+.inf-toc li span:first-child { flex: 1; }
+.inf-toc-pag { font-feature-settings: "tnum" 1; color: var(--tinta-3); }
+.inf-info th { width: 42mm; font: 700 7pt var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--tinta-3); }
+.inf-lista { margin: 1mm 0 3mm; padding-left: 5mm; font-size: 9.5pt; color: var(--tinta-2); line-height: 1.5; }
+.inf-gob td { font-weight: 600; }
+.inf-fig-cap { margin: 2mm 0 3mm; border: 0.3mm solid var(--linea); display: flex; justify-content: center; }
+.inf-fig-cap svg { width: 100%; max-height: 62mm; height: auto; display: block; }
+.inf-cierre { margin: 2mm 0 4mm; font: 700 8pt var(--sans); letter-spacing: .05em; text-transform: uppercase; }
+.inf-cierre.ok { color: var(--ok); } .inf-cierre.mal { color: var(--mal); }
+.inf-firmas-final { display: grid; grid-template-columns: 1fr 1fr; gap: 18mm 12mm; margin-top: 30mm; }
+.inf-firma p { margin: 2mm 0 0; font-size: 9.5pt; }
+.inf-linea { display: block; border-top: 0.3mm solid var(--tinta); }
+.inf-comb thead th { text-transform: none; letter-spacing: 0; font-size: 7.5pt; }
+.inf-bloque-m + .inf-bloque-m .inf-h2 { margin-top: 9mm; }

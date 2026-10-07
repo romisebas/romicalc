@@ -361,6 +361,12 @@ def test_informe_paginado_y_documento_listo(navegador, url):
     assert pagina.locator("#informe .inf-datos .katex").count() > 15  # símbolos de los datos
     desbordes = pagina.evaluate("[...document.querySelectorAll('#informe .hoja')].filter(h => h.scrollHeight > h.clientHeight + 1).length")
     assert desbordes == 0
+    # Entrega profesional: contenido con páginas, pie numerado y secciones en orden
+    assert pagina.locator("#informe .inf-toc li").count() == 8
+    hojas = pagina.locator("#informe .hoja").count()
+    assert pagina.text_content("#informe .hoja:nth-child(2) .hoja-pie").strip().endswith(f"Página 2 de {hojas}")
+    assert pagina.locator("#informe .katex-error").count() == 0
+    assert pagina.locator("#informe .inf-fig-cap svg").count() == 6
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
     pagina.wait_for_selector("#doc-listo[open]")
     assert "Documento listo" in pagina.text_content("#doc-listo")
