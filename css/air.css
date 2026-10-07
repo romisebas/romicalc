@@ -537,3 +537,6 @@ html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:
   .seg-grande { justify-self: stretch; display: grid; grid-template-columns: 1fr 1fr; }
   .seg-grande button { justify-content: center; padding: 11px 8px; font-size: 13px; }
 }
+
+/* Subíndices: no alteran el interlineado */
+sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; }

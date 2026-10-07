@@ -331,6 +331,22 @@ def test_pantalla_de_opciones(navegador, url):
     assert not errores, errores
 
 
+def test_subindices_en_textos_y_dibujos(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    plano = """(sel) => { const out = []; const w = document.createTreeWalker(document.querySelector(sel), NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) { const t = w.currentNode; if (!t.parentElement.closest('.katex') && /σmax|φVc|\bVu\b|\bldc\b|\bMux\b|\bAs\b/.test(t.nodeValue)) out.push(t.nodeValue); } return out; }"""
+    assert pagina.evaluate(plano, "#chequeos") == []
+    assert pagina.locator("#chequeos sub").count() >= 5
+    pagina.click("#tab-planos")
+    assert pagina.locator("#planta svg tspan.sub").count() >= 4
+    pagina.click("#tab-refuerzo")
+    assert pagina.locator("#acero-x sub").count() >= 1
+    pagina.click("#tab-memoria")
+    assert pagina.evaluate(plano, "#memoria") == []
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

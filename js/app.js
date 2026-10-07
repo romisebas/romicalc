@@ -1003,6 +1003,7 @@
     Mov.configurar(a.anim);
     Unidades.usar(a.unid);
     pintarUnidades();
+    Notacion.observar(); // subíndices reales en todo lo que se pinte
     Proyectos.migrar();
     $('#bv-marca').innerHTML = Logo.svg('logo-grande dibujar', 'ZapatAPP');
     $('#marca-logo').innerHTML = Logo.svg('logo');
