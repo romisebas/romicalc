@@ -131,9 +131,11 @@ def test_pestanas_veredicto_y_logo(navegador, url):
     pagina.click('#chequeos [data-paso="pz"]')
     assert pagina.is_visible("#panel-memoria")
     # Al dejar de cumplir: veredicto en rojo con su propia animación
-    pagina.click("#tab-veredicto")
+    pagina.click("#tab-planos")
     pagina.fill('.dims [data-k="zapata.Lx"]', "1.5")
+    pagina.click("#tab-veredicto")
     pagina.wait_for_function("document.querySelector('#veredicto').classList.contains('mal')")
+    assert "Esfuerzos sobre el suelo" in pagina.text_content("#v-fallas")
     assert "anima" in pagina.get_attribute("#veredicto", "class")
     assert not errores, errores
 
@@ -206,14 +208,15 @@ def test_ajuste_de_unidades(navegador, url):
         pagina.click("#dlg-ajustes .btn-acento")
         pagina.wait_for_selector("#dlg-ajustes", state="hidden")
     elegir("si")
-    assert pagina.text_content('#cifras [data-u="presion"]') == "kPa"
-    assert abs(float(pagina.text_content('[data-cifra="smax"]')) - 10.87 * 9.80665) < 0.2
+    assert pagina.locator("#cifras > div").count() == 3
+    assert "kPa" in pagina.text_content("#chequeos")
     assert "kN" in pagina.text_content("#chequeos")
     assert abs(float(pagina.input_value('#asistente [data-k="materiales.fc"]')) - 27.4586) < 1e-3
     elegir("ingles")
     assert abs(float(pagina.input_value('.dims [data-k="zapata.Lx"]')) - 8.2021) < 1e-3
     assert "kip" in pagina.text_content("#chequeos")
     # Editar en pies guarda en metros
+    pagina.click("#tab-planos")
     pagina.fill('.dims [data-k="zapata.Lx"]', "9")
     assert abs(pagina.evaluate("JSON.parse(localStorage.getItem('dz-ajustes')).unid === 'ingles' ? 1 : 0") - 1) < 1e-9
     elegir("curso")
@@ -325,6 +328,7 @@ def test_recientes(navegador, url):
 def test_zapata_pequena_falla(navegador, url):
     pagina, _ = abrir(navegador, url)
     entrar_ejemplo(pagina)
+    pagina.click("#tab-planos")
     pagina.fill('.dims [data-k="zapata.Lx"]', "1.5")
     assert "no cumple" in pagina.text_content("#v-tit")
     pagina.click('.dims .pn-btn[data-paso-k="zapata.Lx"][data-delta="0.05"]')
@@ -346,6 +350,7 @@ def test_malla_en_zapata_liviana(navegador, url):
     editar(pagina, "cargas", {"cargas.D.P": "6", "cargas.L.P": "2", "cargas.D.Mx": "0.05", "cargas.D.My": "0.05", "cargas.L.Mx": "0", "cargas.L.My": "0"})
     editar(pagina, "columna", {"columna.Cx": "0.3", "columna.Cy": "0.3", "columna.barra": "4"})
     editar(pagina, "planta", {"zapata.Lx": "1.0", "zapata.Ly": "1.0"})
+    pagina.click("#tab-planos")
     pagina.fill('.dims [data-k="zapata.d"]', "0.15")
     pagina.click("#tab-refuerzo")
     pagina.click('#tipo-refuerzo [data-ref="malla"]')

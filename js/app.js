@@ -15,7 +15,7 @@
   let proyectoId = null;
   let R = null;            // resultados cuando el proyecto está completo
   let enApp = false;
-  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false;
+  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false, veredictoPendiente = false;
   const movers = {};
 
   // Pasos del asistente = categorías de edición del dashboard
@@ -194,19 +194,20 @@
   function pintarResumen(animar) {
     const v = $('#veredicto');
     const ok = R.todoOk;
-    v.className = 'veredicto ' + (ok ? 'ok' : 'mal');
+    v.className = 'veredicto ' + (ok ? 'ok' : 'mal') + (v.classList.contains('anima') ? ' anima' : '');
     $('#v-tit').textContent = ok ? 'El diseño cumple' : 'El diseño no cumple';
-    if (okPrevio !== null && okPrevio !== ok) animarVeredicto();
+    // Si cambia el resultado: se anima ahora o al volver a la pestaña Veredicto
+    if (okPrevio !== null && okPrevio !== ok) { if (pestana === 'veredicto') animarVeredicto(); else veredictoPendiente = true; }
     okPrevio = ok;
     const fallas = R.chequeos.filter((c) => !c.ok).map((c) => c.titulo.toLowerCase());
     $('#v-det').textContent = ok
       ? 'Gobierna ' + R.ult.gob.id + ' con σu = ' + Unidades.fmt(R.ult.su, 'presion') + '. Toda la base trabaja a compresión (caso ' + R.serv.caso + ').'
       : 'Falla en ' + fallas.join(', ') + '. Revise las dimensiones o el refuerzo.';
     const UA = (x, mag) => Unidades.a(x, mag);
-    const cifras = { Lx: [UA(R.Lx, 'longitud'), 2], Ly: [UA(R.Ly, 'longitud'), 2], h: [UA(R.h, 'longitud'), 2], smax: [UA(R.serv.smax, 'presion'), Unidades.dec('presion')], util: [R.utilMax * 100, 0] };
+    const cifras = { Lx: [UA(R.Lx, 'longitud'), 2], Ly: [UA(R.Ly, 'longitud'), 2], h: [UA(R.h, 'longitud'), 2], util: [R.utilMax * 100, 0] };
     Object.keys(cifras).forEach((k) => Mov.contar($('[data-cifra="' + k + '"]'), cifras[k][0], cifras[k][1], animar));
-    $('[data-cifra-txt="qadm"]').textContent = Unidades.num(estado.suelo.qadm, 'presion');
-    $('[data-cifra="smax"]').classList.toggle('es-mal', !R.serv.okMax);
+    // Si no cumple: una píldora por cada chequeo que falla, bajo el titular
+    $('#v-fallas').innerHTML = R.chequeos.filter((c) => !c.ok).map((c) => '<li>' + c.titulo + '</li>').join('');
     $('[data-cifra="util"]').classList.toggle('es-mal', R.utilMax > 1);
     $('#chequeos').innerHTML = R.chequeos.map((c) => {
       const cls = claseUtil(c.util, c.ok);
@@ -222,9 +223,10 @@
   // si no cumple se trazan las dos líneas de la X y el bloque tiembla.
   function animarVeredicto() {
     const v = $('#veredicto');
-    v.classList.remove('anima');
+    const r = $('#resumen');
+    v.classList.remove('anima'); r.classList.remove('anima');
     void v.offsetWidth;
-    v.classList.add('anima');
+    v.classList.add('anima'); r.classList.add('anima');
   }
 
   // ---------------------------------------------------------------- pestañas
@@ -244,6 +246,7 @@
     });
     if (movers.pestanas) movers.pestanas();
     Object.keys(movers).forEach((k) => { if (k !== 'pestanas' && movers[k]) movers[k](true); });
+    if (id === 'veredicto' && veredictoPendiente) { veredictoPendiente = false; animarVeredicto(); }
     if (id === 'planos' && hay3d && R && !encuadrado) { Vista3D.encuadrar(R, false); encuadrado = true; }
     if (cambia) window.scrollTo({ top: 0, behavior: 'auto' });
   }
