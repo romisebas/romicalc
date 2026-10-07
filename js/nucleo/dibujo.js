@@ -237,31 +237,47 @@
     return s + '</svg>';
   }
 
-  // ---------------------------------------------------------------- Corte
+  // ---------------------------------------------------------------- Corte (v1.1)
+  // Corte moderno: niveles con su marca, suelo, zapata y columna, acero a escala (barras con gancho,
+  // dovelas con gancho y estribos), cotas con flechas, recubrimiento, ldc y diagrama de presiones con
+  // la misma escala de color de la planta. Los data-* permiten acercar y leer σ bajo el mouse.
   function corte(R, dir, prefijo) {
-    const W = 640, H = 460;
+    const W = 700, H = 520;
     const enX = dir !== 'Y';
     const L = enX ? R.Lx : R.Ly;
     const C = enX ? R.inp.columna.Cx : R.inp.columna.Cy;
     const { h, d, r } = R;
     const Df = Math.max(R.inp.suelo.Df, h + 0.2);
-    const total = Df + 0.45; // se dibuja un tramo de columna sobre el terreno
-    const yBase = H - 90;
-    const k = Math.min((W - 150) / L, (yBase - 60) / total);
+    const total = Df + 0.45; // tramo de columna sobre el terreno
+    const yBase = H - 130;
+    const k = Math.min((W - 190) / L, (yBase - 60) / total);
     const X = (x) => W / 2 + x * k;
     const Y = (z) => yBase - z * k; // z = 0 en el fondo de la zapata
     const id = (prefijo || 'ct') + (enX ? 'x' : 'y');
-    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="dibujo corte" role="img" aria-label="Corte ' + (enX ? 'X' : 'Y') + '">' + defs(id);
+    const sv = R.serv, qadm = R.inp.suelo.qadm;
+    const izq = enX ? Math.max(sv.s3, sv.s4) : Math.max(sv.s2, sv.s3);
+    const der = enX ? Math.max(sv.s1, sv.s2) : Math.max(sv.s1, sv.s4);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="dibujo corte" role="img" aria-label="Corte ' + (enX ? 'X' : 'Y') + '"' +
+      ' data-modo="corte" data-cx="' + W / 2 + '" data-k="' + k + '" data-l="' + L + '" data-izq="' + izq + '" data-der="' + der + '" data-qadm="' + qadm + '">' + defs(id);
 
-    s += '<rect class="relleno" x="' + X(-L / 2 - 0.35) + '" y="' + Y(Df) + '" width="' + (L + 0.7) * k + '" height="' + Df * k + '" style="fill:url(#' + id + '-suelo)"/>';
-    s += '<line class="terreno" x1="' + X(-L / 2 - 0.45) + '" y1="' + Y(Df) + '" x2="' + X(L / 2 + 0.45) + '" y2="' + Y(Df) + '"/>';
-    s += '<text class="etq-mini" x="14" y="' + (Y(Df) - 6) + '">Nivel de terreno, Df = ' + uL(R.inp.suelo.Df) + '</text>';
+    // Suelo y niveles
+    s += '<rect class="relleno" x="' + X(-L / 2 - 0.45) + '" y="' + Y(Df) + '" width="' + (L + 0.9) * k + '" height="' + (Df + 0.25) * k + '" style="fill:url(#' + id + '-suelo)"/>';
+    s += '<line class="terreno" x1="' + X(-L / 2 - 0.6) + '" y1="' + Y(Df) + '" x2="' + X(L / 2 + 0.6) + '" y2="' + Y(Df) + '"/>';
+    const nivel = (z, txt) => {
+      const x = Math.max(40, X(-L / 2) - 62), y = Y(z);
+      return '<g class="nivel-marca"><path d="M' + x + ' ' + y + 'l-7 -10h14z"/><line x1="' + (x - 22) + '" y1="' + y + '" x2="' + (x + 22) + '" y2="' + y + '"/>' +
+        '<text class="halo" x="' + (x - 22) + '" y="' + (y - 14) + '">' + txt + '</text></g>';
+    };
+    s += nivel(Df, 'N. terreno');
+    s += nivel(0, 'Df = ' + uL(R.inp.suelo.Df));
+
+    // Concreto
     s += '<rect class="zapata" x="' + X(-L / 2) + '" y="' + Y(h) + '" width="' + L * k + '" height="' + h * k + '"/>';
     s += '<rect class="columna" x="' + X(-C / 2) + '" y="' + Y(total) + '" width="' + C * k + '" height="' + (total - h) * k + '"/>';
     const yc = Y(total);
     s += '<path class="quiebre" d="M' + (X(-C / 2) - 8) + ' ' + (yc + 6) + 'L' + X(-C / 6) + ' ' + (yc + 6) + 'L' + X(0) + ' ' + (yc - 4) + 'L' + X(C / 6) + ' ' + (yc + 12) + 'L' + X(0) + ' ' + (yc + 4) + 'L' + (X(C / 2) + 8) + ' ' + (yc + 4) + '"/>';
 
-    // Refuerzo: capa X abajo y capa Y encima. En el corte X la capa X se ve como línea.
+    // Refuerzo inferior a escala: la capa paralela al corte se ve como barra con ganchos; la otra, como puntos
     const rd = refuerzoDibujo(R);
     const par = enX ? rd.X : rd.Y, per = enX ? rd.Y : rd.X;
     const dbX = rd.X.db / 1000 * rd.capas, dbY = rd.Y.db / 1000 * rd.capas;
@@ -269,41 +285,48 @@
     const zLinea = enX ? zX : zY, zPuntos = enX ? zY : zX;
     const dbPar = par.db / 1000;
     const gancho = rd.malla ? 0 : Math.min(h - r - 0.03, 12 * dbPar);
-    s += '<path class="barra' + (par.mal ? ' mal' : '') + '" style="stroke-width:' + Math.max(rd.malla ? 1.2 : 1.6, dbPar * k) + '" d="M' + X(-L / 2 + r) + ' ' + Y(zLinea + gancho) + 'V' + Y(zLinea) + 'H' + X(L / 2 - r) + 'V' + Y(zLinea + gancho) + '"/>';
+    s += '<path class="barra' + (par.mal ? ' mal' : '') + '" style="stroke-width:' + Math.max(rd.malla ? 1.4 : 2, dbPar * k) + '" d="M' + X(-L / 2 + r) + ' ' + Y(zLinea + gancho) + 'V' + Y(zLinea) + 'H' + X(L / 2 - r) + 'V' + Y(zLinea + gancho) + '"/>';
     posicionesParrilla(L, r, per).forEach((x) => {
-      s += '<circle class="barra-punto' + (per.mal ? ' mal' : '') + '" cx="' + X(x) + '" cy="' + Y(zPuntos) + '" r="' + Math.max(rd.malla ? 1.4 : 2, per.db / 2000 * k) + '"/>';
+      s += '<circle class="barra-punto' + (per.mal ? ' mal' : '') + '" cx="' + X(x) + '" cy="' + Y(zPuntos) + '" r="' + Math.max(rd.malla ? 1.6 : 2.4, per.db / 2000 * k) + '"/>';
     });
 
-    // Dovelas con gancho de 90° hacia el centro de la columna
+    // Dovelas con gancho de 90° y estribos de la columna
     const dbc = R.ld.db / 1000;
     const zApoyo = r + dbX + dbY + dbc / 2;
-    const lg = 12 * dbc;
-    [-C / 2 + 0.05, C / 2 - 0.05].forEach((x, i) => {
-      const sgn = i === 0 ? 1 : -1;
-      s += '<path class="dovela-l' + (R.ld.ok ? '' : ' mal') + '" style="stroke-width:' + Math.max(1.6, dbc * k) + '" d="M' + X(x) + ' ' + Y(total - 0.02) + 'V' + Y(zApoyo) + 'H' + X(x + sgn * lg) + '"/>';
+    const lg = 12 * dbc, rec = 0.05;
+    [-C / 2 + rec, C / 2 - rec].forEach((x, i) => {
+      const sgn = i === 0 ? -1 : 1; // ganchos hacia afuera, apoyados en la parrilla
+      s += '<path class="dovela-l' + (R.ld.ok ? '' : ' mal') + '" style="stroke-width:' + Math.max(2, dbc * k) + '" d="M' + X(x) + ' ' + Y(total - 0.02) + 'V' + Y(zApoyo) + 'H' + X(x + sgn * lg) + '"/>';
     });
+    for (let z = h + 0.08; z < total - 0.05; z += Math.max(0.15, (total - h) / 5)) {
+      s += '<line class="estribo" x1="' + X(-C / 2 + rec - 0.01) + '" y1="' + Y(z) + '" x2="' + X(C / 2 - rec + 0.01) + '" y2="' + Y(z) + '"/>';
+    }
 
-    s += cota(X(-L / 2), Y(0) + 64, X(L / 2), Y(0) + 64, (enX ? 'Lx' : 'Ly') + ' = ' + uL(L), 13);
-    s += cota(X(-L / 2) - 30, Y(h), X(-L / 2) - 30, Y(0), 'h = ' + nL(h), -12);
+    // Cotas
+    s += cota(X(-L / 2), Y(0) + 96, X(L / 2), Y(0) + 96, (enX ? 'Lx' : 'Ly') + ' = ' + uL(L), 13);
+    s += cota(X(-L / 2) - 26, Y(h), X(-L / 2) - 26, Y(0), 'h = ' + nL(h), -12);
     s += cota(X(L / 2) + 26, Y(h), X(L / 2) + 26, Y(h - d), 'd = ' + nL(d), 12);
-    s += cota(X(L / 2) + 26, Y(h - d), X(L / 2) + 26, Y(0), 'r', 10);
-    s += cota(X(-C / 2), Y(total) - 14, X(C / 2), Y(total) - 14, (enX ? 'Cx' : 'Cy') + ' = ' + nL(C), -10);
-    const xl = X(C / 2 + 0.12);
+    s += cota(X(L / 2) + 52, Y(h - d), X(L / 2) + 52, Y(0), 'r = ' + UD().fmt(r, 'corto'), 12, 'interna');
+    s += cota(X(-C / 2), Y(total) - 16, X(C / 2), Y(total) - 16, (enX ? 'Cx' : 'Cy') + ' = ' + nL(C), -10);
+    const xl = X(C / 2 + 0.14);
     s += '<g class="cota ld' + (R.ld.ok ? '' : ' mal') + '"><line x1="' + xl + '" y1="' + Y(h) + '" x2="' + xl + '" y2="' + Y(Math.max(h - R.ld.ldc / 1000, -0.25)) + '"/>' +
-      '<text x="' + (xl + 6) + '" y="' + Y(h / 2) + '" dominant-baseline="middle">ldc ' + UD().fmt(R.ld.ldc, 'ldmm') + '</text></g>';
+      '<text class="halo" x="' + (xl + 8) + '" y="' + Y(h / 2) + '" dominant-baseline="middle">ldc ' + UD().fmt(R.ld.ldc, 'ldmm') + '</text></g>';
 
-    // Presiones de servicio bajo la zapata
-    const sv = R.serv;
-    const izq = enX ? Math.max(sv.s3, sv.s4) : Math.max(sv.s2, sv.s3);
-    const der = enX ? Math.max(sv.s1, sv.s2) : Math.max(sv.s1, sv.s4);
-    const esc = 46 / Math.max(R.inp.suelo.qadm, izq, der, 1e-6);
-    const yB = Y(0) + 4;
-    s += '<path class="presion' + (Math.max(izq, der) > R.inp.suelo.qadm ? ' mal' : '') + '" d="M' + X(-L / 2) + ' ' + yB + 'V' + (yB + izq * esc) + 'L' + X(L / 2) + ' ' + (yB + der * esc) + 'V' + yB + 'Z"/>';
-    const yAdm = yB + R.inp.suelo.qadm * esc;
+    // Diagrama de presiones de servicio con la escala de color de la planta
+    const esc = 52 / Math.max(qadm, izq, der, 1e-6);
+    const yB = Y(0) + 6;
+    s += '<defs><linearGradient id="' + id + '-pres" x1="0" x2="1">' + paradaPresion(0, izq, qadm) + paradaPresion(1, der, qadm) + '</linearGradient></defs>';
+    s += '<path class="presion-diag" style="fill:url(#' + id + '-pres)" d="M' + X(-L / 2) + ' ' + yB + 'V' + (yB + izq * esc) + 'L' + X(L / 2) + ' ' + (yB + der * esc) + 'V' + yB + 'Z"/>';
+    for (let i = 1; i < 8; i++) { const x = -L / 2 + L * i / 8, v = izq + (der - izq) * i / 8; s += '<line class="presion-flecha" x1="' + X(x) + '" y1="' + (yB + v * esc) + '" x2="' + X(x) + '" y2="' + (yB + 3) + '"/>'; }
+    const yAdm = yB + qadm * esc;
     s += '<line class="adm" x1="' + X(-L / 2) + '" y1="' + yAdm + '" x2="' + X(L / 2) + '" y2="' + yAdm + '"/>';
-    s += '<text class="etq-mini" x="' + (X(-L / 2) - 6) + '" y="' + (yB + izq * esc + 12) + '" text-anchor="end">' + nP(izq) + '</text>';
-    s += '<text class="etq-mini" x="' + (X(L / 2) + 6) + '" y="' + (yB + der * esc + 12) + '">' + nP(der) + '</text>';
-    s += '<text class="etq-mini adm-t" x="' + X(L / 2) + '" y="' + (yAdm + 12) + '" text-anchor="end">σadm ' + nP(R.inp.suelo.qadm) + '</text>';
+    const pildora = (x, y, txt, anc, mal) => {
+      const w = txt.length * 6.6 + 14, x0 = anc === 'end' ? x - w : x;
+      return '<g class="pildora-g' + (mal ? ' mal' : '') + '"><rect class="pildora" x="' + x0 + '" y="' + (y - 10) + '" width="' + w + '" height="20" rx="10"/><text class="pildora-txt" x="' + (x0 + w / 2) + '" y="' + (y + 4) + '" text-anchor="middle">' + txt + '</text></g>';
+    };
+    s += pildora(X(-L / 2) - 8, yB + izq * esc, nP(izq), 'end', izq > qadm || izq <= 0);
+    s += pildora(X(L / 2) + 8, yB + der * esc, nP(der), 'start', der > qadm || der <= 0);
+    s += '<text class="etq-mini adm-t" x="' + X(L / 2) + '" y="' + (yAdm + 14) + '" text-anchor="end">σadm ' + nP(qadm) + '</text>';
     s += '<text class="etq-acero" x="' + (W - 14) + '" y="22" text-anchor="end">' + rd.etq + ', dovelas #' + R.ld.barra + '</text>';
     return s + '</svg>';
   }

@@ -294,13 +294,13 @@
     } else abrirNuevo();
   }
 
-  function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); PlantaInteractiva.aplicar(); }
+  function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); PlantaInteractiva.aplicar($('#planta')); }
 
   function pintarVista2() {
     $('#vista3d').hidden = vista2 !== '3d';
     $('#corte').hidden = vista2 === '3d';
     $('#titulo-vista2').textContent = vista2 === '3d' ? 'Vista 3D' : 'Corte ' + vista2;
-    if (vista2 !== '3d') $('#corte').innerHTML = Dibujo.corte(R, vista2);
+    if (vista2 !== '3d') { $('#corte').innerHTML = Dibujo.corte(R, vista2); PlantaInteractiva.aplicar($('#corte')); }
     if (hay3d && vista2 === '3d') Vista3D.update(R);
   }
 
@@ -1112,6 +1112,7 @@
     Diapositivas.montar($('#memoria'));
     Elemento.montar($('#elegido-3d'));
     PlantaInteractiva.montar($('#planta'));
+    PlantaInteractiva.montar($('#corte'));
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));
