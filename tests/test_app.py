@@ -504,11 +504,11 @@ def test_portada_titular_despiece_creditos(navegador, url):
     pagina, errores = abrir(navegador, url, anim="activadas")
     pagina.wait_for_timeout(1200)  # termina la entrada de las letras
     # Ola: la letra bajo el cursor crece
-    letra = pagina.locator("#titulo-app .letra").nth(3)
+    letra = pagina.locator("#titulo-app .letra").nth(1)  # lejos de Diseñar: el despiece sigue separado
     caja = letra.bounding_box()
     pagina.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
     pagina.wait_for_timeout(400)
-    escala = pagina.evaluate("""() => { const m = new DOMMatrix(getComputedStyle(document.querySelectorAll('#titulo-app .letra')[3]).transform); return m.a; }""")
+    escala = pagina.evaluate("""() => { const m = new DOMMatrix(getComputedStyle(document.querySelectorAll('#titulo-app .letra')[1]).transform); return m.a; }""")
     assert escala > 1.1, escala
     # Despiece: se arma al acercarse a Diseñar
     assert pagina.evaluate("Escultura.estado().armado") < 0.2
