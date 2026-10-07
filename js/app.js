@@ -737,7 +737,31 @@
 
     // --- bienvenida
     $('#btn-saltar').addEventListener('click', () => Intro3D.saltar());
-    $('#btn-disenar').addEventListener('click', () => mostrarPantalla('opciones'));
+    // Diseñar: el botón se "imanta" hacia el cursor y al hacer clic se expande hasta llenar la pantalla
+    const cta = $('#btn-disenar');
+    $('#bv-portada').addEventListener('pointermove', (e) => {
+      if (Mov.reducido() || e.pointerType !== 'mouse') return;
+      const r = cta.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy);
+      const f = d < 140 ? (1 - d / 140) * 0.3 : 0;
+      cta.style.transform = 'translate(' + (dx * f).toFixed(1) + 'px,' + (dy * f).toFixed(1) + 'px)';
+    });
+    $('#bv-portada').addEventListener('pointerleave', () => { cta.style.transform = ''; });
+    cta.addEventListener('click', () => {
+      cta.style.transform = '';
+      if (Mov.reducido()) { mostrarPantalla('opciones'); return; }
+      const r = cta.getBoundingClientRect();
+      const capa = document.createElement('div');
+      capa.className = 'bv-expande';
+      const centro = (r.left + r.width / 2).toFixed(0) + 'px ' + (r.top + r.height / 2).toFixed(0) + 'px';
+      document.body.appendChild(capa);
+      const crece = capa.animate([{ clipPath: 'circle(0px at ' + centro + ')' }, { clipPath: 'circle(150vmax at ' + centro + ')' }],
+        { duration: 520, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'forwards' });
+      crece.onfinish = () => {
+        mostrarPantalla('opciones');
+        capa.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: 'ease-out', fill: 'forwards' }).onfinish = () => capa.remove();
+      };
+    });
     $$('[data-ir]').forEach((b) => b.addEventListener('click', () => mostrarPantalla(b.dataset.ir)));
     $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => mostrarPantalla('tipos')));
     $('#op-importar').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-importar', () => $('#archivo-importar').click()));
@@ -1032,7 +1056,7 @@
     pintarUnidades();
     Notacion.observar(); // subíndices reales en todo lo que se pinte
     Proyectos.migrar();
-    $('#bv-marca').innerHTML = Logo.svg('logo-grande dibujar', 'ZapatAPP');
+    $('#bv-marca').innerHTML = Logo.svg('logo dibujar', 'ZapatAPP');
     $('#marca-logo').innerHTML = Logo.svg('logo');
     $('#pie-logo').innerHTML = Logo.svg('logo');
     // GitHub: el ícono gira con un aro que se expande y luego se abre el perfil

@@ -588,3 +588,48 @@ sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; }
 .tip3d { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; max-width: 260px; padding: 7px 10px; border-radius: var(--r-ctl);
   background: #1b1b1b; color: #fff; font: 500 13px/1.3 var(--sans); white-space: nowrap; }
 .tip3d[hidden] { display: none; }
+
+/* ===================================================================== v1.1 portada editorial a sangre */
+.bv-portada {
+  width: 100%; max-width: none; min-height: calc(100dvh - 64px); padding: 0; gap: 0;
+  display: grid; grid-template-rows: auto minmax(220px, 1fr) auto auto auto; justify-items: center; align-items: end; text-align: center;
+}
+.bv-top { width: 100%; display: flex; align-items: center; gap: 12px; align-self: start; }
+.bv-top .logo-dz { width: 28px; height: 28px; }
+.bv-top-nom { font: 500 17px/1 var(--sans); }
+.bv-esp { flex: 1; }
+.bv-version { font: 500 13px/1 var(--sans); color: var(--tinta-3); padding: 7px 12px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-tag); }
+.bv-portada .escultura { position: absolute; left: 50%; top: 6%; right: auto; width: min(62vh, 78vw); transform: translateX(-50%); z-index: 0; }
+.bv-portada.desde-intro .escultura { animation: esculturaLlegaCentro 1.1s var(--ease-out) both; }
+@keyframes esculturaLlegaCentro { from { opacity: 0; transform: translateX(-50%) scale(0.9); } to { opacity: 1; transform: translateX(-50%); } }
+.bv-accion { position: relative; z-index: 2; display: grid; justify-items: center; gap: 16px; margin-bottom: 18px; }
+.bv-portada .bv-lema { margin: 0; max-width: 40ch; text-align: center; }
+.bv-cta {
+  display: inline-flex; align-items: center; gap: 12px; padding: 16px 30px 16px 34px; border: 0; border-radius: var(--r-tag);
+  background: var(--tinta); color: var(--fondo); font: 500 17px/1 var(--sans); cursor: pointer;
+  transition: transform .35s var(--ease-out), box-shadow .3s ease;
+}
+.bv-cta svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .bv-cta:hover svg { transform: translateX(5px); } }
+.bv-cta:active { scale: 0.97; }
+.bv-cta:focus-visible { outline: 2px solid var(--acento-10); outline-offset: 4px; }
+.bv-portada .bv-titulo {
+  position: relative; z-index: 1; width: 100%; margin: 0; overflow: hidden; white-space: nowrap;
+  font-size: clamp(76px, 20.5vw, 330px); line-height: 0.8; text-align: center; padding-top: 0.06em;
+}
+.bv-titulo .letra { display: inline-block; animation: letraSube .8s var(--ease-out) both; animation-delay: calc(.15s + var(--i) * 55ms); }
+@keyframes letraSube { from { transform: translateY(105%); } to { transform: none; } }
+.bv-cinta { width: 100%; overflow: hidden; border-top: 1px solid var(--linea); margin-top: 14px; padding: 12px 0;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.bv-cinta-pista { display: flex; width: max-content; animation: cinta 42s linear infinite; }
+.bv-cinta-item { font: 500 14px/1 var(--sans); color: var(--tinta-2); white-space: nowrap; padding: 0 22px; }
+.bv-cinta-item::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 22px; border-radius: 50%; background: var(--acento-10); vertical-align: middle; }
+@keyframes cinta { to { transform: translateX(-50%); } }
+html.mov-reducido .bv-cinta-pista { animation: none; }
+.bv-expande { position: fixed; inset: 0; z-index: 70; background: var(--tinta); pointer-events: none; }
+@media (max-width: 900px) {
+  .bv-portada { padding-top: 0; min-height: calc(100dvh - 40px); grid-template-rows: auto minmax(200px, 1fr) auto auto auto; }
+  .bv-portada .escultura { top: 9%; width: min(86vw, 46vh); }
+  .bv-version { display: none; }
+  .bv-portada .bv-titulo { font-size: 20vw; }
+}

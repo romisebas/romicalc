@@ -420,6 +420,23 @@ def test_intro_de_la_tierra_al_logo(navegador, url):
     assert not errores, errores
 
 
+def test_portada_editorial(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    assert pagina.locator("#titulo-app .letra").count() == 8
+    assert "NSR-10" in pagina.text_content(".bv-version")
+    assert pagina.locator(".bv-cinta .bv-cinta-item").count() >= 14  # la cinta se repite para girar sin cortes
+    assert pagina.locator("#btn-disenar svg").count() == 1
+    pagina.click("#btn-disenar")
+    assert pagina.locator(".bv-expande").count() == 1
+    pagina.wait_for_selector("#bv-opciones:not([hidden])", timeout=3000)
+    pagina.wait_for_selector(".bv-expande", state="detached", timeout=3000)
+    assert not errores, errores
+    movil, errores2 = abrir(navegador, url, 390, 844)
+    assert movil.evaluate("document.documentElement.scrollWidth") <= 390
+    assert movil.is_visible("#btn-disenar")
+    assert not errores2, errores2
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
