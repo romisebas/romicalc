@@ -242,8 +242,10 @@
   }
 
   // ---------------------------------------------------------------- pestañas
+  let salidaPanel = null;
   function mostrarPestana(id, foco) {
     const cambia = id !== pestana;
+    const anterior = $('#panel-' + pestana);
     pestana = id;
     $$('#pestanas [role="tab"]').forEach((b) => {
       const sel = b.dataset.tab === id;
@@ -251,16 +253,28 @@
       b.tabIndex = sel ? 0 : -1;
       if (sel && foco) b.focus();
     });
-    $$('#contenido > .panel').forEach((pn) => {
-      const sel = pn.id === 'panel-' + id;
-      pn.hidden = !sel;
-      if (sel && cambia) { pn.classList.remove('entra'); void pn.offsetWidth; pn.classList.add('entra'); }
-    });
     if (movers.pestanas) movers.pestanas();
-    Object.keys(movers).forEach((k) => { if (k !== 'pestanas' && movers[k]) movers[k](true); });
-    if (id === 'veredicto' && veredictoPendiente) { veredictoPendiente = false; animarVeredicto(); }
-    if (id === 'planos' && hay3d && R && !encuadrado) { Vista3D.encuadrar(R, false); encuadrado = true; }
-    if (cambia) window.scrollTo({ top: 0, behavior: 'auto' });
+    // Un cambio rápido de pestaña interrumpe el cierre anterior (cancelar no dispara onfinish)
+    if (salidaPanel) { salidaPanel.cancel(); salidaPanel = null; }
+    const abrirNuevo = () => {
+      $$('#contenido > .panel').forEach((pn) => {
+        const sel = pn.id === 'panel-' + id;
+        pn.hidden = !sel;
+        if (sel && cambia) { pn.classList.remove('entra'); void pn.offsetWidth; pn.classList.add('entra'); }
+      });
+      Object.keys(movers).forEach((k) => { if (k !== 'pestanas' && movers[k]) movers[k](true); });
+      if (id === 'veredicto' && veredictoPendiente) { veredictoPendiente = false; animarVeredicto(); }
+      if (id === 'planos' && hay3d && R && !encuadrado) { Vista3D.encuadrar(R, false); encuadrado = true; }
+      if (cambia) window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+    // La pestaña que se cierra sale hacia arriba y se desvanece; luego entra la nueva
+    if (cambia && anterior && !anterior.hidden && !Mov.reducido() && anterior.animate) {
+      anterior.classList.remove('entra');
+      salidaPanel = anterior.animate(
+        [{ opacity: 1, transform: 'none', filter: 'none' }, { opacity: 0, transform: 'translateY(-12px) scale(0.985)', filter: 'blur(2px)' }],
+        { duration: 200, easing: 'cubic-bezier(0.4, 0, 1, 1)' });
+      salidaPanel.onfinish = () => { salidaPanel = null; abrirNuevo(); };
+    } else abrirNuevo();
   }
 
   function pintarPlanta() { $('#planta').innerHTML = Dibujo.planta(R, capa); }

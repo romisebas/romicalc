@@ -274,6 +274,29 @@ def test_refuerzo_elegido_3d_y_dibujo(navegador, url):
     assert not errores, errores
 
 
+def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    entrar_ejemplo(pagina)
+    anim = lambda sel: pagina.eval_on_selector(sel, "e => getComputedStyle(e).animationName")
+    pagina.hover("#btn-inicio")
+    assert anim("#marca-logo path") == "varillaDobla"
+    pagina.hover("#barra-sup .btn-icono[data-abrir-ajustes]")
+    assert anim("#barra-sup .btn-icono[data-abrir-ajustes] circle") == "ajusteDesliza"
+    pagina.hover("#btn-tema")
+    assert anim("#btn-tema svg") == "temaGira"
+    pagina.hover(".pie-github")
+    assert anim(".pie-github .gh-icono") == "ghSaluda"
+    pagina.hover("#pie-logo")
+    assert anim("#pie-logo path") == "varillaDobla"
+    # Al cambiar de pestaña, la anterior se cierra con su propia animación antes de mostrar la nueva
+    pagina.click("#tab-planos")
+    assert pagina.is_visible("#panel-veredicto") and pagina.is_hidden("#panel-planos")
+    assert pagina.eval_on_selector("#panel-veredicto", "e => e.getAnimations().length") > 0
+    pagina.wait_for_selector("#panel-planos", state="visible", timeout=1500)
+    assert pagina.is_hidden("#panel-veredicto")
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

@@ -442,3 +442,24 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 .dibujo.fig .alambre { stroke: #6b7480; stroke-linecap: round; }
 .dibujo.fig .soldadura { fill: var(--azul); }
 @media (max-width: 900px) { .elegido-vistas { grid-template-columns: minmax(0, 1fr); } .elegido-3d, .elegido-2d { height: 220px; } }
+
+/* ===================================================================== v3.3 animación de los logos e íconos al pasar el mouse */
+/* Logo ZapatAPP (barra, pie y portada): la varilla se vuelve a doblar */
+@media (hover: hover) and (pointer: fine) {
+  #btn-inicio:hover .logo-dz path, .pie-marca:hover .logo-dz path, #bv-marca:hover .logo-dz path {
+    stroke-dasharray: 1; stroke-dashoffset: 1; animation: varillaDobla .9s var(--ease-io) forwards;
+  }
+  /* Ajustes: los deslizadores se mueven */
+  .btn-icono[data-abrir-ajustes]:hover circle { animation: ajusteDesliza .7s var(--ease-io); transform-box: fill-box; }
+  .btn-icono[data-abrir-ajustes]:hover circle:nth-of-type(2) { animation-direction: reverse; }
+  /* Tema: la luna gira */
+  #btn-tema:hover svg { animation: temaGira .6s var(--ease-out); }
+  /* GitHub: saludo */
+  .pie-github:hover .gh-icono { animation: ghSaluda .7s var(--ease-out); transform-origin: 50% 80%; }
+  /* Marca de la carga y del intro */
+  .btn-icono:hover svg { transform-origin: center; }
+}
+@keyframes ajusteDesliza { 0%, 100% { transform: none; } 50% { transform: translateX(-5px); } }
+@keyframes temaGira { 0% { transform: rotate(0); } 60% { transform: rotate(-40deg) scale(1.12); } 100% { transform: rotate(0); } }
+@keyframes ghSaluda { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-6deg); } }
+html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:hover .logo-dz path { stroke-dashoffset: 0; }
