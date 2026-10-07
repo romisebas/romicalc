@@ -256,6 +256,24 @@ def test_riel_de_datos(navegador, url):
     assert not errores, errores
 
 
+def test_refuerzo_elegido_3d_y_dibujo(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-refuerzo")
+    assert pagina.locator("#elegido-3d canvas").count() == 1
+    assert "#4" in pagina.text_content("#elegido-tit")
+    assert "Barra corrugada #4" in pagina.text_content("#elegido-2d")
+    pagina.check('#acero-x input[value="6"]')
+    pagina.wait_for_function("document.querySelector('#elegido-tit').textContent.includes('#6')")
+    pagina.click('#elegido-dir [data-dir="Y"]')
+    assert "#4" in pagina.text_content("#elegido-tit") and "Y" in pagina.text_content("#elegido-tit")
+    pagina.click('#tipo-refuerzo [data-ref="malla"]')
+    assert "Malla" in pagina.text_content("#elegido-tit")
+    assert pagina.locator("#elegido-2d .soldadura").count() == 12
+    assert pagina.is_hidden("#elegido-dir")
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

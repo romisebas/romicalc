@@ -178,6 +178,19 @@
               <button type="button" role="tab" data-ref="malla" aria-selected="false">Malla electrosoldada</button>
             </div>
           </div>
+          <section class="elegido" aria-labelledby="elegido-tit">
+            <div class="elegido-cab">
+              <div><p class="elegido-eti">Elemento elegido</p><h3 class="elegido-tit" id="elegido-tit"></h3></div>
+              <div class="seg seg-sm" role="tablist" aria-label="Dirección de la barra" id="elegido-dir">
+                <button type="button" role="tab" data-dir="X" aria-selected="true">Paralelas a X</button>
+                <button type="button" role="tab" data-dir="Y" aria-selected="false">Paralelas a Y</button>
+              </div>
+            </div>
+            <div class="elegido-vistas">
+              <div class="elegido-3d" id="elegido-3d" role="img" aria-label="Vista 3D del refuerzo elegido"></div>
+              <figure class="elegido-2d" id="elegido-2d"></figure>
+            </div>
+          </section>
           <div id="panel-barras">
             <p class="ayuda">Elija la barra en cada dirección. La cantidad cubre el acero requerido y respeta smax = min(3h, 45 cm).</p>
             <div class="aceros">
@@ -469,6 +482,7 @@
   <script src="js/nucleo/informe.js"></script>
   <script src="js/nucleo/dibujo.js"></script>
   <script src="js/nucleo/figuras.js"></script>
+  <script src="js/nucleo/elemento.js"></script>
   <script src="js/nucleo/diapositivas.js"></script>
   <script src="js/nucleo/vista3d.js"></script>
   <script src="js/nucleo/intro3d.js"></script>

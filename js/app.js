@@ -15,8 +15,9 @@
   let proyectoId = null;
   let R = null;            // resultados cuando el proyecto está completo
   let enApp = false;
-  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false, veredictoPendiente = false;
+  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false, veredictoPendiente = false, dirElegida = 'X';
   const movers = {};
+  const RF_BARS = window.Zapata.BARS; // catálogo de barras (db en mm, A en cm²)
 
   // Pasos del asistente = categorías de edición del dashboard
   const PASOS = [
@@ -294,6 +295,26 @@
     return '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Referencia</th><th>Alambre L / T (mm)</th><th>Separación L / T (mm)</th><th>As en X (' + Unidades.u('aceroM') + ')</th><th>As en Y (' + Unidades.u('aceroM') + ')</th><th>Capas</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';
   }
 
+  // Tarjeta del elemento elegido: 3D y dibujo de la barra (por dirección) o de la malla
+  function pintarElegido() {
+    const rf = R.ref, esMalla = rf.tipo === 'malla';
+    $('#elegido-dir').hidden = esMalla;
+    let e;
+    if (esMalla) {
+      const m = rf.sel;
+      e = { tipo: 'malla', ref: m.ref, alt: m.alt, dL: m.dL, dT: m.dT, sL: m.sL, sT: m.sT, capas: m.capas };
+      $('#elegido-tit').textContent = 'Malla ' + (m.capas > 1 ? '2 × ' : '') + m.ref + ' (' + m.alt + ')';
+    } else {
+      const sel = dirElegida === 'X' ? rf.selX : rf.selY, b = RF_BARS[sel.barra];
+      e = { tipo: 'barra', barra: sel.barra, db: b.db, A: b.A, n: sel.n, sTxt: Unidades.fmt(sel.s, 'longitud'), dir: dirElegida };
+      $('#elegido-tit').textContent = sel.n + ' barras #' + sel.barra + ' @ ' + Unidades.fmt(sel.s, 'longitud') + ', paralelas a ' + dirElegida;
+      $$('#elegido-dir button').forEach((x) => x.setAttribute('aria-selected', String(x.dataset.dir === dirElegida)));
+      if (movers.elegido) movers.elegido();
+    }
+    $('#elegido-2d').innerHTML = Elemento.svg2d(e);
+    Elemento.mostrar(e);
+  }
+
   function pintarRefuerzo() {
     const rf = R.ref;
     const esMalla = rf.tipo === 'malla';
@@ -301,6 +322,7 @@
     $('#panel-malla').hidden = !esMalla;
     $$('#tipo-refuerzo button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.ref === rf.tipo)));
     if (movers.ref) movers.ref();
+    pintarElegido();
     if (!esMalla) {
       $('#acero-x').innerHTML = tablaBarras('X', rf.opsX, rf.barX, R.fx.As, R.Ly);
       $('#acero-y').innerHTML = tablaBarras('Y', rf.opsY, rf.barY, R.fy.As, R.Lx);
@@ -729,6 +751,13 @@
     movers.capas_planta = Mov.segmentado($('#capas'));
     movers.vistas = Mov.segmentado($('#vistas2'));
     movers.pestanas = Mov.segmentado($('#pestanas'));
+    movers.elegido = Mov.segmentado($('#elegido-dir'));
+    $('#elegido-dir').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-dir]');
+      if (!b || !R) return;
+      dirElegida = b.dataset.dir;
+      pintarElegido();
+    });
     $('#pestanas').addEventListener('click', (e) => {
       const b = e.target.closest('[role="tab"]');
       if (b) mostrarPestana(b.dataset.tab);
@@ -954,6 +983,7 @@
     });
     llenarSelectBarras();
     Diapositivas.montar($('#memoria'));
+    Elemento.montar($('#elegido-3d'));
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));
