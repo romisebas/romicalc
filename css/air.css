@@ -540,3 +540,45 @@ html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:
 
 /* Subíndices: no alteran el interlineado */
 sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; }
+
+/* ===================================================================== v3.3 detalle con anillos de utilización */
+.v-contexto { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.v-contexto li { padding: 7px 14px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-tag); font: 500 14px/1 var(--sans); color: var(--tinta); }
+.anillos { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.anillo {
+  position: relative; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; padding: 18px 8px 14px; cursor: pointer; font: inherit; text-align: center;
+  border: 1px solid transparent; border-radius: var(--r-cont); background: color-mix(in srgb, var(--tinta) 6%, transparent); color: var(--tinta);
+  transition: border-color .2s ease, background-color .2s ease, transform .2s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .anillo:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--tinta) 10%, transparent); } }
+.anillo[aria-selected="true"] { border-color: var(--tinta); background: color-mix(in srgb, var(--tinta) 12%, transparent); }
+.an-svg { width: 84px; height: 84px; transform: rotate(-90deg); }
+.an-svg circle { fill: none; stroke-width: 6; }
+.an-pista { stroke: color-mix(in srgb, var(--tinta) 14%, transparent); }
+.an-valor { stroke-linecap: round; stroke-dasharray: var(--u) 100; stroke: var(--ok); }
+.u-aviso .an-valor { stroke: #c9a227; } .u-mal .an-valor { stroke: var(--mal); }
+.an-pct { position: absolute; top: 18px; height: 84px; display: grid; place-items: center; font: 500 20px/1 var(--sans); letter-spacing: -0.02em; }
+.an-nom { font: 500 13px/1.2 var(--sans); color: var(--tinta-2); text-align: center; }
+.resumen.anima .an-valor { animation: anilloLlena 1s var(--ease-out) .7s both; }
+@keyframes anilloLlena { from { stroke-dasharray: 0 100; } }
+.ficha {
+  --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b; --linea: #e0e0e0; --ok: #3d6b47; --ok-fondo: #dde8dc; --mal: #a3392c; --mal-fondo: #f1dcd7; --aviso: #8a6a1f;
+  background: #f5f5f5; color: var(--tinta); border-radius: var(--r-cont); padding: 20px 22px; display: grid; gap: 12px;
+}
+.ficha.entra { animation: panelEntra .35s var(--ease-out) both; }
+.ficha-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ficha-tit { margin: 0; font: 400 28px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.ficha-det { margin: 0; font: 500 16px/1.5 var(--sans); color: var(--tinta-2); }
+.ficha-barra { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.ficha-barra .ch-pista { height: 8px; border-radius: 4px; }
+.ficha-barra .ch-barra { background: var(--ok); } .ficha-barra.u-aviso .ch-barra { background: #b8891a; } .ficha-barra.u-mal .ch-barra { background: var(--mal); }
+.ficha-barra .num { font: 500 14px var(--sans); color: var(--tinta); }
+.ficha-memoria { justify-self: start; font: 500 14px var(--sans); color: #2b7fff; }
+@media (max-width: 900px) {
+  .anillos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .anillo { padding: 12px 4px 10px; }
+  .an-svg { width: 64px; height: 64px; }
+  .an-pct { top: 12px; height: 64px; font-size: 16px; }
+  .an-nom { font-size: 12px; }
+  .ficha-tit { font-size: 24px; }
+}

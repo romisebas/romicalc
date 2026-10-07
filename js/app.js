@@ -15,7 +15,7 @@
   let proyectoId = null;
   let R = null;            // resultados cuando el proyecto está completo
   let enApp = false;
-  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false, veredictoPendiente = false, dirElegida = 'X';
+  let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false, veredictoPendiente = false, dirElegida = 'X', fichaSel = null;
   const movers = {};
   const RF_BARS = window.Zapata.BARS; // catálogo de barras (db en mm, A en cm²)
 
@@ -211,24 +211,41 @@
     // Si cambia el resultado: se anima ahora o al volver a la pestaña Veredicto
     if (okPrevio !== null && okPrevio !== ok) { if (pestana === 'veredicto') animarVeredicto(); else veredictoPendiente = true; }
     okPrevio = ok;
-    const fallas = R.chequeos.filter((c) => !c.ok).map((c) => c.titulo.toLowerCase());
-    $('#v-det').textContent = ok
-      ? 'Gobierna ' + R.ult.gob.id + ' con σu = ' + Unidades.fmt(R.ult.su, 'presion') + '. Toda la base trabaja a compresión (caso ' + R.serv.caso + ').'
-      : 'Falla en ' + fallas.join(', ') + '. Revise las dimensiones o el refuerzo.';
+    // Contexto en píldoras: combinación que gobierna, esfuerzo de diseño y caso de presiones
+    $('#v-contexto').innerHTML = '<li>Gobierna ' + R.ult.gob.id + '</li><li>σu ' + Unidades.fmt(R.ult.su, 'presion') + '</li>' +
+      '<li>Caso ' + R.serv.caso + (R.serv.caso === 'A' ? ', base en compresión' : ', hay tensión') + '</li>';
     const UA = (x, mag) => Unidades.a(x, mag);
     const cifras = { Lx: [UA(R.Lx, 'longitud'), 2], Ly: [UA(R.Ly, 'longitud'), 2], h: [UA(R.h, 'longitud'), 2], util: [R.utilMax * 100, 0] };
     Object.keys(cifras).forEach((k) => Mov.contar($('[data-cifra="' + k + '"]'), cifras[k][0], cifras[k][1], animar));
     // Si no cumple: una píldora por cada chequeo que falla, bajo el titular
     $('#v-fallas').innerHTML = R.chequeos.filter((c) => !c.ok).map((c) => '<li>' + c.titulo + '</li>').join('');
     $('[data-cifra="util"]').classList.toggle('es-mal', R.utilMax > 1);
+    // Anillos de utilización (uno por chequeo); la ficha muestra el seleccionado o el más exigido
+    if (!fichaSel || !R.chequeos.some((c) => c.id === fichaSel)) fichaSel = R.chequeos.reduce((a, b) => (b.util > a.util ? b : a)).id;
     $('#chequeos').innerHTML = R.chequeos.map((c) => {
-      const cls = claseUtil(c.util, c.ok);
-      const ancho = Math.max(2, Math.min(1, c.util) * 100);
-      return '<li><a href="#paso-' + c.id + '" class="chequeo ' + (c.ok ? 'ok' : 'mal') + '" data-paso="' + c.id + '">' +
-        '<span class="ch-tit">' + c.titulo + '</span><span class="ch-det">' + c.det + '</span>' +
-        '<span class="ch-util ' + cls + '" title="Demanda / capacidad"><span class="ch-pista"><span class="ch-barra" style="width:' + ancho + '%"></span></span><span class="num">' + f(c.util * 100, 0) + '%</span></span>' +
-        '<span class="tag ' + (c.ok ? 'tag-ok' : 'tag-mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</span></a></li>';
+      const cls = claseUtil(c.util, c.ok), u = Math.min(1, c.util) * 100;
+      return '<li><button type="button" role="tab" class="chequeo anillo ' + (c.ok ? 'ok' : 'mal') + ' u-' + cls + '" data-paso="' + c.id + '" aria-selected="' + (c.id === fichaSel) + '">' +
+        '<svg class="an-svg" viewBox="0 0 64 64" aria-hidden="true"><circle class="an-pista" cx="32" cy="32" r="26" pathLength="100"/>' +
+        '<circle class="an-valor" cx="32" cy="32" r="26" pathLength="100" style="--u:' + u.toFixed(1) + '"/></svg>' +
+        '<span class="an-pct num">' + f(c.util * 100, 0) + '%</span><span class="an-nom">' + (CORTO[c.id] || c.titulo) + '</span>' +
+        '<span class="sr-only">' + c.titulo + (c.ok ? ', cumple' : ', no cumple') + '</span></button></li>';
     }).join('');
+    pintarFicha();
+  }
+
+  const CORTO = { serv: 'Suelo', pz: 'Cortante 2D', cu: 'Cortante 1D', fl: 'Flexión', ap: 'Aplastamiento', ld: 'Desarrollo' };
+  function pintarFicha() {
+    const c = R.chequeos.find((x) => x.id === fichaSel);
+    if (!c) return;
+    const cls = claseUtil(c.util, c.ok);
+    $$('#chequeos .anillo').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.paso === fichaSel)));
+    $('#ficha').innerHTML = '<div class="ficha-cab"><h3 class="ficha-tit">' + c.titulo + '</h3>' +
+      '<span class="tag ' + (c.ok ? 'tag-ok' : 'tag-mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</span></div>' +
+      '<p class="ficha-det">' + c.det + '</p>' +
+      '<div class="ficha-barra u-' + cls + '"><span class="ch-pista"><span class="ch-barra" style="width:' + Math.max(2, Math.min(1, c.util) * 100) + '%"></span></span>' +
+      '<span class="num">' + f(c.util * 100, 0) + '% de la capacidad</span></div>' +
+      '<a href="#" class="ficha-memoria" data-paso="' + c.id + '">Ver en la memoria ›</a>';
+    $('#ficha').classList.remove('entra'); void $('#ficha').offsetWidth; $('#ficha').classList.add('entra');
   }
 
   // Animación del veredicto: el aro se dibuja; si cumple aparece el check y un latido verde,
@@ -849,6 +866,12 @@
     });
 
     $('#chequeos').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-paso]');
+      if (!b || !R) return;
+      fichaSel = b.dataset.paso;
+      pintarFicha();
+    });
+    $('#ficha').addEventListener('click', (e) => {
       const a = e.target.closest('a[data-paso]');
       if (!a) return;
       e.preventDefault();

@@ -138,11 +138,9 @@
           </dl>
           <section class="detalle" aria-labelledby="detalle-tit">
             <h2 class="detalle-tit" id="detalle-tit">Detalle de los chequeos</h2>
-            <p class="v-det" id="v-det"></p>
-            <div class="tabla-chequeos">
-              <div class="tc-cab" aria-hidden="true"><span>Chequeo</span><span>Demanda y capacidad</span><span>Utilización</span><span>Estado</span></div>
-              <ol class="chequeos" id="chequeos"></ol>
-            </div>
+            <ul class="v-contexto" id="v-contexto" aria-label="Condición que gobierna"></ul>
+            <ol class="chequeos anillos" id="chequeos" role="tablist" aria-label="Utilización de cada chequeo"></ol>
+            <div class="ficha" id="ficha" role="tabpanel" aria-live="polite"></div>
           </section>
         </div>
 

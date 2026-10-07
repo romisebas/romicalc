@@ -136,6 +136,8 @@ def test_pestanas_veredicto_y_logo(navegador, url):
     # Un chequeo lleva a su paso en la pestaña Memoria
     pagina.click("#tab-veredicto")
     pagina.click('#chequeos [data-paso="pz"]')
+    assert "Cortante en dos direcciones" in pagina.text_content("#ficha")
+    pagina.click("#ficha .ficha-memoria")
     assert pagina.is_visible("#panel-memoria")
     # Al dejar de cumplir: veredicto en rojo con su propia animación
     pagina.click("#tab-planos")
@@ -216,12 +218,14 @@ def test_ajuste_de_unidades(navegador, url):
         pagina.wait_for_selector("#dlg-ajustes", state="hidden")
     elegir("si")
     assert pagina.locator("#cifras > div").count() == 3
-    assert "kPa" in pagina.text_content("#chequeos")
-    assert "kN" in pagina.text_content("#chequeos")
+    assert "kPa" in pagina.text_content(".detalle")
+    pagina.click('#chequeos [data-paso="pz"]')
+    assert "kN" in pagina.text_content("#ficha")
     assert abs(float(pagina.input_value('#asistente [data-k="materiales.fc"]')) - 27.4586) < 1e-3
     elegir("ingles")
     assert abs(float(pagina.input_value('.dims [data-k="zapata.Lx"]')) - 8.2021) < 1e-3
-    assert "kip" in pagina.text_content("#chequeos")
+    pagina.click('#chequeos [data-paso="pz"]')
+    assert "kip" in pagina.text_content("#ficha")
     # Editar en pies guarda en metros
     pagina.click("#tab-planos")
     pagina.fill('.dims [data-k="zapata.Lx"]', "9")
@@ -336,14 +340,30 @@ def test_subindices_en_textos_y_dibujos(navegador, url):
     entrar_ejemplo(pagina)
     plano = """(sel) => { const out = []; const w = document.createTreeWalker(document.querySelector(sel), NodeFilter.SHOW_TEXT);
       while (w.nextNode()) { const t = w.currentNode; if (!t.parentElement.closest('.katex') && /σmax|φVc|\bVu\b|\bldc\b|\bMux\b|\bAs\b/.test(t.nodeValue)) out.push(t.nodeValue); } return out; }"""
-    assert pagina.evaluate(plano, "#chequeos") == []
-    assert pagina.locator("#chequeos sub").count() >= 5
+    assert pagina.evaluate(plano, ".detalle") == []
+    pagina.click('#chequeos [data-paso="serv"]')
+    assert pagina.locator(".detalle sub").count() >= 2
     pagina.click("#tab-planos")
     assert pagina.locator("#planta svg tspan.sub").count() >= 4
     pagina.click("#tab-refuerzo")
     assert pagina.locator("#acero-x sub").count() >= 1
     pagina.click("#tab-memoria")
     assert pagina.evaluate(plano, "#memoria") == []
+    assert not errores, errores
+
+
+def test_detalle_con_anillos(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    assert pagina.locator("#v-contexto li").count() == 3
+    assert "Gobierna 1.2D + 1.6L" in pagina.text_content("#v-contexto")
+    assert pagina.locator("#chequeos .anillo svg").count() == 6
+    # Por defecto, la ficha del chequeo más exigido (flexión, 97 %)
+    assert "Flexión y refuerzo" in pagina.text_content("#ficha .ficha-tit")
+    assert pagina.get_attribute('#chequeos [data-paso="fl"]', "aria-selected") == "true"
+    pagina.click('#chequeos [data-paso="ap"]')
+    assert "Aplastamiento" in pagina.text_content("#ficha .ficha-tit")
+    assert "309.40" in pagina.text_content("#ficha")
     assert not errores, errores
 
 
