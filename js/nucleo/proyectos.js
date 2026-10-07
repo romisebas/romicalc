@@ -41,5 +41,8 @@
 
   function borrar(id) { escribir(leer().filter((p) => p.id !== id)); }
 
-  global.Proyectos = { migrar, nuevoId, listar, obtener, guardar, borrar };
+  // Devuelve a la lista una entrada borrada, tal como estaba (para "Deshacer")
+  function restaurar(entrada) { escribir(leer().filter((p) => p.id !== entrada.id).concat([entrada])); }
+
+  global.Proyectos = { migrar, nuevoId, listar, obtener, guardar, borrar, restaurar };
 })(window);

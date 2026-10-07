@@ -518,12 +518,22 @@
     $('#recientes').hidden = !lista.length;
     const etq = { cumple: 'Cumple', 'no-cumple': 'No cumple', incompleto: 'Incompleto' };
     $('#lista-recientes').innerHTML = lista.map((p) =>
-      '<li><button type="button" class="reciente" data-id="' + p.id + '">' + miniatura(p.datos) +
+      '<li class="rc-tarjeta"><button type="button" class="reciente" data-id="' + p.id + '">' + miniatura(p.datos) +
+      '<span class="rc-estado ' + p.estado + '">' + etq[p.estado] + '</span>' +
       '<span class="rc-nombre">' + Informe.esc(p.nombre || 'Proyecto sin nombre') + '</span>' +
-      '<span class="rc-meta">' + Informe.esc(p.elemento || 'Sin elemento') + ', ' + new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' +
-      '<span class="rc-estado ' + p.estado + '">' + etq[p.estado] + '</span></button>' +
+      '<span class="rc-meta">' + Informe.esc(p.elemento || 'Sin elemento') + '</span>' +
+      '<span class="rc-fecha">' + fechaRelativa(p.fecha) + '</span></button>' +
       '<button type="button" class="btn-icono rc-borrar" data-borrar="' + p.id + '" aria-label="Borrar ' + Informe.esc(p.nombre || 'proyecto') + '" title="Borrar">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M8 7l1 12h6l1-12"/></svg></button></li>').join('');
+  }
+
+  // "hace 2 h", "ayer", "hace 3 días"…
+  function fechaRelativa(iso) {
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s < 60) return 'ahora';
+    const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+    const [n, u] = s < 3600 ? [s / 60, 'minute'] : s < 86400 ? [s / 3600, 'hour'] : s < 2592000 ? [s / 86400, 'day'] : [s / 2592000, 'month'];
+    return rtf.format(-Math.round(n), u);
   }
 
   // Miniatura de la planta guardada (zapata y columna a escala)
@@ -710,12 +720,20 @@
     setTimeout(() => { if (dlg.open) dlg.close(); }, Mov.reducido() ? 0 : 160);
   }
   let tAviso = 0;
-  function avisar(txt) {
+  // Aviso flotante; con accion (texto y función) muestra un botón, por ejemplo "Deshacer"
+  function avisar(txt, accion, alPulsar) {
     const a = $('#aviso');
     a.textContent = txt;
+    a.classList.toggle('con-accion', !!accion);
+    if (accion) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'aviso-accion'; b.textContent = accion;
+      b.addEventListener('click', () => { a.classList.remove('ver'); alPulsar(); }, { once: true });
+      a.appendChild(b);
+    }
     a.classList.add('ver');
     clearTimeout(tAviso);
-    tAviso = setTimeout(() => a.classList.remove('ver'), 2800);
+    tAviso = setTimeout(() => a.classList.remove('ver'), accion ? 6000 : 2800);
   }
 
   // ============================================================ tabla pegada de SAP2000 / ETABS
@@ -800,9 +818,12 @@
     $('#lista-recientes').addEventListener('click', (e) => {
       const borrar = e.target.closest('[data-borrar]');
       if (borrar) {
-        Proyectos.borrar(borrar.dataset.borrar);
-        pintarRecientes();
-        avisar('Proyecto borrado de la lista.');
+        const entrada = Proyectos.obtener(borrar.dataset.borrar);
+        const tarjeta = borrar.closest('.rc-tarjeta');
+        const quitar = () => { Proyectos.borrar(entrada.id); pintarRecientes(); };
+        if (tarjeta && tarjeta.animate && !Mov.reducido()) tarjeta.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.94)' }], { duration: 200, easing: 'ease-in' }).onfinish = quitar;
+        else quitar();
+        avisar('Proyecto borrado.', 'Deshacer', () => { Proyectos.restaurar(entrada); pintarRecientes(); });
         return;
       }
       const r = e.target.closest('.reciente');
