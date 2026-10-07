@@ -302,9 +302,11 @@ def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
     pagina.hover("#pie-logo")
     assert anim("#pie-logo path") == "varillaDobla"
     # Al cambiar de pestaña, la anterior se cierra con su propia animación antes de mostrar la nueva
-    pagina.click("#tab-planos")
-    assert pagina.is_visible("#panel-veredicto") and pagina.is_hidden("#panel-planos")
-    assert pagina.eval_on_selector("#panel-veredicto", "e => e.getAnimations().length") > 0
+    # Se comprueba en el mismo instante del clic (un clic lento podría llegar después de los 200 ms)
+    estado = pagina.evaluate("""() => { document.querySelector('#tab-planos').click();
+      const v = document.querySelector('#panel-veredicto');
+      return [!v.hidden, document.querySelector('#panel-planos').hidden, v.getAnimations().length]; }""")
+    assert estado[0] and estado[1] and estado[2] > 0, estado
     pagina.wait_for_selector("#panel-planos", state="visible", timeout=1500)
     assert pagina.is_hidden("#panel-veredicto")
     assert not errores, errores

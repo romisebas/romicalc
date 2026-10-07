@@ -401,7 +401,8 @@
     ocultarError();
     pintarPasoVivo();
     const primero = $('.wz-paso[data-paso="' + p.id + '"] input, .wz-paso[data-paso="' + p.id + '"] select');
-    if (primero) setTimeout(() => primero.focus({ preventScroll: true }), 30);
+    // Enfoca el primer campo solo si el usuario no está ya escribiendo en otro campo del paso
+    if (primero) setTimeout(() => { if (!primero.closest('.wz-paso').contains(document.activeElement)) primero.focus({ preventScroll: true }); }, 30);
   }
 
   function abrirAsistente(i, modo, desde) {

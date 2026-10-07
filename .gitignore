@@ -1,3 +1,4 @@
 ﻿tests/capturas/
 __pycache__/
 .pytest_cache/
+.claude/
