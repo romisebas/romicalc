@@ -1,15 +1,13 @@
-/* Memoria de cálculo de la zapata aislada con momento, en notación LaTeX (KaTeX).
- * Devuelve secciones con párrafos explicativos, ecuaciones alineadas y verificaciones.
+/* Memoria de cálculo de la zapata aislada con momento (v3.3), en LaTeX (KaTeX).
+ * Se organiza en capítulos y cada capítulo en diapositivas de una sola idea:
+ * un texto corto, de una a cuatro ecuaciones y una figura. Todo se escribe en el sistema
+ * de unidades del cálculo (curso, SI o inglés), con los coeficientes de la norma de ese sistema.
+ * Para el PDF, cada capítulo también trae la lista plana de elementos (items).
  */
 (function (global) {
   'use strict';
 
   const n = (x, d = 3) => (x == null || !isFinite(x) ? '\\text{n/a}' : Number(x).toFixed(d));
-  const U = {
-    t: '\\,\\text{tonf}', tm2: '\\,\\text{tonf/m}^2', m: '\\,\\text{m}', m2: '\\,\\text{m}^2', m4: '\\,\\text{m}^4',
-    tm: '\\,\\text{tonf}\\cdot\\text{m}', kc: '\\,\\text{kgf/cm}^2', cm2: '\\,\\text{cm}^2', cm2m: '\\,\\text{cm}^2/\\text{m}',
-    mm: '\\,\\text{mm}', cm: '\\,\\text{cm}', mpa: '\\,\\text{MPa}', none: '',
-  };
 
   // Ecuación alineada: símbolo, sustitución y resultado enmarcado.
   function eq(etq, lhs, simb, sust, res, u, extra) {
@@ -20,156 +18,213 @@
     return Object.assign({ t: 'eq', etq, tex: '\\begin{aligned}' + lineas.join(' \\\\ ') + '\\end{aligned}' }, extra || {});
   }
   const ver = (etq, tex, ok) => ({ t: 'ver', etq, tex, ok });
-  const p = (html) => ({ t: 'p', html });
-  const sub = (txt) => ({ t: 'sub', txt });
   const nota = (tipo, html) => ({ t: 'nota', tipo, html });
   const le = (ok) => (ok ? '\\le' : '>');
   const ge = (ok) => (ok ? '\\ge' : '<');
+  const kTx = (k) => (k === 1 ? '' : String(k));
 
   function generar(R) {
     const I = R.inp, c = I.columna, m = I.materiales;
     const s = R.serv, u = R.ult, pz = R.pz, cu = R.cu, fx = R.fx, fy = R.fy, ap = R.ap, ld = R.ld, rf = R.ref;
-    const out = [];
+    const sis = I.unid || 'curso';
+    const UN = global.Unidades;
+    const C = UN.coef(sis);
+    const v = (x, mag, d) => UN.num(x, mag, sis, d);
+    const U = (mag) => UN.tex(mag, sis);
+    const en = sis === 'ingles';
+    // Conversión del momento a fuerza × longitud corta para R_n
+    const convM = { curso: '10^{5}', si: '10^{6}', ingles: '12\\,000' }[sis];
+    const convMv = { curso: 1e5, si: 1e6, ingles: 12000 }[sis];
+    const uCorto = U('corto'), uEsf = U('esfuerzo');
+    const ldU = en ? '\\,\\text{in}' : '\\,\\text{mm}';
+    const ldV = (x) => (en ? x / 25.4 : x);
+    const unidTxt = { curso: "f'c en kgf/cm², b y d en cm; el resultado sale en kgf y se divide entre 1000 para tonf",
+      si: "f'c en MPa, b y d en mm; el resultado sale en N y se divide entre 1000 para kN",
+      ingles: "f'c en psi, b y d en pulgadas; el resultado sale en lb y se divide entre 1000 para kip" }[sis];
 
-    // ---------------------------------------------------------------- 1
-    const a = [];
-    a.push(p('El área de la zapata se determina con las cargas de servicio, sin mayorar (NSR-10 C.15.2.2). Como la columna transmite momentos en las dos direcciones, la presión sobre el suelo no es uniforme: varía linealmente y alcanza su máximo en una esquina. Se verifica que ninguna esquina supere el esfuerzo admisible y que ninguna quede en tensión.'));
-    if (s.W > 0) a.push(eq('Peso propio de zapata y suelo', 'W', 'L_x L_y\\left[h\\,\\gamma_c + (D_f - h)\\,\\gamma_s\\right]',
-      n(R.Lx, 2) + '\\cdot' + n(R.Ly, 2) + '\\left[' + n(R.h) + '\\cdot' + n(I.suelo.gc, 2) + ' + ' + n(Math.max(I.suelo.Df - R.h, 0)) + '\\cdot' + n(I.suelo.gs, 2) + '\\right]', n(s.W), U.t));
-    a.push(eq('Carga axial de servicio', 'P_s', 'P_{PP+CM} + P_{CV}' + (s.W > 0 ? ' + W' : ''),
-      n(Math.abs(I.cargas.D.P)) + ' + ' + n(Math.abs(I.cargas.L.P)) + (s.W > 0 ? ' + ' + n(s.W) : ''), n(s.P), U.t));
-    a.push(eq('Momentos de servicio', 'M_{xs}', 'M_{x,PP+CM} + M_{x,CV}', n(Math.abs(I.cargas.D.Mx)) + ' + ' + n(Math.abs(I.cargas.L.Mx)), n(s.Mx), U.tm));
-    a.push(eq('', 'M_{ys}', 'M_{y,PP+CM} + M_{y,CV}', n(Math.abs(I.cargas.D.My)) + ' + ' + n(Math.abs(I.cargas.L.My)), n(s.My), U.tm));
-    a.push(eq('Área requerida solo por carga axial', 'A_z', '\\dfrac{P_s}{\\sigma_{adm}}', '\\dfrac{' + n(s.P) + '}{' + n(I.suelo.qadm, 2) + '}', n(s.Areq), U.m2));
-    a.push(p('Esa área no considera los momentos, por eso se adopta una zapata algo mayor y se revisan los esfuerzos en las esquinas.'));
-    a.push(eq('Área adoptada', 'A', 'L_x\\,L_y', n(R.Lx, 2) + '\\cdot' + n(R.Ly, 2), n(s.A), U.m2));
-    a.push(eq('Inercias de la base', 'I_x', '\\dfrac{L_x L_y^{3}}{12}', '\\dfrac{' + n(R.Lx, 2) + '\\cdot' + n(R.Ly, 2) + '^{3}}{12}', n(s.Ix), U.m4));
-    a.push(eq('', 'I_y', '\\dfrac{L_y L_x^{3}}{12}', '\\dfrac{' + n(R.Ly, 2) + '\\cdot' + n(R.Lx, 2) + '^{3}}{12}', n(s.Iy), U.m4));
-    a.push(eq('Excentricidades', 'e_x', '\\dfrac{M_{ys}}{P_s}', '\\dfrac{' + n(s.My) + '}{' + n(s.P) + '}', n(s.ex, 4), U.m));
-    a.push(ver('Dentro del núcleo central en X', 'e_x = ' + n(s.ex, 4) + U.m + ' \\;' + le(s.ex <= R.Lx / 6) + '\\; \\dfrac{L_x}{6} = ' + n(R.Lx / 6, 3) + U.m, s.ex <= R.Lx / 6));
-    a.push(eq('', 'e_y', '\\dfrac{M_{xs}}{P_s}', '\\dfrac{' + n(s.Mx) + '}{' + n(s.P) + '}', n(s.ey, 4), U.m));
-    a.push(ver('Dentro del núcleo central en Y', 'e_y = ' + n(s.ey, 4) + U.m + ' \\;' + le(s.ey <= R.Ly / 6) + '\\; \\dfrac{L_y}{6} = ' + n(R.Ly / 6, 3) + U.m, s.ey <= R.Ly / 6));
-    a.push(p('Los esfuerzos en las esquinas resultan de sumar la compresión uniforme y la flexión en cada dirección. Los signos siguen la numeración del documento: σ1 arriba a la derecha y luego en sentido horario.'));
-    const sig = (i, sx, sy) => eq('Esquina ' + i, '\\sigma_{' + i + '}',
-      '\\dfrac{P_s}{A} ' + sx + ' \\dfrac{M_{xs}\\,(L_y/2)}{I_x} ' + sy + ' \\dfrac{M_{ys}\\,(L_x/2)}{I_y}',
-      '\\dfrac{' + n(s.P) + '}{' + n(s.A) + '} ' + sx + ' \\dfrac{' + n(s.Mx) + '\\cdot' + n(R.Ly / 2) + '}{' + n(s.Ix) + '} ' + sy + ' \\dfrac{' + n(s.My) + '\\cdot' + n(R.Lx / 2) + '}{' + n(s.Iy) + '}',
-      n(s['s' + i]), U.tm2);
-    a.push(sig(1, '+', '+'), sig(2, '-', '+'), sig(3, '-', '-'), sig(4, '+', '-'));
-    a.push(ver('Esfuerzo máximo contra el admisible', '\\sigma_{max} = ' + n(s.smax) + U.tm2 + ' \\;' + le(s.okMax) + '\\; \\sigma_{adm} = ' + n(I.suelo.qadm, 2) + U.tm2, s.okMax));
-    a.push(ver('Sin tensión en el suelo (caso ' + s.caso + ')', '\\sigma_{min} = ' + n(s.smin) + U.tm2 + ' \\;' + (s.okMin ? '>' : '\\le') + '\\; 0', s.okMin));
-    out.push({ id: 'serv', titulo: 'Área de la zapata y esfuerzos de servicio', ref: 'NSR-10 C.15.2', ok: R.chequeos[0].ok, items: a });
+    const caps = [];
+    const capitulo = (id, titulo, ref, ok) => { const cap = { id, titulo, ref, ok, diapos: [] }; caps.push(cap); return cap; };
+    const diapo = (cap, titulo, texto, items, fig) => cap.diapos.push({ titulo, texto, items: items.filter(Boolean), fig });
 
-    // ---------------------------------------------------------------- 2
-    const b = [];
-    b.push(p('La altura de la zapata debe resistir el punzonamiento: la columna tiende a perforar la placa a lo largo de un perímetro crítico ubicado a d/2 de sus caras (NSR-10 C.11.11.1.2). El cortante actuante es la reacción del suelo fuera de ese perímetro, calculada con cargas mayoradas.'));
-    u.lista.forEach((cb) => {
-      b.push(eq('Combinación ' + cb.id, 'P_u', cb.tex.replace('D', 'P_D').replace('L', 'P_L'),
-        cb.id === '1.4D' ? '1.4\\cdot' + n(Math.abs(I.cargas.D.P)) : '1.2\\cdot' + n(Math.abs(I.cargas.D.P)) + ' + 1.6\\cdot' + n(Math.abs(I.cargas.L.P)),
-        n(cb.P, 2), U.t, { nota: 'σmax = ' + cb.su.toFixed(3) + ' tonf/m²' + (cb === u.gob ? ', gobierna' : '') }));
-    });
-    b.push(p('Gobierna la combinación <b>' + u.gob.id + '</b>, con M<sub>xu</sub> = ' + u.Mx.toFixed(3) + ' y M<sub>yu</sub> = ' + u.My.toFixed(3) + ' tonf·m. Siguiendo el documento, se diseña con el mayor esfuerzo de las cuatro esquinas, lo que es conservador.'));
-    const sigu = (i, sx, sy) => eq('Esquina ' + i + ' mayorada', '\\sigma_{' + i + 'u}',
-      null,
-      '\\dfrac{' + n(u.P) + '}{' + n(u.A) + '} ' + sx + ' \\dfrac{' + n(u.Mx) + '\\cdot' + n(R.Ly / 2) + '}{' + n(u.Ix) + '} ' + sy + ' \\dfrac{' + n(u.My) + '\\cdot' + n(R.Lx / 2) + '}{' + n(u.Iy) + '}',
-      n(u['s' + i]), U.tm2);
-    b.push(sigu(1, '+', '+'), sigu(2, '-', '+'), sigu(3, '-', '-'), sigu(4, '+', '-'));
-    b.push(eq('Esfuerzo último de diseño', '\\sigma_u', '\\max(\\sigma_{1u},\\,\\sigma_{2u},\\,\\sigma_{3u},\\,\\sigma_{4u})', null, n(u.su), U.tm2));
-    b.push(eq('Relación de lados de la columna', '\\beta', '\\dfrac{\\max(C_x, C_y)}{\\min(C_x, C_y)}', '\\dfrac{' + n(Math.max(c.Cx, c.Cy), 2) + '}{' + n(Math.min(c.Cx, c.Cy), 2) + '}', n(pz.beta), U.none));
-    b.push(eq('Perímetro crítico', 'b_o', '2(C_x + d) + 2(C_y + d)', '2(' + n(c.Cx, 2) + ' + ' + n(R.d) + ') + 2(' + n(c.Cy, 2) + ' + ' + n(R.d) + ')', n(pz.bo), U.m));
-    b.push(eq('Área a cortante doble', 'A_{2D}', 'L_x L_y - (C_x + d)(C_y + d)', n(R.Lx, 2) + '\\cdot' + n(R.Ly, 2) + ' - ' + n(c.Cx + R.d) + '\\cdot' + n(c.Cy + R.d), n(pz.A2D), U.m2));
-    b.push(eq('Cortante último', 'V_{u}', '\\sigma_u\\,A_{2D}', n(u.su) + '\\cdot' + n(pz.A2D), n(pz.Vu, 2), U.t));
-    b.push(p('La resistencia del concreto es la menor de tres expresiones (NSR-10 C.11.11.2.1). Con f\'c en kgf/cm² y b<sub>o</sub>, d en cm, el resultado sale en kgf y se divide entre 1000.'));
-    const raizTxt = n(m.lambda, 2) + '\\sqrt{' + n(m.fc, 0) + '}\\,(' + n(pz.bo * 100, 1) + ')(' + n(R.d * 100, 1) + ')/1000';
-    b.push(eq('Ecuación C.11-31', 'V_{c1}', '0.53\\left(1 + \\dfrac{2}{\\beta}\\right)\\lambda\\sqrt{f\'_c}\\,b_o\\,d', '0.53\\left(1 + \\dfrac{2}{' + n(pz.beta) + '}\\right)' + raizTxt, n(pz.Vc1, 2), U.t));
-    b.push(eq('Ecuación C.11-32', 'V_{c2}', '0.27\\left(\\dfrac{\\alpha_s\\,d}{b_o} + 2\\right)\\lambda\\sqrt{f\'_c}\\,b_o\\,d', '0.27\\left(\\dfrac{' + c.alpha + '\\cdot' + n(R.d) + '}{' + n(pz.bo) + '} + 2\\right)' + raizTxt, n(pz.Vc2, 2), U.t));
-    b.push(eq('Ecuación C.11-33', 'V_{c3}', '1.0\\,\\lambda\\sqrt{f\'_c}\\,b_o\\,d', raizTxt, n(pz.Vc3, 2), U.t));
-    b.push(eq('Resistencia de diseño', '\\phi V_c', '\\phi_v\\,\\min(V_{c1}, V_{c2}, V_{c3})', n(m.phiV, 2) + '\\cdot' + n(pz.Vc, 2), n(pz.phiVc, 2), U.t));
-    b.push(ver('Punzonamiento', 'V_u = ' + n(pz.Vu, 2) + U.t + ' \\;' + le(pz.ok) + '\\; \\phi V_c = ' + n(pz.phiVc, 2) + U.t, pz.ok));
-    if (!pz.dentro) b.push(nota('aviso', 'El perímetro crítico (C<sub>x</sub> + d, C<sub>y</sub> + d) se sale de la zapata: el punzonamiento no se desarrolla como se supone. Revise las dimensiones.'));
-    out.push({ id: 'pz', titulo: 'Cortante en dos direcciones', ref: 'NSR-10 C.11.11', ok: pz.ok, items: b });
+    // ---------------------------------------------------------------- 1. Esfuerzos de servicio
+    const c1 = capitulo('serv', 'Área de la zapata y esfuerzos de servicio', 'NSR-10 C.15.2', R.chequeos[0].ok);
+    diapo(c1, 'Cargas de servicio',
+      'El área de la zapata se determina con las cargas de servicio, sin mayorar (NSR-10 C.15.2.2). Se suman la carga muerta y la viva que baja por la columna.',
+      [s.W > 0 ? eq('Peso propio de zapata y suelo', 'W', 'L_x L_y\\left[h\\,\\gamma_c + (D_f - h)\\,\\gamma_s\\right]',
+        v(R.Lx, 'longitud') + '\\cdot' + v(R.Ly, 'longitud') + '\\left[' + v(R.h, 'longitud', 3) + '\\cdot' + v(I.suelo.gc, 'peso') + ' + ' + v(Math.max(I.suelo.Df - R.h, 0), 'longitud', 3) + '\\cdot' + v(I.suelo.gs, 'peso') + '\\right]', v(s.W, 'fuerza'), U('fuerza')) : null,
+      eq('Carga axial de servicio', 'P_s', 'P_{PP+CM} + P_{CV}' + (s.W > 0 ? ' + W' : ''),
+        v(Math.abs(I.cargas.D.P), 'fuerza') + ' + ' + v(Math.abs(I.cargas.L.P), 'fuerza') + (s.W > 0 ? ' + ' + v(s.W, 'fuerza') : ''), v(s.P, 'fuerza'), U('fuerza')),
+      eq('Momento en X', 'M_{xs}', 'M_{x,PP+CM} + M_{x,CV}', v(Math.abs(I.cargas.D.Mx), 'momento') + ' + ' + v(Math.abs(I.cargas.L.Mx), 'momento'), v(s.Mx, 'momento'), U('momento')),
+      eq('Momento en Y', 'M_{ys}', 'M_{y,PP+CM} + M_{y,CV}', v(Math.abs(I.cargas.D.My), 'momento') + ' + ' + v(Math.abs(I.cargas.L.My), 'momento'), v(s.My, 'momento'), U('momento'))],
+      { tipo: 'cargas', ult: false });
+    diapo(c1, 'Área requerida y área adoptada',
+      'Con solo la carga axial se obtiene un área mínima. Como los momentos aumentan la presión en una esquina, se adopta una zapata algo mayor y se revisan las esquinas.',
+      [eq('Área requerida por carga axial', 'A_z', '\\dfrac{P_s}{\\sigma_{adm}}', '\\dfrac{' + v(s.P, 'fuerza') + '}{' + v(I.suelo.qadm, 'presion') + '}', v(s.Areq, 'area'), U('area')),
+      eq('Área adoptada', 'A', 'L_x\\,L_y', v(R.Lx, 'longitud') + '\\cdot' + v(R.Ly, 'longitud'), v(s.A, 'area'), U('area'))],
+      { tipo: 'planta', capa: 'presion' });
+    diapo(c1, 'Inercias y excentricidades',
+      'La resultante debe caer dentro del núcleo central (un rombo de L/6 desde el centro). Así toda la base queda en compresión.',
+      [eq('Inercia respecto a X', 'I_x', '\\dfrac{L_x L_y^{3}}{12}', '\\dfrac{' + v(R.Lx, 'longitud') + '\\cdot' + v(R.Ly, 'longitud') + '^{3}}{12}', v(s.Ix, 'inercia'), U('inercia')),
+      eq('Inercia respecto a Y', 'I_y', '\\dfrac{L_y L_x^{3}}{12}', '\\dfrac{' + v(R.Ly, 'longitud') + '\\cdot' + v(R.Lx, 'longitud') + '^{3}}{12}', v(s.Iy, 'inercia'), U('inercia')),
+      ver('Núcleo central en X', 'e_x = \\dfrac{M_{ys}}{P_s} = ' + v(s.ex, 'longitud', 4) + U('longitud') + ' \\;' + le(s.ex <= R.Lx / 6) + '\\; \\dfrac{L_x}{6} = ' + v(R.Lx / 6, 'longitud', 3) + U('longitud'), s.ex <= R.Lx / 6),
+      ver('Núcleo central en Y', 'e_y = \\dfrac{M_{xs}}{P_s} = ' + v(s.ey, 'longitud', 4) + U('longitud') + ' \\;' + le(s.ey <= R.Ly / 6) + '\\; \\dfrac{L_y}{6} = ' + v(R.Ly / 6, 'longitud', 3) + U('longitud'), s.ey <= R.Ly / 6)],
+      { tipo: 'nucleo' });
+    const sig = (i, sx, sy) => eq('Esquina ' + i, '\\sigma_{' + i + '}', null,
+      '\\dfrac{' + v(s.P, 'fuerza') + '}{' + v(s.A, 'area') + '} ' + sx + ' \\dfrac{' + v(s.Mx, 'momento') + '\\cdot' + v(R.Ly / 2, 'longitud', 3) + '}{' + v(s.Ix, 'inercia') + '} ' + sy + ' \\dfrac{' + v(s.My, 'momento') + '\\cdot' + v(R.Lx / 2, 'longitud', 3) + '}{' + v(s.Iy, 'inercia') + '}',
+      v(s['s' + i], 'presion'), U('presion'));
+    diapo(c1, 'Esfuerzos en las esquinas',
+      'La presión es la compresión uniforme más la flexión en cada dirección: σ = P/A ± M<sub>x</sub>(L<sub>y</sub>/2)/I<sub>x</sub> ± M<sub>y</sub>(L<sub>x</sub>/2)/I<sub>y</sub>. σ1 es la esquina de arriba a la derecha y las demás siguen en sentido horario.',
+      [sig(1, '+', '+'), sig(2, '-', '+'), sig(3, '-', '-'), sig(4, '+', '-')],
+      { tipo: 'planta', capa: 'presion' });
+    diapo(c1, 'Verificación contra el suelo',
+      'Ninguna esquina puede superar el esfuerzo admisible del suelo y ninguna puede quedar en tensión, porque el suelo no la resiste.',
+      [ver('Esfuerzo máximo', '\\sigma_{max} = ' + v(s.smax, 'presion') + U('presion') + ' \\;' + le(s.okMax) + '\\; \\sigma_{adm} = ' + v(I.suelo.qadm, 'presion') + U('presion'), s.okMax),
+      ver('Sin tensión (caso ' + s.caso + ')', '\\sigma_{min} = ' + v(s.smin, 'presion') + U('presion') + ' \\;' + (s.okMin ? '>' : '\\le') + '\\; 0', s.okMin)],
+      { tipo: 'corte', dir: 'X' });
 
-    // ---------------------------------------------------------------- 3
-    const k = [];
-    k.push(p('La zapata también trabaja como una viga ancha en cada dirección. La sección crítica está a una distancia d de la cara de la columna (NSR-10 C.11.11.1.1), y el cortante es la reacción del suelo sobre la franja que queda por fuera.'));
-    k.push(sub('Dirección X'));
-    k.push(eq('Área tributaria', 'A_x', 'L_y\\left(\\dfrac{L_x - C_x}{2} - d\\right)', n(R.Ly, 2) + '\\left(\\dfrac{' + n(R.Lx, 2) + ' - ' + n(c.Cx, 2) + '}{2} - ' + n(R.d) + '\\right)', n(cu.x.A), U.m2));
-    k.push(eq('Cortante último', 'V_{ux}', '\\sigma_u\\,A_x', n(u.su) + '\\cdot' + n(cu.x.A), n(cu.x.Vu, 2), U.t));
-    k.push(eq('Resistencia', '\\phi V_{cx}', '\\phi_v\\,0.53\\,\\lambda\\sqrt{f\'_c}\\,L_y\\,d', n(m.phiV, 2) + '\\cdot 0.53\\cdot' + n(m.lambda, 2) + '\\sqrt{' + n(m.fc, 0) + '}\\,(' + n(R.Ly * 100, 0) + ')(' + n(R.d * 100, 1) + ')/1000', n(cu.x.phiVc, 2), U.t));
-    k.push(ver('Cortante en X', 'V_{ux} = ' + n(cu.x.Vu, 2) + U.t + ' \\;' + le(cu.x.ok) + '\\; \\phi V_{cx} = ' + n(cu.x.phiVc, 2) + U.t, cu.x.ok));
-    k.push(sub('Dirección Y'));
-    k.push(eq('Área tributaria', 'A_y', 'L_x\\left(\\dfrac{L_y - C_y}{2} - d\\right)', n(R.Lx, 2) + '\\left(\\dfrac{' + n(R.Ly, 2) + ' - ' + n(c.Cy, 2) + '}{2} - ' + n(R.d) + '\\right)', n(cu.y.A), U.m2));
-    k.push(eq('Cortante último', 'V_{uy}', '\\sigma_u\\,A_y', n(u.su) + '\\cdot' + n(cu.y.A), n(cu.y.Vu, 2), U.t));
-    k.push(eq('Resistencia', '\\phi V_{cy}', '\\phi_v\\,0.53\\,\\lambda\\sqrt{f\'_c}\\,L_x\\,d', n(m.phiV, 2) + '\\cdot 0.53\\cdot' + n(m.lambda, 2) + '\\sqrt{' + n(m.fc, 0) + '}\\,(' + n(R.Lx * 100, 0) + ')(' + n(R.d * 100, 1) + ')/1000', n(cu.y.phiVc, 2), U.t));
-    k.push(ver('Cortante en Y', 'V_{uy} = ' + n(cu.y.Vu, 2) + U.t + ' \\;' + le(cu.y.ok) + '\\; \\phi V_{cy} = ' + n(cu.y.phiVc, 2) + U.t, cu.y.ok));
-    if (cu.x.k <= 0 || cu.y.k <= 0) k.push(nota('info', 'En alguna dirección la sección crítica queda fuera de la zapata, así que ese cortante es cero.'));
-    out.push({ id: 'cu', titulo: 'Cortante en una dirección', ref: 'NSR-10 C.11.11.1.1', ok: cu.x.ok && cu.y.ok, items: k });
+    // ---------------------------------------------------------------- 2. Punzonamiento
+    const c2 = capitulo('pz', 'Cortante en dos direcciones', en ? 'ACI 318 22.6' : 'NSR-10 C.11.11', pz.ok);
+    diapo(c2, 'Cargas mayoradas',
+      'Desde aquí se diseña con cargas mayoradas (NSR-10 B.2.4). Gobierna la combinación que produce el mayor esfuerzo en las esquinas.',
+      u.lista.map((cb) => eq('Combinación ' + cb.id, 'P_u', cb.tex.replace('D', 'P_D').replace('L', 'P_L'),
+        cb.id === '1.4D' ? '1.4\\cdot' + v(Math.abs(I.cargas.D.P), 'fuerza') : '1.2\\cdot' + v(Math.abs(I.cargas.D.P), 'fuerza') + ' + 1.6\\cdot' + v(Math.abs(I.cargas.L.P), 'fuerza'),
+        v(cb.P, 'fuerza'), U('fuerza'), { nota: 'σmax = ' + UN.fmt(cb.su, 'presion', sis) + (cb === u.gob ? ', gobierna' : '') })),
+      { tipo: 'cargas', ult: true });
+    const sigu = (i, sx, sy) => eq('Esquina ' + i, '\\sigma_{' + i + 'u}', null,
+      '\\dfrac{' + v(u.P, 'fuerza') + '}{' + v(u.A, 'area') + '} ' + sx + ' \\dfrac{' + v(u.Mx, 'momento') + '\\cdot' + v(R.Ly / 2, 'longitud', 3) + '}{' + v(u.Ix, 'inercia') + '} ' + sy + ' \\dfrac{' + v(u.My, 'momento') + '\\cdot' + v(R.Lx / 2, 'longitud', 3) + '}{' + v(u.Iy, 'inercia') + '}',
+      v(u['s' + i], 'presion'), U('presion'));
+    diapo(c2, 'Esfuerzo último de diseño',
+      'Siguiendo el método del curso, se diseña con el mayor esfuerzo mayorado de las cuatro esquinas, lo que es conservador.',
+      [sigu(1, '+', '+'), sigu(2, '-', '+'), sigu(3, '-', '-'), sigu(4, '+', '-'),
+      eq('Esfuerzo de diseño', '\\sigma_u', '\\max(\\sigma_{1u},\\,\\sigma_{2u},\\,\\sigma_{3u},\\,\\sigma_{4u})', null, v(u.su, 'presion'), U('presion'))],
+      { tipo: 'planta', capa: 'presion' });
+    diapo(c2, 'Perímetro crítico y cortante actuante',
+      'La columna tiende a perforar la placa a lo largo de un perímetro ubicado a d/2 de sus caras. El cortante es la reacción del suelo fuera de ese perímetro.',
+      [eq('Relación de lados de la columna', '\\beta', '\\dfrac{\\max(C_x, C_y)}{\\min(C_x, C_y)}', '\\dfrac{' + v(Math.max(c.Cx, c.Cy), 'longitud') + '}{' + v(Math.min(c.Cx, c.Cy), 'longitud') + '}', n(pz.beta), ''),
+      eq('Perímetro crítico', 'b_o', '2(C_x + d) + 2(C_y + d)', '2(' + v(c.Cx, 'longitud') + ' + ' + v(R.d, 'longitud', 3) + ') + 2(' + v(c.Cy, 'longitud') + ' + ' + v(R.d, 'longitud', 3) + ')', v(pz.bo, 'longitud', 3), U('longitud')),
+      eq('Área fuera del perímetro', 'A_{2D}', 'L_x L_y - (C_x + d)(C_y + d)', v(R.Lx, 'longitud') + '\\cdot' + v(R.Ly, 'longitud') + ' - ' + v(c.Cx + R.d, 'longitud', 3) + '\\cdot' + v(c.Cy + R.d, 'longitud', 3), v(pz.A2D, 'area'), U('area')),
+      eq('Cortante último', 'V_u', '\\sigma_u\\,A_{2D}', v(u.su, 'presion') + '\\cdot' + v(pz.A2D, 'area'), v(pz.Vu, 'fuerza'), U('fuerza'))],
+      { tipo: 'planta', capa: 'punz' });
+    const raiz = n(m.lambda, 2) + '\\sqrt{' + v(m.fc, 'esfuerzo') + '}\\,(' + v(pz.bo, 'corto') + ')(' + v(R.d, 'corto') + ')/1000';
+    diapo(c2, 'Resistencia del concreto',
+      'La resistencia es la menor de tres expresiones, con ' + unidTxt + '.',
+      [eq('Ecuación ' + C.ec[0], 'V_{c1}', C.pz1 + '\\left(1 + \\dfrac{2}{\\beta}\\right)\\lambda\\sqrt{f\'_c}\\,b_o\\,d', C.pz1 + '\\left(1 + \\dfrac{2}{' + n(pz.beta) + '}\\right)' + raiz, v(pz.Vc1, 'fuerza'), U('fuerza')),
+      eq('Ecuación ' + C.ec[1], 'V_{c2}', kTx(C.pz2) + '\\left(\\dfrac{\\alpha_s\\,d}{b_o} + 2\\right)\\lambda\\sqrt{f\'_c}\\,b_o\\,d', kTx(C.pz2) + '\\left(\\dfrac{' + c.alpha + '\\cdot' + v(R.d, 'corto') + '}{' + v(pz.bo, 'corto') + '} + 2\\right)' + raiz, v(pz.Vc2, 'fuerza'), U('fuerza')),
+      eq('Ecuación ' + C.ec[2], 'V_{c3}', C.pz3 + '\\,\\lambda\\sqrt{f\'_c}\\,b_o\\,d', C.pz3 + '\\cdot' + raiz, v(pz.Vc3, 'fuerza'), U('fuerza'))],
+      { tipo: 'vc' });
+    diapo(c2, 'Verificación a punzonamiento',
+      'La resistencia de diseño se reduce con φ y debe ser mayor que el cortante último.',
+      [eq('Resistencia de diseño', '\\phi V_c', '\\phi_v\\,\\min(V_{c1}, V_{c2}, V_{c3})', n(m.phiV, 2) + '\\cdot' + v(pz.Vc, 'fuerza'), v(pz.phiVc, 'fuerza'), U('fuerza')),
+      ver('Punzonamiento', 'V_u = ' + v(pz.Vu, 'fuerza') + U('fuerza') + ' \\;' + le(pz.ok) + '\\; \\phi V_c = ' + v(pz.phiVc, 'fuerza') + U('fuerza'), pz.ok),
+      !pz.dentro ? nota('aviso', 'El perímetro crítico se sale de la zapata: el punzonamiento no se desarrolla como se supone. Revise las dimensiones.') : null],
+      { tipo: 'planta', capa: 'punz' });
 
-    // ---------------------------------------------------------------- 4
-    const f = [];
-    f.push(p('El momento de diseño se toma en la cara de la columna (NSR-10 C.15.4.2), considerando el voladizo cargado por la reacción del suelo. Con ese momento se obtiene la cuantía necesaria, que no puede ser menor que la mínima por retracción y temperatura (C.7.12.2.1).'));
-    if (rf.tipo === 'malla') f.push(nota('info', 'Refuerzo con malla electrosoldada: se diseña con f<sub>y</sub> = ' + n(fx.fy, 0) + ' kgf/cm²' + (fx.fy > 4200 ? ', por lo que ρ<sub>min</sub> = 0.0018·4200/f<sub>y</sub> = ' + fx.rhoMin.toFixed(5) : '') + '.'));
-    const flex = (dir, F, L, C, bTxt, bVal) => {
+    // ---------------------------------------------------------------- 3. Cortante en una dirección
+    const c3 = capitulo('cu', 'Cortante en una dirección', en ? 'ACI 318 22.5' : 'NSR-10 C.11.11.1.1', cu.x.ok && cu.y.ok);
+    const una = (dir, o, L, Cl, b, lb) => {
       const dl = dir.toLowerCase();
-      f.push(sub('Momento en la dirección ' + dir));
-      f.push(eq('Voladizo', 'K_' + dl, '\\dfrac{L_' + dl + ' - C_' + dl + '}{2}', '\\dfrac{' + n(L, 2) + ' - ' + n(C, 2) + '}{2}', n(F.K), U.m));
-      f.push(eq('Área que genera flexión', 'A_{' + dl + 'f}', bTxt + '\\,K_' + dl, n(bVal, 2) + '\\cdot' + n(F.K), n(F.Af), U.m2));
-      f.push(eq('Fuerza resultante', 'F_' + dl, '\\sigma_u\\,A_{' + dl + 'f}', n(u.su) + '\\cdot' + n(F.Af), n(F.F, 2), U.t));
-      f.push(eq('Momento último', 'M_{u' + dl + '}', 'F_' + dl + '\\,\\dfrac{K_' + dl + '}{2}', n(F.F, 3) + '\\cdot\\dfrac{' + n(F.K) + '}{2}', n(F.Mu, 2), U.tm));
-      f.push(eq('Coeficiente de resistencia', 'R_{n' + dl + '}', '\\dfrac{M_{u' + dl + '}}{\\phi_f\\,b\\,d^{2}}', '\\dfrac{' + n(F.Mu * 1e5, 0) + '}{' + n(m.phiF, 2) + '\\cdot' + n(bVal * 100, 0) + '\\cdot' + n(R.d * 100, 1) + '^{2}}', n(F.Rn), U.kc));
-      f.push(eq('Cuantía requerida', '\\rho_{' + dl + '}', '\\dfrac{0.85 f\'_c}{f_y}\\left(1 - \\sqrt{1 - \\dfrac{2R_n}{0.85 f\'_c}}\\right)',
-        '\\dfrac{0.85\\cdot' + n(m.fc, 0) + '}{' + n(F.fy, 0) + '}\\left(1 - \\sqrt{1 - \\dfrac{2\\cdot' + n(F.Rn) + '}{0.85\\cdot' + n(m.fc, 0) + '}}\\right)', n(F.rhoCalc, 5), U.none));
-      f.push(eq('Cuantía de diseño', '\\rho', '\\max(\\rho_{' + dl + '},\\ \\rho_{min})', '\\max(' + n(F.rhoCalc, 5) + ',\\ ' + n(F.rhoMin, 5) + ')', n(F.rho, 5), U.none));
-      f.push(ver('Cuantía máxima (sección controlada por tracción)', '\\rho = ' + n(F.rho, 5) + ' \\;' + le(F.rho <= F.rhoMax) + '\\; \\rho_{max} = ' + n(F.rhoMax, 5), F.rho <= F.rhoMax));
-      f.push(eq('Acero requerido', 'A_{s' + dl + '}', '\\rho\\,b\\,d', n(F.rho, 5) + '\\cdot' + n(bVal * 100, 0) + '\\cdot' + n(R.d * 100, 1), n(F.As, 2), U.cm2));
+      diapo(c3, 'Dirección ' + dir,
+        'La zapata trabaja como una viga ancha. La sección crítica está a una distancia d de la cara de la columna y el cortante es la reacción del suelo en la franja exterior.',
+        [eq('Área tributaria', 'A_' + dl, lb + '\\left(\\dfrac{L_' + dl + ' - C_' + dl + '}{2} - d\\right)', v(b, 'longitud') + '\\left(\\dfrac{' + v(L, 'longitud') + ' - ' + v(Cl, 'longitud') + '}{2} - ' + v(R.d, 'longitud', 3) + '\\right)', v(o.A, 'area'), U('area')),
+        eq('Cortante último', 'V_{u' + dl + '}', '\\sigma_u\\,A_' + dl, v(u.su, 'presion') + '\\cdot' + v(o.A, 'area'), v(o.Vu, 'fuerza'), U('fuerza')),
+        eq('Resistencia (' + C.ec[3] + ')', '\\phi V_{c' + dl + '}', '\\phi_v\\,' + C.cu + '\\,\\lambda\\sqrt{f\'_c}\\,' + lb + '\\,d',
+          n(m.phiV, 2) + '\\cdot ' + C.cu + '\\cdot' + n(m.lambda, 2) + '\\sqrt{' + v(m.fc, 'esfuerzo') + '}\\,(' + v(b, 'corto') + ')(' + v(R.d, 'corto') + ')/1000', v(o.phiVc, 'fuerza'), U('fuerza')),
+        ver('Cortante en ' + dir, 'V_{u' + dl + '} = ' + v(o.Vu, 'fuerza') + U('fuerza') + ' \\;' + le(o.ok) + '\\; \\phi V_{c' + dl + '} = ' + v(o.phiVc, 'fuerza') + U('fuerza'), o.ok),
+        o.k <= 0 ? nota('info', 'La sección crítica queda fuera de la zapata, así que este cortante es cero.') : null],
+        { tipo: 'planta', capa: 'cortante' });
+    };
+    una('X', cu.x, R.Lx, c.Cx, R.Ly, 'L_y');
+    una('Y', cu.y, R.Ly, c.Cy, R.Lx, 'L_x');
+
+    // ---------------------------------------------------------------- 4. Flexión
+    const c4 = capitulo('fl', 'Diseño a flexión y refuerzo', en ? 'ACI 318 13.2.7' : 'NSR-10 C.15.4', R.chequeos[3].ok);
+    const flex = (dir, F, L, Cl, bTxt, bVal) => {
+      const dl = dir.toLowerCase();
+      diapo(c4, 'Momento en la dirección ' + dir,
+        'El momento de diseño se toma en la cara de la columna (NSR-10 C.15.4.2): el voladizo recibe la reacción del suelo como una carga repartida.',
+        [eq('Voladizo', 'K_' + dl, '\\dfrac{L_' + dl + ' - C_' + dl + '}{2}', '\\dfrac{' + v(L, 'longitud') + ' - ' + v(Cl, 'longitud') + '}{2}', v(F.K, 'longitud', 3), U('longitud')),
+        eq('Área que genera flexión', 'A_{' + dl + 'f}', bTxt + '\\,K_' + dl, v(bVal, 'longitud') + '\\cdot' + v(F.K, 'longitud', 3), v(F.Af, 'area'), U('area')),
+        eq('Fuerza resultante', 'F_' + dl, '\\sigma_u\\,A_{' + dl + 'f}', v(u.su, 'presion') + '\\cdot' + v(F.Af, 'area'), v(F.F, 'fuerza'), U('fuerza')),
+        eq('Momento último', 'M_{u' + dl + '}', 'F_' + dl + '\\,\\dfrac{K_' + dl + '}{2}', v(F.F, 'fuerza') + '\\cdot\\dfrac{' + v(F.K, 'longitud', 3) + '}{2}', v(F.Mu, 'momento'), U('momento'))],
+        { tipo: 'voladizo', dir });
+      const MuC = UN.a(F.Mu, 'momento', sis) * convMv;
+      diapo(c4, 'Cuantía de acero en ' + dir,
+        'Con el momento se obtiene la cuantía necesaria. No puede ser menor que la mínima por retracción y temperatura (C.7.12.2.1) ni mayor que la de una sección controlada por tracción.',
+        [eq('Coeficiente de resistencia', 'R_{n' + dl + '}', '\\dfrac{M_{u' + dl + '}\\cdot ' + convM + '}{\\phi_f\\,b\\,d^{2}}', '\\dfrac{' + n(MuC, 0) + '}{' + n(m.phiF, 2) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto') + '^{2}}', v(F.Rn, 'esfuerzo', en ? 1 : 3), uEsf),
+        eq('Cuantía requerida', '\\rho_{' + dl + '}', '\\dfrac{0.85 f\'_c}{f_y}\\left(1 - \\sqrt{1 - \\dfrac{2R_n}{0.85 f\'_c}}\\right)',
+          '\\dfrac{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}{' + v(F.fy, 'esfuerzo') + '}\\left(1 - \\sqrt{1 - \\dfrac{2\\cdot' + v(F.Rn, 'esfuerzo', en ? 1 : 3) + '}{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}}\\right)', n(F.rhoCalc, 5), ''),
+        eq('Cuantía de diseño', '\\rho', '\\max(\\rho_{' + dl + '},\\ \\rho_{min})', '\\max(' + n(F.rhoCalc, 5) + ',\\ ' + n(F.rhoMin, 5) + ')', n(F.rho, 5), ''),
+        ver('Cuantía máxima', '\\rho = ' + n(F.rho, 5) + ' \\;' + le(F.rho <= F.rhoMax) + '\\; \\rho_{max} = ' + n(F.rhoMax, 5), F.rho <= F.rhoMax)],
+        { tipo: 'voladizo', dir });
+      const items = [eq('Acero requerido', 'A_{s' + dl + '}', '\\rho\\,b\\,d', n(F.rho, 5) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto'), v(F.As, 'acero'), U('acero'))];
       if (rf.tipo === 'barras') {
         const sel = dir === 'X' ? rf.selX : rf.selY;
-        f.push(eq('Acero suministrado', 'A_{s,prov}', 'n\\,A_b', sel.n + '\\cdot' + n(sel.Ab, 2) + '\\quad(' + sel.n + '\\,\\#' + sel.barra + '\\ @\\ ' + n(sel.s, 2) + '\\,\\text{m})', n(sel.AsProv, 2), U.cm2));
-        f.push(ver('Acero y separación en ' + dir, 'A_{s,prov} = ' + n(sel.AsProv, 2) + U.cm2 + ' \\;\\ge\\; A_{s' + dl + '} = ' + n(F.As, 2) + U.cm2 + ',\\quad s = ' + n(sel.s, 2) + U.m + ' \\;' + le(sel.s <= sel.smax + 1e-9) + '\\; s_{max} = ' + n(sel.smax, 2) + U.m, sel.estado !== 'mal'));
+        items.push(eq('Acero suministrado', 'A_{s,prov}', 'n\\,A_b', sel.n + '\\cdot' + v(sel.Ab, 'acero') + '\\quad(' + sel.n + '\\,\\#' + sel.barra + '\\ @\\ ' + v(sel.s, 'longitud') + U('longitud') + ')', v(sel.AsProv, 'acero'), U('acero')));
+        items.push(ver('Acero y separación', 'A_{s,prov} = ' + v(sel.AsProv, 'acero') + U('acero') + ' \\;\\ge\\; A_{s' + dl + '},\\quad s = ' + v(sel.s, 'longitud') + U('longitud') + ' \\;' + le(sel.s <= sel.smax + 1e-9) + '\\; s_{max} = ' + v(sel.smax, 'longitud') + U('longitud'), sel.estado !== 'mal'));
       } else {
         const req = dir === 'X' ? rf.reqX : rf.reqY;
         const prov = dir === 'X' ? rf.sel.provX : rf.sel.provY;
-        f.push(eq('Acero requerido por metro', 'a_{s' + dl + '}', '\\dfrac{A_{s' + dl + '}}{b}', '\\dfrac{' + n(F.As, 2) + '}{' + n(bVal, 2) + '}', n(req), U.cm2m));
-        f.push(ver('Malla en ' + dir + ' (' + (rf.sel.capas > 1 ? '2 capas de ' : '') + rf.sel.ref + ')', 'a_{s,prov} = ' + n(prov) + U.cm2m + ' \\;' + ge(prov >= req - 1e-9) + '\\; a_{s' + dl + '} = ' + n(req) + U.cm2m, prov >= req - 1e-9));
+        items.push(eq('Acero requerido por unidad de ancho', 'a_{s' + dl + '}', '\\dfrac{A_{s' + dl + '}}{b}', '\\dfrac{' + v(F.As, 'acero') + '}{' + v(bVal, 'longitud') + '}', v(req, 'aceroM'), U('aceroM')));
+        items.push(ver('Malla ' + (rf.sel.capas > 1 ? '2 × ' : '') + rf.sel.ref, 'a_{s,prov} = ' + v(prov, 'aceroM') + U('aceroM') + ' \\;' + ge(prov >= req - 1e-9) + '\\; a_{s' + dl + '} = ' + v(req, 'aceroM') + U('aceroM'), prov >= req - 1e-9));
       }
+      diapo(c4, 'Refuerzo en ' + dir,
+        rf.tipo === 'barras' ? 'Se elige la barra y la separación que cubren el acero requerido sin pasar la separación máxima s<sub>max</sub> = min(3h, 45 cm).' : 'Se elige la malla electrosoldada cuyo acero por metro cubre el requerido en esta dirección.',
+        items, { tipo: 'planta', capa: 'acero' });
     };
     flex('X', fx, R.Lx, c.Cx, 'L_y', R.Ly);
     flex('Y', fy, R.Ly, c.Cy, 'L_x', R.Lx);
-    f.push(nota('pdf', 'Corrección respecto al documento (pág. 10): allí se escribe A<sub>yf</sub> = L<sub>x</sub>·K<sub>y</sub> pero se calcula L<sub>y</sub>·K<sub>y</sub> = ' + fy.AfPdf.toFixed(2) + ' m², y se obtiene M<sub>uy</sub> = ' + fy.MuPdf.toFixed(2) + ' tonf·m. Con L<sub>x</sub>·K<sub>y</sub> el valor correcto es <b>' + fy.Mu.toFixed(2) + ' tonf·m</b>. Además, ρ<sub>y</sub> debe calcularse con R<sub>ny</sub> (el documento usa R<sub>nx</sub>).'));
-    if (Math.abs(R.Lx - R.Ly) > 1e-6) {
-      f.push(nota('info', 'Zapata rectangular: la NSR-10 C.15.4.4.2 pide concentrar en una banda central, de ancho igual al lado corto, la fracción γ<sub>s</sub> = 2/(β + 1) = ' + R.banda.gamma.toFixed(3) + ' (β = ' + R.banda.beta.toFixed(3) + ') del acero paralelo al lado corto. El documento lo reparte de forma uniforme; aquí se sigue el documento.'));
-    }
-    if (rf.tipo === 'malla') {
-      if (rf.sel.traslapo) f.push(nota('aviso', 'La zapata excede el panel Diaco de 6.00 × 2.35 m: se requieren traslapos entre paneles, según NSR-10 C.12.18.'));
-      f.push(nota('aviso', 'El uso de malla electrosoldada como refuerzo de zapatas debe aprobarlo el diseñador estructural o el profesor.'));
-    }
-    out.push({ id: 'fl', titulo: 'Diseño a flexión y refuerzo', ref: 'NSR-10 C.15.4', ok: R.chequeos[3].ok, items: f });
+    const notas = [];
+    if (rf.tipo === 'malla') notas.push(nota('info', 'Refuerzo con malla electrosoldada: se diseña con f<sub>y</sub> = ' + UN.fmt(fx.fy, 'esfuerzo', sis) + (fx.fy > 4200 ? ', por lo que ρ<sub>min</sub> = 0.0018·420/f<sub>y</sub> (MPa) = ' + fx.rhoMin.toFixed(5) : '') + '.'));
+    if (Math.abs(R.Lx - R.Ly) > 1e-6) notas.push(nota('info', 'Zapata rectangular: la NSR-10 C.15.4.4.2 pide concentrar en una banda central, de ancho igual al lado corto, la fracción γ<sub>s</sub> = 2/(β + 1) = ' + R.banda.gamma.toFixed(3) + ' del acero paralelo al lado corto. El documento del curso lo reparte de forma uniforme y aquí se sigue el documento.'));
+    if (rf.tipo === 'malla' && rf.sel.traslapo) notas.push(nota('aviso', 'La zapata excede el panel Diaco de 6.00 × 2.35 m: se requieren traslapos entre paneles, según NSR-10 C.12.18.'));
+    if (rf.tipo === 'malla') notas.push(nota('aviso', 'El uso de malla electrosoldada como refuerzo de zapatas debe aprobarlo el diseñador estructural.'));
+    notas.push(nota('pdf', 'Corrección respecto al documento del curso (pág. 10): allí se escribe A<sub>yf</sub> = L<sub>x</sub>·K<sub>y</sub> pero se calcula L<sub>y</sub>·K<sub>y</sub>. Con L<sub>x</sub>·K<sub>y</sub> el momento correcto es <b>' + UN.fmt(fy.Mu, 'momento', sis) + '</b> (el documento obtiene ' + UN.fmt(fy.MuPdf, 'momento', sis) + '). Además, ρ<sub>y</sub> se calcula con R<sub>ny</sub>.'));
+    diapo(c4, 'Observaciones del refuerzo', 'Condiciones adicionales que conviene tener presentes al detallar el refuerzo.', notas, { tipo: 'planta', capa: 'flexion' });
 
-    // ---------------------------------------------------------------- 5
-    const e = [];
-    e.push(p('La carga de la columna se transmite por contacto directo. Se revisa el aplastamiento del concreto en la base de la columna y en la cara superior de la zapata (NSR-10 C.10.14), con φ = ' + m.phiB + '. En la zapata la resistencia aumenta por el confinamiento del concreto que rodea el área cargada, con un límite de 2 veces.'));
-    e.push(eq('Área cargada', 'A_1', 'C_x\\,C_y', n(c.Cx, 2) + '\\cdot' + n(c.Cy, 2), n(ap.A1), U.m2));
-    e.push(eq('Base de la pirámide (pendiente 1:2)', 'A_2', '\\min(C_x + 4h,\\ L_x)\\cdot\\min(C_y + 4h,\\ L_y)', '\\min(' + n(ap.a2x) + ',\\ ' + n(R.Lx, 2) + ')\\cdot\\min(' + n(ap.a2y) + ',\\ ' + n(R.Ly, 2) + ')', n(ap.A2), U.m2));
-    e.push(eq('Resistencia en la base de la columna', '\\phi P_{nb1}', '\\phi\\,(0.85\\,f\'_c\\,A_1)', n(m.phiB, 2) + '\\cdot 0.85\\cdot' + n(m.fc, 0) + '\\cdot' + n(ap.A1 * 1e4, 0) + '/1000', n(ap.phiPnb1, 2), U.t));
-    e.push(ver('Base de la columna', 'P_u = ' + n(u.P, 2) + U.t + ' \\;' + le(ap.ok1) + '\\; \\phi P_{nb1} = ' + n(ap.phiPnb1, 2) + U.t, ap.ok1));
-    e.push(eq('Factor de confinamiento', 'K', '\\min\\left(\\sqrt{A_2/A_1},\\ 2\\right)', '\\min\\left(\\sqrt{' + n(ap.A2) + '/' + n(ap.A1) + '},\\ 2\\right) = \\min(' + n(ap.raiz) + ',\\ 2)', n(ap.K), U.none));
-    e.push(eq('Resistencia en la zapata', '\\phi P_{nb2}', '\\phi\\,(0.85\\,f\'_c\\,A_1)\\,K', n(ap.phiPnb1, 2) + '\\cdot' + n(ap.K), n(ap.phiPnb2, 2), U.t));
-    e.push(ver('Cara superior de la zapata', 'P_u = ' + n(u.P, 2) + U.t + ' \\;' + le(ap.ok2) + '\\; \\phi P_{nb2} = ' + n(ap.phiPnb2, 2) + U.t, ap.ok2));
-    if (ap.recortada) e.push(nota('pdf', 'A<sub>2</sub> se limita al área de la zapata. El documento usa (C<sub>x</sub> + 4h)(C<sub>y</sub> + 4h) = ' + ap.A2sin.toFixed(2) + ' m² sin recortar. En el ejemplo no cambia el resultado porque K queda limitado a 2.'));
-    out.push({ id: 'ap', titulo: 'Resistencia al aplastamiento', ref: 'NSR-10 C.10.14', ok: ap.ok1 && ap.ok2, items: e });
+    // ---------------------------------------------------------------- 5. Aplastamiento
+    const c5 = capitulo('ap', 'Resistencia al aplastamiento', en ? 'ACI 318 22.8' : 'NSR-10 C.10.14', ap.ok1 && ap.ok2);
+    const A1c = UN.a(c.Cx, 'corto', sis) * UN.a(c.Cy, 'corto', sis);
+    diapo(c5, 'Áreas de contacto',
+      'La carga de la columna pasa a la zapata por contacto directo. El concreto que rodea el área cargada la confina y aumenta su resistencia, hasta un límite de 2 veces. A<sub>2</sub> no puede salirse de la zapata.',
+      [eq('Área cargada', 'A_1', 'C_x\\,C_y', v(c.Cx, 'longitud') + '\\cdot' + v(c.Cy, 'longitud'), v(ap.A1, 'area'), U('area')),
+      eq('Base de la pirámide (pendiente 1:2)', 'A_2', '\\min(C_x + 4h,\\ L_x)\\cdot\\min(C_y + 4h,\\ L_y)', '\\min(' + v(ap.a2x, 'longitud', 3) + ',\\ ' + v(R.Lx, 'longitud') + ')\\cdot\\min(' + v(ap.a2y, 'longitud', 3) + ',\\ ' + v(R.Ly, 'longitud') + ')', v(ap.A2, 'area'), U('area')),
+      eq('Factor de confinamiento', 'K', '\\min\\left(\\sqrt{A_2/A_1},\\ 2\\right)', '\\min(' + n(ap.raiz) + ',\\ 2)', n(ap.K), '')],
+      { tipo: 'aplastamiento' });
+    diapo(c5, 'Verificación al aplastamiento',
+      'Se revisa la base de la columna y la cara superior de la zapata, con φ = ' + m.phiB + ' y A<sub>1</sub> en ' + UN.u('corto', sis) + '².',
+      [eq('Base de la columna', '\\phi P_{nb1}', '\\phi\\,(0.85\\,f\'_c\\,A_1)', n(m.phiB, 2) + '\\cdot 0.85\\cdot' + v(m.fc, 'esfuerzo') + '\\cdot' + n(A1c, 0) + '/1000', v(ap.phiPnb1, 'fuerza'), U('fuerza')),
+      ver('Base de la columna', 'P_u = ' + v(u.P, 'fuerza') + U('fuerza') + ' \\;' + le(ap.ok1) + '\\; \\phi P_{nb1} = ' + v(ap.phiPnb1, 'fuerza') + U('fuerza'), ap.ok1),
+      eq('Cara superior de la zapata', '\\phi P_{nb2}', '\\phi\\,(0.85\\,f\'_c\\,A_1)\\,K', v(ap.phiPnb1, 'fuerza') + '\\cdot' + n(ap.K), v(ap.phiPnb2, 'fuerza'), U('fuerza')),
+      ver('Cara superior de la zapata', 'P_u = ' + v(u.P, 'fuerza') + U('fuerza') + ' \\;' + le(ap.ok2) + '\\; \\phi P_{nb2} = ' + v(ap.phiPnb2, 'fuerza') + U('fuerza'), ap.ok2)],
+      { tipo: 'aplastamiento' });
 
-    // ---------------------------------------------------------------- 6
-    const g = [];
-    g.push(p('Las barras de la columna deben anclarse dentro de la zapata con una longitud suficiente para transmitir su fuerza por compresión (NSR-10 C.12.3.2). Esta condición suele definir la altura mínima de la zapata. Las barras terminan en gancho de 90° apoyado sobre la parrilla inferior; la parte horizontal del gancho no cuenta para el anclaje.'));
-    g.push(eq('Datos de la barra #' + ld.barra, 'd_b', null, null, n(ld.db, 1), U.mm, { nota: 'fy = ' + ld.fyM.toFixed(1) + ' MPa, f\'c = ' + ld.fcM.toFixed(2) + ' MPa' }));
-    g.push(eq('Longitud básica', 'l_{dc}', '\\dfrac{0.24\\,d_b\\,f_y}{\\lambda\\sqrt{f\'_c}}', '\\dfrac{0.24\\cdot' + n(ld.db, 1) + '\\cdot' + n(ld.fyM, 1) + '}{' + n(m.lambda, 2) + '\\sqrt{' + n(ld.fcM, 2) + '}}', n(ld.l1, 1), U.mm));
-    g.push(eq('Mínimo', 'l_{dc,min}', '\\max(0.043\\,d_b\\,f_y,\\ 200\\,\\text{mm})', '\\max(0.043\\cdot' + n(ld.db, 1) + '\\cdot' + n(ld.fyM, 1) + ',\\ 200)', n(Math.max(ld.l2, 200), 1), U.mm));
-    g.push(ver('Anclaje disponible', 'l_{dc} = ' + n(ld.ldc, 1) + U.mm + ' \\;' + le(ld.ok) + '\\; h - r = ' + n(ld.disponible, 1) + U.mm, ld.ok));
-    g.push(ver('Altura mínima sobre el refuerzo (C.15.7)', 'd = ' + n(R.d * 1000, 0) + U.mm + ' \\;' + ge(R.dMinOk) + '\\; 150' + U.mm, R.dMinOk));
-    if (ld.tabla != null) g.push(nota('info', 'Referencia: Tabla 4.21 de J. Segura (f<sub>y</sub> = 420 MPa), interpolada para f\'c = ' + ld.fcM.toFixed(1) + ' MPa: <b>' + ld.tabla.toFixed(0) + ' mm</b>.'));
-    g.push(nota('info', 'No se aplica la reducción por A<sub>s</sub> requerido / A<sub>s</sub> suministrado.'));
-    out.push({ id: 'ld', titulo: 'Longitud de desarrollo', ref: 'NSR-10 C.12.3', ok: R.chequeos[5].ok, items: g });
+    // ---------------------------------------------------------------- 6. Longitud de desarrollo
+    const c6 = capitulo('ld', 'Longitud de desarrollo', en ? 'ACI 318 25.4.9' : 'NSR-10 C.12.3', R.chequeos[5].ok);
+    const fyD = en ? UN.a(m.fy, 'esfuerzo', 'ingles') : ld.fyM, fcD = en ? UN.a(m.fc, 'esfuerzo', 'ingles') : ld.fcM;
+    const dbD = ldV(ld.db), uE = en ? '\\,\\text{psi}' : '\\,\\text{MPa}';
+    diapo(c6, 'Longitud de anclaje a compresión',
+      'Las barras de la columna se anclan dentro de la zapata con una longitud suficiente para transmitir su fuerza (' + (en ? 'ACI 318 25.4.9.2' : 'NSR-10 C.12.3.2') + '). Esta condición suele definir la altura mínima.',
+      [eq('Barra #' + ld.barra, 'd_b', null, null, n(dbD, en ? 3 : 1), ldU, { nota: 'fy = ' + n(fyD, en ? 0 : 1) + (en ? ' psi' : ' MPa') + ", f'c = " + n(fcD, en ? 0 : 2) + (en ? ' psi' : ' MPa') }),
+      eq('Longitud básica', 'l_{dc}', '\\dfrac{' + (en ? '0.02' : '0.24') + '\\,f_y\\,d_b}{\\lambda\\sqrt{f\'_c}}', '\\dfrac{' + (en ? '0.02' : '0.24') + '\\cdot' + n(fyD, en ? 0 : 1) + '\\cdot' + n(dbD, en ? 3 : 1) + '}{' + n(m.lambda, 2) + '\\sqrt{' + n(fcD, en ? 0 : 2) + '}}', n(ldV(ld.l1), 1), ldU),
+      eq('Mínimo', 'l_{dc,min}', '\\max(' + (en ? '0.0003' : '0.043') + '\\,f_y\\,d_b,\\ ' + (en ? '8\\,\\text{in}' : '200\\,\\text{mm}') + ')', '\\max(' + n(ldV(ld.l2), 1) + ',\\ ' + n(ldV(ld.lmin), 0) + ')', n(ldV(Math.max(ld.l2, ld.lmin)), 1), ldU)],
+      { tipo: 'corte', dir: 'X' });
+    diapo(c6, 'Verificación del anclaje',
+      'Las barras terminan en gancho de 90° apoyado en la parrilla inferior; la parte horizontal del gancho no cuenta. No se aplica la reducción por A<sub>s</sub> requerido / A<sub>s</sub> suministrado.',
+      [ver('Anclaje disponible', 'l_{dc} = ' + n(ldV(ld.ldc), 1) + ldU + ' \\;' + le(ld.ok) + '\\; h - r = ' + n(ldV(ld.disponible), 1) + ldU, ld.ok),
+      ver('Altura mínima sobre el refuerzo (C.15.7)', 'd = ' + n(ldV(R.d * 1000), en ? 1 : 0) + ldU + ' \\;' + ge(R.dMinOk) + '\\; ' + (en ? '6' : '150') + ldU, R.dMinOk),
+      ld.tabla != null && !en ? nota('info', 'Referencia: Tabla 4.21 de J. Segura (f<sub>y</sub> = 420 MPa), interpolada para f\'c = ' + ld.fcM.toFixed(1) + ' MPa: <b>' + ld.tabla.toFixed(0) + ' mm</b>.') : null],
+      { tipo: 'corte', dir: 'X' });
 
-    return out;
+    // Lista plana para el PDF: cada diapositiva es un subtítulo, su texto y sus elementos
+    caps.forEach((cap) => {
+      cap.items = [];
+      cap.diapos.forEach((d) => {
+        cap.items.push({ t: 'sub', txt: d.titulo });
+        if (d.texto) cap.items.push({ t: 'p', html: d.texto });
+        d.items.forEach((it) => cap.items.push(it));
+      });
+    });
+    return caps;
   }
 
   global.MemoriaAisladaMomento = { generar };

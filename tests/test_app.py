@@ -228,9 +228,27 @@ def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     assert "cumple" in pagina.text_content("#v-tit")
     assert pagina.locator(".chequeo.mal").count() == 0
     pagina.click("#tab-memoria")
-    pagina.click("#btn-abrir")
-    pagina.wait_for_function("document.querySelectorAll('#memoria .katex').length > 60")
-    assert pagina.locator("#memoria .katex-error").count() == 0
+    # Memoria por diapositivas: una visible, con texto, ecuaciones y figura
+    assert pagina.locator("#memoria .diapo").count() == 1
+    assert pagina.locator("#memoria .dp-cap").count() == 6
+    total = int(pagina.text_content("#diapo-contador").split(" de ")[1])
+    assert total >= 20
+    vistos = 0
+    for k in range(total):
+        assert pagina.text_content("#diapo-contador").startswith(f"{k + 1} de")
+        d = pagina.locator("#memoria .diapo:not(.saliendo)").last
+        assert d.locator(".diapo-tit").count() == 1 and d.locator(".diapo-fig svg").count() == 1
+        vistos += d.locator(".katex").count()
+        assert pagina.locator("#memoria .katex-error").count() == 0
+        if k < total - 1:
+            pagina.locator("#memoria .dp-escena").focus()
+            pagina.keyboard.press("ArrowRight")
+    assert vistos > 60
+    dup = pagina.evaluate("(() => { const ids = [...document.querySelectorAll('[id]')].map(e => e.id); return ids.filter((x, k) => ids.indexOf(x) !== k); })()")
+    assert dup == [], dup
+    assert pagina.is_disabled("#diapo-sig")
+    pagina.click('#memoria .dp-cap[data-cap="ap"]')
+    assert "Aplastamiento" in pagina.text_content("#memoria .diapo:not(.saliendo) .diapo-cap") or "aplastamiento" in pagina.text_content("#memoria .diapo:not(.saliendo) .diapo-cap")
     assert not errores, errores
 
 

@@ -17,7 +17,6 @@
   let enApp = false;
   let capa = 'presion', vista2 = '3d', hay3d = false, okPrevio = null, pestana = 'veredicto', encuadrado = false;
   const movers = {};
-  const abiertos = new Set(['serv']);
 
   // Pasos del asistente = categorías de edición del dashboard
   const PASOS = [
@@ -307,9 +306,8 @@
   function pintarMemoria() {
     if (!R) return;
     secciones = MemoriaAisladaMomento.generar(R);
-    $('#memoria').innerHTML = Memoria.aHtml(secciones, abiertos);
+    Diapositivas.datos(secciones, R);
   }
-  function abrirPaso(d) { Memoria.completar(d, secciones); d.open = true; abiertos.add(d.id.replace('paso-', '')); }
 
   // ============================================================ asistente
   const wz = { i: 0, modo: 'nuevo' };
@@ -500,7 +498,6 @@
     estado = normalizar(datos);
     proyectoId = id || Proyectos.nuevoId();
     okPrevio = null;
-    abiertos.clear(); abiertos.add('serv');
     abrirApp(conCarga);
   }
 
@@ -574,7 +571,6 @@
     const i = infoInforme();
     $('#inf-titulo').value = i.titulo; $('#inf-proyecto').value = i.proyecto; $('#inf-elemento').value = i.elemento;
     $('#inf-elaboro').value = i.elaboro; $('#inf-responsables').value = i.responsables; $('#inf-fecha').value = i.fecha;
-    $('#inf-explica').checked = $('#chk-explica').checked;
     $('#inf-error').textContent = '';
     abrirDialogo($('#dlg-informe'));
     $('#inf-titulo').select();
@@ -755,20 +751,8 @@
       mostrarPestana('memoria');
       clearTimeout(tMemoria);
       pintarMemoria();
-      const d = document.getElementById('paso-' + a.dataset.paso);
-      if (d) { abrirPaso(d); Mov.desplazarA(d); }
+      Diapositivas.ir(a.dataset.paso);
     });
-    $('#memoria').addEventListener('toggle', (e) => {
-      const d = e.target;
-      if (!d.id || !d.id.startsWith('paso-')) return;
-      const id = d.id.replace('paso-', '');
-      if (d.open) Memoria.completar(d, secciones);
-      if (d.open && d.dataset.cerrando !== '1') abiertos.add(id); else if (!d.open) abiertos.delete(id);
-    }, true);
-    Mov.detallesSuaves($('#memoria'), (d) => Memoria.completar(d, secciones));
-    $('#chk-explica').addEventListener('change', (e) => document.body.classList.toggle('sin-explica', !e.target.checked));
-    $('#btn-abrir').addEventListener('click', () => $$('#memoria details.paso').forEach(abrirPaso));
-    $('#btn-cerrar').addEventListener('click', () => { $$('#memoria details.paso').forEach((d) => { d.open = false; }); abiertos.clear(); });
 
     // --- asistente
     $('#wz-form').addEventListener('submit', (e) => { e.preventDefault(); avanzar(false); });
@@ -859,7 +843,7 @@
       setTimeout(() => imprimirInforme(conExplica), Mov.reducido() ? 30 : 190);
     });
     window.addEventListener('beforeprint', () => {
-      if (R && !document.body.classList.contains('con-informe')) construirInforme($('#chk-explica').checked);
+      if (R && !document.body.classList.contains('con-informe')) construirInforme($('#inf-explica').checked);
     });
     window.addEventListener('afterprint', () => {
       limpiarInforme();
@@ -927,6 +911,7 @@
       setTimeout(() => window.open(a.href, '_blank', 'noopener'), Mov.reducido() ? 0 : 600);
     });
     llenarSelectBarras();
+    Diapositivas.montar($('#memoria'));
     pintarTipos();
     enlazar();
     pintarCategorias(T.faltantes(estado));

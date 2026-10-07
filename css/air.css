@@ -280,3 +280,61 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 .pie-github.gira .gh-aro { animation: ghAro .6s var(--ease-out) both; }
 @keyframes ghGira { from { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } to { transform: rotate(360deg) scale(1); } }
 @keyframes ghAro { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+
+/* ===================================================================== v3.3 memoria por diapositivas */
+.dp-ayuda { font: 500 13px var(--sans); color: var(--tinta-3); }
+.dp { display: grid; gap: 18px; }
+.dp-indice { display: flex; flex-wrap: wrap; gap: 6px; }
+.dp-cap { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-tag); background: transparent; color: var(--tinta-2); font: 500 13px/1 var(--sans); cursor: pointer; transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+.dp-cap-n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--tinta) 10%, transparent); font-size: 12px; }
+.dp-cap-punto { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.dp-cap.mal .dp-cap-punto { background: var(--mal); }
+.dp-cap[aria-current="true"] { background: var(--tinta); color: var(--fondo); border-color: var(--tinta); }
+.dp-cap[aria-current="true"] .dp-cap-n { background: var(--acento-10); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .dp-cap:hover { border-color: var(--tinta); color: var(--tinta); } .dp-cap[aria-current="true"]:hover { color: var(--fondo); } }
+
+.dp-escena { position: relative; display: grid; min-height: 520px; outline: none; touch-action: pan-y; }
+.dp-escena:focus-visible { outline: 2px solid var(--acento-10); outline-offset: 4px; border-radius: var(--r-cont); }
+.diapo {
+  grid-area: 1 / 1; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 28px; align-items: start;
+  --fondo: #f5f5f5; --superficie: #f5f5f5; --superficie-2: #e8e8e8; --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b;
+  --linea: #e0e0e0; --linea-fuerte: #b3b3b3; --acero: #1b1b1b; --dovela: #3d3d3d; --concreto: #dcdcdc; --concreto-borde: #3d3d3d; --columna: #a6a6a6;
+  --presion-lo: #fafafa; --presion-hi: #8c8c8c; --azul: #426188; --ok: #3d6b47; --ok-fondo: #dde8dc; --mal: #a3392c; --mal-fondo: #f1dcd7; --aviso: #6e5520; --aviso-fondo: #efe6cf;
+  background: var(--superficie); color: var(--tinta); border-radius: var(--r-cont); padding: 28px 32px 32px;
+}
+.diapo.saliendo { pointer-events: none; }
+.diapo-txt { display: grid; gap: 12px; min-width: 0; }
+.diapo-cap { margin: 0; font: 500 12px/1.4 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta-3); }
+.diapo-cap span { color: var(--azul); margin-left: 6px; }
+.diapo-tit { margin: 0; font: 400 clamp(30px, 3vw, 42px)/0.95 var(--display); text-transform: uppercase; letter-spacing: 0.01em; }
+.diapo-texto { margin: 0; font: 400 16px/1.6 var(--sans); color: var(--tinta-2); max-width: 60ch; }
+.diapo-items { display: grid; gap: 4px; }
+.diapo-items .ec { grid-template-columns: 150px minmax(0, 1fr); }
+.diapo-items .ec.ver { grid-template-columns: 150px minmax(0, 1fr) auto; padding: 10px 12px; }
+.diapo-fin { margin: 6px 0 0; font: 400 22px/1 var(--display); text-transform: uppercase; letter-spacing: 0.02em; }
+.diapo-fin.ok { color: var(--ok); } .diapo-fin.mal { color: var(--mal); }
+.diapo-fig { margin: 0; background: #fff; border-radius: var(--r-ctl); border: 1px solid var(--linea); min-height: 300px; display: grid; place-items: center; overflow: hidden; position: sticky; top: calc(var(--alto-barra) + 16px); }
+.diapo-fig svg { width: 100%; height: auto; max-height: 460px; }
+.dibujo.fig .fig-flecha { stroke: var(--tinta); stroke-width: 1.6; fill: none; }
+.dibujo.fig .fig-punta { fill: var(--tinta); }
+.dibujo.fig .fig-etq { font: 500 12px var(--sans); fill: var(--tinta); }
+.dibujo.fig .fig-punto { fill: var(--azul); } .dibujo.fig .fig-punto.mal { fill: var(--mal); }
+.dibujo.fig .fig-barra { fill: #c9d3df; } .dibujo.fig .fig-barra.min { fill: var(--azul); }
+.dibujo.fig .fig-vu { stroke: var(--tinta); stroke-width: 2; stroke-dasharray: 5 4; } .dibujo.fig .fig-vu.mal { stroke: var(--mal); }
+.dibujo.fig .fig-carga { fill: color-mix(in srgb, var(--azul) 14%, transparent); }
+
+.dp-control { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 16px; }
+.dp-progreso { height: 4px; border-radius: 2px; background: var(--linea); overflow: hidden; }
+.dp-relleno { display: block; height: 100%; background: var(--acento-10); transform-origin: left; transform: scaleX(0); transition: transform .45s var(--ease-out); }
+.dp-contador { font: 500 14px var(--sans); font-feature-settings: "tnum" 1; color: var(--tinta-2); min-width: 4.5em; text-align: right; }
+.dp-btn:disabled { opacity: .35; cursor: default; }
+
+@media (max-width: 900px) {
+  .dp-ayuda { display: none; }
+  .diapo { grid-template-columns: minmax(0, 1fr); padding: 20px 16px 22px; gap: 18px; }
+  .diapo-fig { position: static; order: -1; min-height: 0; }
+  .diapo-items .ec, .diapo-items .ec.ver { grid-template-columns: minmax(0, 1fr); }
+  .dp-escena { min-height: 0; }
+  .dp-control { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .dp-progreso { grid-column: 1 / -1; grid-row: 1; }
+}
