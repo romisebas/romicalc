@@ -57,6 +57,13 @@ def abrir(navegador, url, ancho=1440, alto=900, tema="light", intro=False, anim=
     return pagina, errores
 
 
+def siguiente(pagina):
+    """Avanza el asistente y espera a que cambie el paso (evita clics perdidos por cambios de altura)."""
+    antes = pagina.text_content("#wz-contador")
+    pagina.click("#wz-siguiente")
+    pagina.wait_for_function("t => document.querySelector('#wz-contador').textContent !== t", arg=antes)
+
+
 def entrar_ejemplo(pagina):
     pagina.click("#btn-disenar")
     pagina.click("#op-ejemplo")
@@ -297,6 +304,31 @@ def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
     assert not errores, errores
 
 
+def test_pantalla_de_opciones(navegador, url):
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    pagina.click("#btn-disenar")
+    assert "Paso 1 de 2" in pagina.text_content("#bv-opciones .bv-eti")
+    assert pagina.locator("#bv-opciones .bv-sub").count() == 1
+    assert pagina.locator(".opcion .op-ico").count() == 3 and pagina.locator(".opcion .op-tit").count() == 3
+    pagina.click("#op-nueva")
+    assert "elige-nueva" in pagina.get_attribute("#op-nueva", "class")
+    pagina.wait_for_selector("#bv-tipos:not([hidden])", timeout=3000)
+    assert pagina.locator("#tipos .tt-ico").count() == 6
+    assert "Paso 2 de 2" in pagina.text_content("#bv-tipos .bv-eti")
+    pagina.click('#bv-tipos [data-ir="opciones"]')
+    pagina.click("#op-ejemplo")
+    assert "elige-ejemplo" in pagina.get_attribute("#op-ejemplo", "class")
+    pagina.wait_for_selector("#chequeos .chequeo", timeout=4000)
+    pagina.wait_for_timeout(500)
+    pagina.click("#btn-inicio")
+    pagina.wait_for_selector("#recientes:not([hidden]) .rc-mini .rc-col")
+    pagina.evaluate("document.getElementById('archivo-importar').click = () => { window.__importar = true; }")
+    pagina.click("#op-importar")
+    assert "elige-importar" in pagina.get_attribute("#op-importar", "class")
+    pagina.wait_for_function("window.__importar === true", timeout=3000)
+    assert not errores, errores
+
+
 def test_ejemplo_cumple_y_memoria_katex(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
@@ -338,32 +370,32 @@ def test_nueva_zapata_vacia_y_asistente(navegador, url):
     assert llenos == [], llenos
     assert "Paso 1 de 7" in pagina.text_content("#wz-contador")
     pagina.fill('#asistente [data-k="proyecto.nombre"]', "Bloque B")
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     # Cargas vacías: aviso y botón para continuar de todos modos
     pagina.click("#wz-siguiente")
     assert "Faltan" in pagina.text_content("#wz-error")
     for k, v in EJEMPLO.items():
         pagina.fill(f'#asistente [data-k="{k}"]', v)
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     pagina.fill('#asistente [data-k="suelo.qadm"]', "12")
     pagina.fill('#asistente [data-k="suelo.Df"]', "1.5")
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     pagina.fill('#asistente [data-k="columna.Cx"]', "0.5")
     pagina.fill('#asistente [data-k="columna.Cy"]', "0.4")
     pagina.select_option('#asistente [data-k="columna.barra"]', "7")
     pagina.fill('#asistente [data-k="columna.nBarras"]', "8")
     pagina.select_option('#asistente [data-k="columna.alpha"]', "40")
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     pagina.fill('#asistente [data-k="materiales.fc"]', "280")
     pagina.fill('#asistente [data-k="materiales.fy"]', "4200")
     pagina.click("#btn-nsr")
     assert pagina.input_value('#asistente [data-k="materiales.phiV"]') == "0.75"
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     assert "Planta" in pagina.text_content("#wz-titulo")
     pagina.click("#btn-opt-planta")
     assert "cumplen" in pagina.text_content("#wz-planta-v")
     assert pagina.locator("#wz-planta svg").count() == 1
-    pagina.click("#wz-siguiente")
+    siguiente(pagina)
     pagina.click("#btn-opt-d")
     pagina.wait_for_selector("#wz-altura li.ok")
     pagina.click("#wz-siguiente")

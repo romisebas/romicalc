@@ -33,16 +33,32 @@
 
     <section class="bv-pantalla" id="bv-opciones" aria-labelledby="titulo-opciones" hidden>
       <button type="button" class="btn btn-quieto bv-volver" data-ir="portada">Volver</button>
+      <p class="bv-eti">Paso 1 de 2 · Empezar</p>
       <h2 class="bv-h2" id="titulo-opciones">¿Qué quieres hacer?</h2>
+      <p class="bv-sub">Diseña una zapata desde cero, abre un proyecto guardado o explora el ejemplo del curso.</p>
       <div class="opciones">
         <button type="button" class="opcion opcion-principal" id="op-nueva">
-          <span class="op-tit">Nueva zapata</span><span class="op-desc">Empieza con todos los campos vacíos y el asistente paso a paso.</span>
+          <svg class="op-ico ico-nueva" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ic-hoja" d="M8 6h24l8 8v28H8z"/><path class="ic-hoja" d="M32 6v8h8"/>
+            <path class="ic-cota" pathLength="1" d="M12 38h24M12 36v4M36 36v4"/>
+            <path class="ic-zap" d="M14 28h20v6H14z"/><path class="ic-col" d="M21 16h6v12h-6z"/>
+          </svg>
+          <span class="op-tit">Nueva zapata</span><span class="op-desc">Empieza con todos los campos vacíos y el asistente paso a paso.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
-        <label class="opcion" for="archivo-importar">
-          <span class="op-tit">Importar proyecto</span><span class="op-desc">Abre un archivo .json exportado desde la app.</span>
-        </label>
+        <button type="button" class="opcion" id="op-importar">
+          <svg class="op-ico ico-importar" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ic-bandeja" d="M6 30v10h36V30M6 30h10l3 5h10l3-5h10"/>
+            <g class="ic-archivo"><path d="M17 4h10l5 5v14H17z"/><path d="M27 4v5h5"/><path class="ic-flecha" d="M24.5 12v8M21.5 17l3 3 3-3"/></g>
+          </svg>
+          <span class="op-tit">Importar proyecto</span><span class="op-desc">Abre un archivo .json exportado desde la app.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
         <button type="button" class="opcion" id="op-ejemplo">
-          <span class="op-tit">Usar el ejemplo</span><span class="op-desc">Zapata del documento del curso, 2.50 × 2.00 m.</span>
+          <svg class="op-ico ico-ejemplo" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ic-pag" d="M24 12c-4-3-10-4-17-3v28c7-1 13 0 17 3"/><path class="ic-pag" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/>
+            <path class="ic-hoja1" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/><path class="ic-hoja2" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/>
+            <path class="ic-lineas" d="M11 16h8M11 21h8M11 26h6"/>
+          </svg>
+          <span class="op-tit">Usar el ejemplo</span><span class="op-desc">Zapata del documento del curso, 2.50 × 2.00 m.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
       </div>
       <div class="recientes" id="recientes" hidden>
@@ -53,7 +69,9 @@
 
     <section class="bv-pantalla" id="bv-tipos" aria-labelledby="titulo-tipos" hidden>
       <button type="button" class="btn btn-quieto bv-volver" data-ir="opciones">Volver</button>
+      <p class="bv-eti">Paso 2 de 2 · Tipo de cimentación</p>
       <h2 class="bv-h2" id="titulo-tipos">Tipo de zapata</h2>
+      <p class="bv-sub">Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.</p>
       <div class="tipos" id="tipos"></div>
     </section>
   </div>

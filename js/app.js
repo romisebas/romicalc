@@ -498,7 +498,7 @@
     $('#recientes').hidden = !lista.length;
     const etq = { cumple: 'Cumple', 'no-cumple': 'No cumple', incompleto: 'Incompleto' };
     $('#lista-recientes').innerHTML = lista.map((p) =>
-      '<li><button type="button" class="reciente" data-id="' + p.id + '">' +
+      '<li><button type="button" class="reciente" data-id="' + p.id + '">' + miniatura(p.datos) +
       '<span class="rc-nombre">' + Informe.esc(p.nombre || 'Proyecto sin nombre') + '</span>' +
       '<span class="rc-meta">' + Informe.esc(p.elemento || 'Sin elemento') + ', ' + new Date(p.fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' +
       '<span class="rc-estado ' + p.estado + '">' + etq[p.estado] + '</span></button>' +
@@ -506,9 +506,27 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M8 7l1 12h6l1-12"/></svg></button></li>').join('');
   }
 
+  // Miniatura de la planta guardada (zapata y columna a escala)
+  function miniatura(d) {
+    const z = d && d.zapata, c = d && d.columna;
+    if (!z || !(z.Lx > 0) || !(z.Ly > 0)) return '<svg class="rc-mini" viewBox="0 0 48 48" aria-hidden="true"><path class="rc-vacio" d="M10 10h28v28H10z"/></svg>';
+    const k = 36 / Math.max(z.Lx, z.Ly), w = z.Lx * k, h = z.Ly * k;
+    const cw = (c && c.Cx > 0 ? c.Cx : 0) * k, ch = (c && c.Cy > 0 ? c.Cy : 0) * k;
+    return '<svg class="rc-mini" viewBox="0 0 48 48" aria-hidden="true"><rect class="rc-zap" x="' + (24 - w / 2) + '" y="' + (24 - h / 2) + '" width="' + w + '" height="' + h + '"/>' +
+      (cw ? '<rect class="rc-col" x="' + (24 - cw / 2) + '" y="' + (24 - ch / 2) + '" width="' + cw + '" height="' + ch + '"/>' : '') + '</svg>';
+  }
+
+  // Animación propia de cada opción antes de continuar
+  function elegir(boton, clase, siguiente) {
+    if (Mov.reducido()) { siguiente(); return; }
+    boton.classList.remove(clase); void boton.offsetWidth; boton.classList.add(clase);
+    setTimeout(() => { boton.classList.remove(clase); siguiente(); }, 950);
+  }
+
   function pintarTipos() {
     $('#tipos').innerHTML = CatalogoZapatas.map((t) =>
       '<button type="button" class="tipo-tarjeta' + (t.disponible ? '' : ' pronto') + '" data-tipo="' + t.id + '"' + (t.disponible ? '' : ' aria-disabled="true"') + '>' +
+      '<svg class="tt-ico" viewBox="0 0 48 48" aria-hidden="true">' + t.ico + '</svg>' +
       '<span class="tt-nombre">' + t.nombre + '</span><span class="tt-desc">' + t.desc + '</span>' +
       (t.disponible ? '' : '<span class="mi-tag pronto">Próximamente</span>') + '</button>').join('');
   }
@@ -700,11 +718,12 @@
     $('#btn-saltar').addEventListener('click', () => Intro3D.saltar());
     $('#btn-disenar').addEventListener('click', () => mostrarPantalla('opciones'));
     $$('[data-ir]').forEach((b) => b.addEventListener('click', () => mostrarPantalla(b.dataset.ir)));
-    $('#op-nueva').addEventListener('click', () => mostrarPantalla('tipos'));
-    $('#op-ejemplo').addEventListener('click', () => {
+    $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => mostrarPantalla('tipos')));
+    $('#op-importar').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-importar', () => $('#archivo-importar').click()));
+    $('#op-ejemplo').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-ejemplo', () => {
       cargarProyecto(T.clone(T.EJEMPLO));
       avisar('Ejemplo del documento cargado: 2.50 × 2.00 m con d = 0.475 m.');
-    });
+    }));
     $('#tipos').addEventListener('click', (e) => {
       const t = e.target.closest('.tipo-tarjeta');
       if (!t) return;

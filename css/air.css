@@ -463,3 +463,65 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 @keyframes temaGira { 0% { transform: rotate(0); } 60% { transform: rotate(-40deg) scale(1.12); } 100% { transform: rotate(0); } }
 @keyframes ghSaluda { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-6deg); } }
 html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:hover .logo-dz path { stroke-dashoffset: 0; }
+
+/* ===================================================================== v3.3 pantalla de opciones y tipos */
+.bv-eti { margin: 0 0 22px; font: 500 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--acento-10); }
+#bv-opciones .bv-h2, #bv-tipos .bv-h2 { margin: 0 0 14px; }
+.bv-sub { margin: 0 0 34px; font: 500 18px/1.45 var(--sans); color: var(--tinta-2); max-width: 56ch; }
+.opciones { grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+.opcion { position: relative; display: grid; grid-template-rows: auto auto 1fr; align-content: start; gap: 10px; padding: 24px 24px 56px; min-height: 230px; overflow: hidden; }
+.op-ico { width: 52px; height: 52px; margin-bottom: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.op-ico * { transform-box: fill-box; }
+.op-tit { font: 400 30px/0.95 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.op-desc { font: 500 15px/1.45 var(--sans); }
+.op-flecha { position: absolute; left: 24px; bottom: 20px; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .opcion:hover .op-flecha { transform: translateX(8px); }
+  .opcion:hover .op-ico { animation: icoFlota 1.2s ease-in-out infinite; }
+}
+@keyframes icoFlota { 50% { transform: translateY(-3px); } }
+/* Nueva zapata: se trazan las cotas y aparecen zapata y columna */
+.ico-nueva .ic-zap, .ico-nueva .ic-col { fill: currentColor; fill-opacity: .14; }
+.elige-nueva .ic-cota { stroke-dasharray: 1; animation: trazo .45s var(--ease-out) both; }
+.elige-nueva .ic-zap { transform-origin: bottom; animation: icoCrece .4s var(--ease-out) .3s both; }
+.elige-nueva .ic-col { transform-origin: bottom; animation: icoCrece .4s var(--ease-out) .55s both; }
+.elige-nueva { animation: tarjetaCrece .95s var(--ease-io) both; }
+@keyframes tarjetaCrece { 0%, 55% { transform: none; } 100% { transform: scale(1.04); opacity: .4; } }
+/* Importar: el archivo baja a la bandeja y la bandeja se ilumina */
+.elige-importar .ic-archivo { animation: archivoBaja .65s cubic-bezier(.5, 0, .75, 0) both; }
+.elige-importar .ic-bandeja { animation: bandejaBrilla .5s ease .55s both; }
+@keyframes archivoBaja { to { transform: translateY(20px) scale(.7); opacity: 0; } }
+@keyframes bandejaBrilla { 50% { stroke: var(--acento-10); stroke-width: 3; } }
+/* Ejemplo: el libro se abre y pasa dos páginas */
+.ico-ejemplo .ic-hoja1, .ico-ejemplo .ic-hoja2 { fill: var(--superficie); transform-origin: left center; }
+.opcion-principal .ico-ejemplo .ic-hoja1 { fill: var(--superficie); }
+.elige-ejemplo .ic-hoja1 { animation: pasaHoja .45s var(--ease-io) .1s both; }
+.elige-ejemplo .ic-hoja2 { animation: pasaHoja .45s var(--ease-io) .4s both; }
+@keyframes pasaHoja { to { transform: scaleX(-1); } }
+.elige-importar, .elige-ejemplo { border-color: var(--acento-10) !important; }
+
+/* Recientes con miniatura */
+.reciente { grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; }
+.rc-mini { grid-row: 1 / 3; width: 44px; height: 44px; }
+.rc-mini .rc-zap { fill: color-mix(in srgb, var(--tinta) 14%, transparent); stroke: var(--tinta-2); stroke-width: 1.2; }
+.rc-mini .rc-col { fill: var(--tinta); }
+.rc-mini .rc-vacio { fill: none; stroke: var(--linea-fuerte); stroke-dasharray: 3 3; }
+.rc-nombre { grid-column: 2; } .rc-meta { grid-column: 2; } .rc-estado { grid-column: 3; }
+
+/* Tipos con ícono */
+.tipo-tarjeta { gap: 8px; padding: 20px; min-height: 170px; }
+.tt-ico { width: 44px; height: 44px; margin-bottom: 8px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tt-ico .ic-mov { transform-box: fill-box; transform-origin: center; }
+@media (hover: hover) and (pointer: fine) { .tipo-tarjeta:not(.pronto):hover .ic-mov { animation: icoVibra .5s ease; } }
+.tipo-tarjeta.pronto .tt-ico { opacity: .5; }
+.tt-nombre { font: 400 24px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+@media (max-width: 900px) {
+  .opciones { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .opcion { min-height: 0; grid-template-columns: 44px minmax(0, 1fr) 22px; grid-template-rows: auto auto; column-gap: 14px; row-gap: 4px; padding: 18px 16px; align-items: center; }
+  .op-ico { grid-row: 1 / 3; width: 40px; height: 40px; margin: 0; }
+  .op-tit { font-size: 24px; }
+  .op-desc { grid-column: 2; font-size: 14px; }
+  .op-flecha { position: static; grid-column: 3; grid-row: 1 / 3; }
+  .bv-sub { font-size: 16px; margin-bottom: 24px; }
+}
+#bv-opciones .bv-h2, #bv-tipos .bv-h2 { line-height: 1; }
