@@ -6,7 +6,7 @@ Diseño de zapatas de concreto reforzado según la **NSR-10** (Reglamento Colomb
 
 ![Portada de ZapatAPP](docs/capturas/portada.png)
 
-ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La versión 1.0 diseña **zapatas aisladas con carga axial y momento en dos direcciones**; los demás tipos (concéntrica, medianera, esquinera, combinada y corrida) llegarán en próximas versiones.
+ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La beta 1.1 diseña **zapatas aisladas con carga axial y momento en dos direcciones**; los demás tipos (concéntrica, medianera, esquinera, combinada y corrida) llegarán en próximas versiones.
 
 ## Qué hace
 
