@@ -926,3 +926,24 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .corte-comb .pi-txt { fill: var(--acento-10); }
 .plano-comb .franja .rayado { stroke: rgba(255, 255, 255, .45); }
 .plano-comb .franja rect { stroke: rgba(255, 255, 255, .9); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.mesa-aceros { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.mesa-grupo-acero { display: grid; gap: 8px; align-content: start; padding: 16px; border: 1px solid var(--linea); border-radius: var(--r-cont); }
+.mesa-grupo-acero h3 { margin: 0; font: 400 20px/1 var(--display); text-transform: uppercase; }
+.mesa-grupo-acero .mesa-ayuda { margin: 0; }
+.mesa-req { margin: 0; font: 500 13px/1.3 var(--sans); color: var(--tinta-2); }
+.mesa-req b { color: var(--tinta); }
+.mesa-sel { margin: 0; font: 600 17px/1.2 var(--sans); }
+.mesa-ops { display: flex; flex-wrap: wrap; gap: 6px; }
+.mesa-op { min-width: 44px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: var(--r-ctl); background: transparent; color: var(--tinta); font: 600 13px/1 var(--sans); cursor: pointer; transition: background-color .2s ease, border-color .2s ease; }
+.mesa-op.est-mal { color: var(--tinta-3); text-decoration: line-through; }
+.mesa-op.est-aviso { border-style: dashed; }
+.mesa-op[aria-pressed="true"] { background: var(--tinta); color: var(--fondo); border-color: var(--tinta); text-decoration: none; }
+.mesa-tabla-marco { overflow-x: auto; border: 1px solid var(--linea); border-radius: var(--r-cont); }
+.mesa-tabla { width: 100%; border-collapse: collapse; font: 500 14px/1.3 var(--sans); }
+.mesa-tabla th, .mesa-tabla td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+.mesa-tabla th { font: 600 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--tinta-3); }
+.mesa-tabla td.num { text-align: right; font-feature-settings: "tnum" 1; }
+.mesa-tabla tfoot td { font-weight: 700; border-bottom: 0; }
+.mesa-forma { width: 96px; height: 28px; display: block; }
+.mesa-forma path { fill: none; stroke: var(--tinta); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.mesa-tabla th.num { text-align: right; }

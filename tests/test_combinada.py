@@ -3,6 +3,8 @@
 Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests/test_combinada.py -q
 """
+import re
+
 from test_app import abrir
 
 
@@ -240,4 +242,24 @@ def test_mesa_planos_y_3d(navegador, url):
     pagina.wait_for_selector("#mesa-p-3d:not([hidden]) canvas")
     pagina.click('.mesa-pildora[data-id="ct"]')
     assert pagina.get_attribute('#mesa-tabs [data-p="cortes"]', "aria-selected") == "true"
+    assert not errores, errores
+
+
+def test_mesa_refuerzo_y_despiece(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.click('#mesa-tabs [data-p="refuerzo"]')
+    pagina.wait_for_selector("#mesa-p-refuerzo:not([hidden]) .mesa-grupo-acero")
+    assert pagina.locator("#mesa-p-refuerzo .mesa-grupo-acero").count() == 5
+    pagina.click('#mesa-p-refuerzo [data-grupo="sup"] [data-barra="7"]')
+    pagina.wait_for_function("document.querySelector('#mesa-p-refuerzo [data-grupo=\"sup\"] .mesa-sel').textContent.includes('#7')")
+    assert pagina.evaluate("Mesa.estado().acero.barSup") == 7
+    pagina.click('#mesa-tabs [data-p="despiece"]')
+    pagina.wait_for_selector("#mesa-despiece tbody tr")
+    marcas = pagina.locator("#mesa-despiece tbody tr td:first-child").all_text_contents()
+    assert [m.strip() for m in marcas] == ["L1", "L2", "T1", "T2", "T3", "D1", "D2"]
+    total = pagina.text_content("#mesa-despiece tfoot")
+    m = re.search(r"([\d.]+)\s*kg", total)
+    assert m and float(m.group(1)) > 0
+    assert pagina.locator("#mesa-despiece svg").count() == 7
     assert not errores, errores

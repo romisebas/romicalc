@@ -456,5 +456,8 @@
     else $('#mesa-lienzo').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  global.Mesa = { abrir, cerrar, irA, mostrarPestana, estado: () => estado, resultado: () => R };
+  // Cambia un dato desde otra sección (por ejemplo, la barra elegida en Refuerzo)
+  function ajustar(ruta, valor) { set(estado, ruta, valor); cambio(); }
+
+  global.Mesa = { abrir, cerrar, irA, mostrarPestana, ajustar, estado: () => estado, resultado: () => R };
 })(window);
