@@ -123,12 +123,15 @@
     const sin = presionServicio(Ps, xbar, L, B, su.qadm);
     const con = presionServicio(PsE, xbarE, L, B, su.qadm * su.factorSismo);
     const gobS = caso === 'con' ? con : sin;
-    if (Math.abs(sin.e) > L / 6 + 1e-9) avisos.push('La resultante cae fuera del tercio central (|e| > L/6): parte de la zapata no apoya.');
+    if ([sin, con].some((c) => Math.abs(c.e) > L / 6 + 1e-9)) avisos.push('La resultante cae fuera del tercio central (|e| > L/6)' + (Math.abs(sin.e) > L / 6 + 1e-9 ? '' : ' en el caso con sismo') + ': parte de la zapata no apoya.');
+    const anchoMin = Math.max(cols[0].c2, cols[1].c2);
+    if (B < anchoMin - 1e-9) avisos.push('El ancho B es menor que la columna: debe ser al menos ' + anchoMin.toFixed(2) + ' m.');
+    const valido = cubre && B >= anchoMin - 1e-9;
     const serv = { caso, A, Asin, Acon, sin, con, smax: gobS.smax, smin: gobS.smin,
-      ok: cubre && sin.ok && con.ok, util: Math.max(sin.util, con.util) };
+      ok: valido && sin.ok && con.ok, util: Math.max(sin.util, con.util) };
     const ult = combinaciones(cols, R);
     cols.forEach((c, i) => { c.Pu = ult.gob.P[i]; });
-    return { R, cols, Ps, PsE, xbar, xbarE, L, B, e: L / 2 - xbar, area: L * B, serv, ult, avisos };
+    return { R, cols, Ps, PsE, xbar, xbarE, L, B, e: L / 2 - xbar, area: L * B, serv, ult, avisos, valido };
   }
 
   // ---------------------------------------------------------------- presión última y viga invertida
@@ -192,7 +195,10 @@
 
   // ---------------------------------------------------------------- diseño
   function elegirBarras(As, b, h, r, pedida) {
-    const RF = global.Refuerzo, ops = RF.opcionesBarras(As, b, h, r);
+    const RF = global.Refuerzo;
+    // Sin solución a flexión (la sección no alcanza): no hay barras que elegir
+    if (!isFinite(As)) return { ops: [], barra: pedida && RF.BARS[pedida] ? pedida : 6, n: 0, s: 0, estado: 'mal', ratio: 0, sinSolucion: true, resumen: 'Sin solución: aumente d' };
+    const ops = RF.opcionesBarras(As, b, h, r);
     const barra = pedida && RF.BARS[pedida] ? pedida : RF.barraPorDefecto(ops);
     const sel = ops.find((o) => o.barra === barra);
     return Object.assign({ ops, resumen: sel.n + ' #' + sel.barra + ' @ ' + sel.s.toFixed(2) + ' m' }, sel);
@@ -236,7 +242,8 @@
       const fl = flex(Mu, b), Vu = wu * Math.max(Lv - d, 0), lv = phiVc(b);
       return { x0, x1, b, wu, Lv, Mu, fl, Vu, phiVc: lv, ok: fl.ok && Vu <= lv, util: Vu / lv, sel: elegirBarras(fl.As, b, h, z.r, a.barTrans) };
     });
-    const bEntre = Math.max(0, R.L - tr[0].b - tr[1].b);
+    const union = tr[1].x0 < tr[0].x1 ? Math.max(tr[0].x1, tr[1].x1) - tr[0].x0 : tr[0].b + tr[1].b;
+    const bEntre = Math.max(0, R.L - union);
     const AsEntre = 0.0018 * bEntre * 100 * h * 100;
     const entre = { b: bEntre, As: AsEntre, sel: bEntre > 0 ? elegirBarras(AsEntre, bEntre, h, z.r, a.barTrans) : null };
     return { fl: { sup, inf }, cl, tr, entre };
@@ -318,7 +325,8 @@
     const fmt = (x) => x.toFixed(2);
     const flOk = [R.fl.sup, R.fl.inf, R.tr[0].fl, R.tr[1].fl].every((f) => f.ok) &&
       [R.fl.sup.sel, R.fl.inf.sel, R.tr[0].sel, R.tr[1].sel].every((s) => s.estado !== 'mal');
-    const flUtil = Math.max.apply(null, [R.fl.sup.sel, R.fl.inf.sel, R.tr[0].sel, R.tr[1].sel].map((s) => 1 / s.ratio));
+    const sels = [R.fl.sup.sel, R.fl.inf.sel, R.tr[0].sel, R.tr[1].sel];
+    const flUtil = Math.max.apply(null, sels.filter((s) => s.ratio > 0).map((s) => 1 / s.ratio).concat(sels.some((s) => s.sinSolucion) ? [1.01] : [0]));
     const ct = R.tr[0].util > R.tr[1].util ? R.tr[0] : R.tr[1];
     return [
       { id: 'suelo', titulo: 'Presión del suelo', ok: R.serv.ok, util: R.serv.util, det: 'σmax = ' + fmt(R.serv.smax) + ' tonf/m²' },
@@ -337,6 +345,13 @@
     R.inp = inp;
     R.h = inp.zapata.d + inp.zapata.r;
     R.d = inp.zapata.d;
+    if (!R.valido) {
+      // La zapata no cubre la columna interior o es más angosta que una columna: no tiene sentido diseñarla
+      R.chequeos = [{ id: 'suelo', titulo: 'Presión del suelo', ok: false, util: Math.max(R.serv.util, 1.01), det: R.avisos.join(' ') }];
+      R.todoOk = false;
+      R.resumen = R.avisos.join(' ');
+      return R;
+    }
     R.q = presionUltima(inp, R);
     R.lon = longitudinal(R);
     Object.assign(R, diseno(inp, R));

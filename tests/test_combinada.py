@@ -3,6 +3,7 @@
 Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests/test_combinada.py -q
 """
+import json
 import re
 
 from test_app import abrir
@@ -310,4 +311,106 @@ def test_mesa_pdf(navegador, url):
     assert pagina.evaluate("Mesa.estado().informe.titulo") == "Memoria combinada C-1"
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
     pagina.wait_for_function("!document.body.classList.contains('con-informe')")
+    assert not errores, errores
+
+
+# ---------------------------------------------------------------- revisión final
+def test_revision_flexion_imposible_no_rompe(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    R = calc_ejemplo(pagina, "e.zapata.d = 0.1", metodo="corregido")
+    assert all(s["n"] is not None and s["n"] < 1000 for s in [R["fl"]["sup"]["sel"], R["fl"]["inf"]["sel"], R["tr"][0]["sel"], R["tr"][1]["sel"]])
+    assert next(c for c in R["chequeos"] if c["id"] == "fl")["ok"] is False
+    abrir_ejemplo_combinada(pagina)
+    pagina.click('#mesa-tabs [data-p="cortes"]')
+    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.1")
+    pagina.wait_for_timeout(300)
+    html = pagina.inner_html("#mesa")
+    assert "Infinity" not in html and "NaN" not in html
+    pagina.wait_for_timeout(600)
+    assert pagina.evaluate("Proyectos.listar()[0].datos.zapata.d") == 0.1
+    assert not errores, errores
+
+
+def test_revision_nombre_no_inyecta_html(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    nombre = 'x" autofocus onfocus="window.__xss=1'
+    pagina.evaluate("n => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.proyecto.nombre = n; Mesa.abrir(e); }", nombre)
+    pagina.wait_for_timeout(200)
+    assert pagina.evaluate("window.__xss") is None
+    assert pagina.input_value('#mesa-panel [data-k="proyecto.nombre"]') == nombre
+    assert not errores, errores
+
+
+def test_revision_L_que_no_cubre_no_disena(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    for cambio in ["e.geometria.modoL = 'fijo'; e.geometria.L = 4.0", "e.columnas[1].D = 0.001; e.columnas[1].L = 0",
+                   "e.geometria.modoB = 'fijo'; e.geometria.B = 0.3"]:
+        R = calc_ejemplo(pagina, cambio, metodo="corregido")
+        assert R["valido"] is False and not R["todoOk"] and R["avisos"], cambio
+    pagina.evaluate("() => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.geometria.modoL = 'fijo'; e.geometria.L = 4.0; Mesa.abrir(e); }")
+    assert "no cubre" in pagina.text_content("#mesa-faltan")
+    assert "%" not in pagina.text_content("#mesa-veredicto")
+    assert not errores, errores
+
+
+def test_revision_unidades_recalculan_memoria(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.click('#mesa-tabs [data-p="memoria"]')
+    pagina.wait_for_selector("#mesa-p-memoria .dp-cap")
+    pagina.click("#mesa [data-abrir-ajustes]")
+    pagina.check('input[name="aj-unid"][value="si"]')
+    pagina.click("#dlg-ajustes .btn-acento")
+    pagina.wait_for_selector("#dlg-ajustes", state="hidden")
+    assert pagina.evaluate("Mesa.resultado().inp.unid") == "si"
+    assert "tonf" not in pagina.text_content("#mesa-memoria")  # las notas de corrección citan el documento en tonf
+    assert not errores, errores
+
+
+def test_revision_reimprimir_y_ctrl_p_en_la_mesa(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.evaluate("window.print = () => {}")
+    pagina.evaluate("window.dispatchEvent(new Event('beforeprint'))")
+    assert "Zapata combinada" in pagina.text_content("#informe")
+    pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
+    pagina.click("#mesa-pdf")
+    pagina.fill("#inf-titulo", "Memoria C-2")
+    pagina.click("#inf-imprimir")
+    pagina.wait_for_function("document.body.classList.contains('con-informe')")
+    pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
+    pagina.wait_for_selector("#doc-listo[open]")
+    pagina.click("#dl-reimprimir")
+    pagina.wait_for_selector("#dlg-informe[open]")
+    assert pagina.input_value("#inf-titulo") == "Memoria C-2"
+    assert not errores, errores
+
+
+def test_revision_exportar_desde_la_mesa(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    with pagina.expect_download() as d:
+        pagina.click("#mesa-exportar")
+    datos = json.loads(open(d.value.path(), encoding="utf-8").read())
+    assert datos["tipo"] == "combinada" and datos["columnas"][1]["D"] == 146.067
+    assert not errores, errores
+
+
+def test_revision_franjas_traslapadas_y_excentricidad(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    R = calc_ejemplo(pagina, "e.geometria.s = 1.0", metodo="corregido")
+    union = max(R["tr"][1]["x1"], R["tr"][0]["x1"]) - R["tr"][0]["x0"] if R["tr"][1]["x0"] < R["tr"][0]["x1"] else R["tr"][0]["b"] + R["tr"][1]["b"]
+    assert abs(R["entre"]["b"] - (R["L"] - union)) < 1e-9 and R["entre"]["b"] >= 0
+    R = calc_ejemplo(pagina, "e.columnas[0].E = -700", metodo="corregido")
+    assert any("tercio central" in a for a in R["avisos"])
+    assert not errores, errores
+
+
+def test_revision_separacion_minima_al_crecer_la_columna(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.evaluate("Mesa.ajustar('geometria.s', 0.55)")
+    pagina.click('.mesa-carga[data-i="0"]')
+    pagina.fill('#mesa-editor [data-k="columnas.0.c1"]', "1.2")
+    assert pagina.evaluate("Mesa.estado().geometria.s") >= 0.9 - 1e-9
     assert not errores, errores

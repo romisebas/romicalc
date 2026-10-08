@@ -8,7 +8,7 @@
 (function (global) {
   'use strict';
 
-  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const MM = 96 / 25.4; // px por mm en CSS
   const HOJA = { alto: 279, margenSup: 22, margenInf: 20 }; // mm (carta: 279.4; se deja holgura)
 

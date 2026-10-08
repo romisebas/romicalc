@@ -7,7 +7,7 @@
 
   const $ = (s, r) => (r || document).querySelector(s);
   const T = () => global.Tipos.combinada;
-  let el = null, estado = null, id = null, R = null, falt = [], tGuardar = null;
+  let el = null, estado = null, id = null, R = null, falt = [], tGuardar = null, errorCalc = '';
   let esc = null, arrastre = null, cuadro = 0, editando = null, pestana = 'planta';
   const PESTANAS = [['planta', 'Planta'], ['cortes', 'Cortes'], ['3d', '3D'], ['refuerzo', 'Refuerzo'], ['despiece', 'Despiece'], ['memoria', 'Memoria']];
   // A qué pestaña lleva cada píldora del veredicto (el cortante longitudinal se lee en el lienzo)
@@ -42,6 +42,7 @@
         '<div class="mesa-titulo"><p class="bv-eti">Zapata combinada</p><h1 class="mesa-h1" id="mesa-nombre">Nueva zapata</h1></div>' +
         '<p class="mesa-dim">L = <b class="num" id="mesa-L">—</b> · B = <b class="num" id="mesa-B">—</b></p>' +
         '<button type="button" class="btn btn-quieto" id="mesa-ejemplo">Cargar ejemplo del documento</button>' +
+        '<button type="button" class="btn btn-quieto" id="mesa-exportar">Exportar</button>' +
         '<button type="button" class="btn btn-acento" id="mesa-pdf" aria-haspopup="dialog">PDF</button>' +
         '<button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>' +
       '</header>' +
@@ -77,13 +78,11 @@
       '<div class="mesa-editor popover" id="mesa-editor" role="dialog" aria-labelledby="mesa-editor-tit" hidden></div>';
     $('#mesa-inicio').addEventListener('click', cerrar);
     $('#mesa-pdf').addEventListener('click', () => {
-      if (!R) { global.App.avisar('Complete los datos del proyecto para generar la memoria.'); return; }
-      global.App.abrirInforme(global.InformeCombinada.fuente(estado, () => R, (i) => {
-        estado.proyecto.nombre = i.proyecto; estado.proyecto.elemento = i.elemento;
-        estado.informe = { titulo: i.titulo, elaboro: i.elaboro, responsables: i.responsables, fecha: i.fecha };
-        cambio();
-      }));
+      const f = fuente();
+      if (!f) { global.App.avisar('Complete los datos del proyecto para generar la memoria.'); return; }
+      global.App.abrirInforme(f);
     });
+    $('#mesa-exportar').addEventListener('click', exportar);
     $('#mesa-ejemplo').addEventListener('click', () => { estado = T().clone(T().EJEMPLO); esc = null; pintarPanel(); cambio(); });
     const lz = $('#mesa-lienzo');
     lz.addEventListener('pointerdown', alPresionar);
@@ -103,7 +102,7 @@
     });
     $('#mesa-guia').addEventListener('click', (e) => { if (e.target.closest('[data-ejemplo]')) $('#mesa-ejemplo').click(); });
     $('#mesa-veredicto').addEventListener('click', (e) => { const p = e.target.closest('.mesa-pildora'); if (p && global.Mesa.irA) global.Mesa.irA(p.dataset.id); });
-    document.addEventListener('zapatapp:unidades', () => { if (el && !el.hidden) { pintarPanel(); pintar(); } });
+    document.addEventListener('zapatapp:unidades', () => { if (el && !el.hidden) { recalcular(); pintarPanel(); pintar(); } });
     $('#mesa-tabs').addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) mostrarPestana(b.dataset.p); });
     $('#mesa-tabs').addEventListener('keydown', (e) => {
       if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
@@ -258,7 +257,7 @@
 
   function pintarFaltan() {
     const p = $('#mesa-faltan');
-    if (!falt.length) { p.hidden = true; return; }
+    if (!falt.length) { p.textContent = errorCalc; p.hidden = !errorCalc; return; }
     const nombre = (k) => {
       const m = k.match(/^columnas\.(\d)\.(\w+)$/);
       if (m) return NOMBRES[m[2]] + ' de la columna ' + (m[1] === '0' ? 'exterior' : 'interior');
@@ -271,8 +270,10 @@
   function recalcular() {
     const listo = T().preparar(estado);
     falt = T().faltantes(listo);
-    R = null;
-    if (!falt.length) { try { R = T().calcular(listo); } catch (ex) { R = null; } }
+    R = null; errorCalc = '';
+    if (!falt.length) { try { R = T().calcular(listo); } catch (ex) { R = null; errorCalc = 'No se pudo calcular: ' + ex.message; } }
+    // Geometría imposible (L no cubre la columna interior, B menor que una columna): sin diseño
+    if (R && R.valido === false) { errorCalc = R.avisos.join(' '); R = null; }
   }
 
   function pintar() {
@@ -377,8 +378,8 @@
     s.innerHTML = '<dl class="mesa-cifras">' +
       fila('σmax servicio', U.fmt(R.serv.smax, 'presion')) +
       fila('M<sub>u</sub>⁻ / M<sub>u</sub>⁺', U.num(R.lon.Mneg.M, 'momento') + ' / ' + U.fmt(Math.max(R.lon.Mpos[0].M, R.lon.Mpos[1].M), 'momento')) +
-      fila('A<sub>s</sub> superior', U.fmt(R.fl.sup.As, 'acero') + ' · ' + R.fl.sup.sel.resumen) +
-      fila('A<sub>s</sub> inferior', U.fmt(R.fl.inf.As, 'acero') + ' · ' + R.fl.inf.sel.resumen) +
+      fila('A<sub>s</sub> superior', (isFinite(R.fl.sup.As) ? U.fmt(R.fl.sup.As, 'acero') + ' · ' : '') + R.fl.sup.sel.resumen) +
+      fila('A<sub>s</sub> inferior', (isFinite(R.fl.inf.As) ? U.fmt(R.fl.inf.As, 'acero') + ' · ' : '') + R.fl.inf.sel.resumen) +
       fila('V<sub>ud</sub> / φV<sub>c</sub>', U.num(R.cl.Vud, 'fuerza') + ' / ' + U.fmt(R.cl.phiVc, 'fuerza')) +
       fila('Franjas b', U.num(R.tr[0].b, 'longitud') + ' / ' + U.fmt(R.tr[1].b, 'longitud')) +
       '</dl>' + (R.avisos.length ? '<p class="mesa-aviso">' + R.avisos.join(' ') + '</p>' : '');
@@ -403,10 +404,12 @@
   }
 
   function cambio() {
+    // Las columnas no pueden encimarse aunque crezca su tamaño
+    if (estado.geometria.s > 0 && estado.geometria.s < separacionMin()) estado.geometria.s = separacionMin();
     recalcular();
-    pintar();
     clearTimeout(tGuardar);
-    tGuardar = setTimeout(guardar, 400);
+    tGuardar = setTimeout(guardar, 400); // antes de pintar: un error de dibujo no impide guardar
+    pintar();
   }
 
   function abrir(datos, pid, conCarga) {
@@ -465,8 +468,29 @@
     else $('#mesa-lienzo').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  // Fuente del informe PDF para el diálogo de la app (null si faltan datos)
+  function fuente() {
+    if (!R) return null;
+    return global.InformeCombinada.fuente(estado, () => R, (i) => {
+      estado.proyecto.nombre = i.proyecto; estado.proyecto.elemento = i.elemento;
+      estado.informe = { titulo: i.titulo, elaboro: i.elaboro, responsables: i.responsables, fecha: i.fecha };
+      cambio();
+    });
+  }
+
+  function exportar() {
+    const nombre = (estado.proyecto.elemento || estado.proyecto.nombre || 'zapata-combinada').replace(/[^\w\-áéíóúñ ]+/gi, '').trim().replace(/\s+/g, '_') || 'zapata-combinada';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(estado, null, 2)], { type: 'application/json' }));
+    a.download = nombre + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    global.App.avisar('Archivo ' + nombre + '.json exportado.');
+  }
+
   // Cambia un dato desde otra sección (por ejemplo, la barra elegida en Refuerzo)
   function ajustar(ruta, valor) { set(estado, ruta, valor); cambio(); }
 
-  global.Mesa = { abrir, cerrar, irA, mostrarPestana, ajustar, estado: () => estado, resultado: () => R };
+  global.Mesa = { abrir, cerrar, irA, mostrarPestana, ajustar, fuente, visible: () => !!el && !el.hidden, estado: () => estado, resultado: () => R };
 })(window);

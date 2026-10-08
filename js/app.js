@@ -1075,7 +1075,11 @@
       setTimeout(() => imprimirInforme(conExplica), Mov.reducido() ? 30 : 190);
     });
     window.addEventListener('beforeprint', () => {
-      if (!fuenteInforme && R && !document.body.classList.contains('con-informe')) construirInforme($('#inf-explica').checked);
+      if (document.body.classList.contains('con-informe')) return;
+      // Imprimir con Ctrl+P desde la mesa de la combinada imprime su memoria
+      if (Mesa.visible()) { const f = Mesa.fuente(); if (f) { fuenteInforme = f; mostrarInforme(f.datos($('#inf-explica').checked)); } return; }
+      fuenteInforme = null;
+      if (R) construirInforme($('#inf-explica').checked);
     });
     window.addEventListener('afterprint', () => {
       limpiarInforme();
@@ -1088,7 +1092,11 @@
       }
     });
     $('#dl-cerrar').addEventListener('click', () => cerrarDialogo($('#doc-listo')));
-    $('#dl-reimprimir').addEventListener('click', () => { cerrarDialogo($('#doc-listo')); setTimeout(abrirDialogoInforme, 180); });
+    $('#dl-reimprimir').addEventListener('click', () => {
+      cerrarDialogo($('#doc-listo'));
+      const f = fuenteInforme;
+      setTimeout(() => (f ? window.App.abrirInforme(f) : abrirDialogoInforme()), 180);
+    });
 
     // --- ajustes y tema
     // Delegado: también sirve para los botones que se crean después (la mesa de la combinada)
