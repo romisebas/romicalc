@@ -42,6 +42,7 @@
         '<div class="mesa-titulo"><p class="bv-eti">Zapata combinada</p><h1 class="mesa-h1" id="mesa-nombre">Nueva zapata</h1></div>' +
         '<p class="mesa-dim">L = <b class="num" id="mesa-L">—</b> · B = <b class="num" id="mesa-B">—</b></p>' +
         '<button type="button" class="btn btn-quieto" id="mesa-ejemplo">Cargar ejemplo del documento</button>' +
+        '<button type="button" class="btn btn-acento" id="mesa-pdf" aria-haspopup="dialog">PDF</button>' +
         '<button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>' +
       '</header>' +
       '<div class="mesa-veredicto" id="mesa-veredicto" aria-live="polite"></div>' +
@@ -75,6 +76,14 @@
       '</div>' +
       '<div class="mesa-editor popover" id="mesa-editor" role="dialog" aria-labelledby="mesa-editor-tit" hidden></div>';
     $('#mesa-inicio').addEventListener('click', cerrar);
+    $('#mesa-pdf').addEventListener('click', () => {
+      if (!R) { global.App.avisar('Complete los datos del proyecto para generar la memoria.'); return; }
+      global.App.abrirInforme(global.InformeCombinada.fuente(estado, () => R, (i) => {
+        estado.proyecto.nombre = i.proyecto; estado.proyecto.elemento = i.elemento;
+        estado.informe = { titulo: i.titulo, elaboro: i.elaboro, responsables: i.responsables, fecha: i.fecha };
+        cambio();
+      }));
+    });
     $('#mesa-ejemplo').addEventListener('click', () => { estado = T().clone(T().EJEMPLO); esc = null; pintarPanel(); cambio(); });
     const lz = $('#mesa-lienzo');
     lz.addEventListener('pointerdown', alPresionar);

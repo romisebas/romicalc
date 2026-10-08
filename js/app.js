@@ -694,11 +694,16 @@
       { html: Dibujo.corte(R, 'Y', 'inf'), cap: 'Corte Y' },
     ];
     if (img) d.figuras.push({ src: img, cap: 'Vista 3D' });
+    mostrarInforme(d);
+  }
+  function mostrarInforme(d) {
     $('#informe').innerHTML = Informe.construir(d, $('#medidor-informe'));
     tituloOriginal = document.title;
     document.title = d.info.titulo; // nombre sugerido del archivo PDF
     document.body.classList.add('con-informe');
   }
+  // Otro tipo de zapata (la combinada) entrega su propia fuente: { info(), guardar(i), datos(conExplica) }
+  let fuenteInforme = null;
   function limpiarInforme() {
     document.body.classList.remove('con-informe');
     $('#informe').innerHTML = '';
@@ -707,7 +712,10 @@
 
   function abrirDialogoInforme() {
     if (!R) { avisar('Complete los datos del proyecto para generar la memoria.'); return; }
-    const i = infoInforme();
+    fuenteInforme = null;
+    llenarDialogoInforme(infoInforme());
+  }
+  function llenarDialogoInforme(i) {
     $('#inf-titulo').value = i.titulo; $('#inf-proyecto').value = i.proyecto; $('#inf-elemento').value = i.elemento;
     $('#inf-elaboro').value = i.elaboro; $('#inf-responsables').value = i.responsables; $('#inf-fecha').value = i.fecha;
     $('#inf-error').textContent = '';
@@ -717,6 +725,11 @@
   function guardarDialogoInforme() {
     const titulo = $('#inf-titulo').value.trim();
     if (!titulo) { $('#inf-error').textContent = 'Escriba el título del documento.'; $('#inf-titulo').focus(); return false; }
+    if (fuenteInforme) {
+      fuenteInforme.guardar({ titulo, proyecto: $('#inf-proyecto').value.trim(), elemento: $('#inf-elemento').value.trim(),
+        elaboro: $('#inf-elaboro').value.trim(), responsables: $('#inf-responsables').value.trim(), fecha: $('#inf-fecha').value });
+      return true;
+    }
     estado.proyecto.nombre = $('#inf-proyecto').value.trim();
     estado.proyecto.elemento = $('#inf-elemento').value.trim();
     estado.informe = { titulo: titulo === tituloPorDefecto() ? '' : titulo, elaboro: $('#inf-elaboro').value.trim(),
@@ -726,7 +739,8 @@
     return true;
   }
   function imprimirInforme(conExplica) {
-    construirInforme(conExplica);
+    if (fuenteInforme) mostrarInforme(fuenteInforme.datos(conExplica));
+    else construirInforme(conExplica);
     imprimiendoInforme = true;
     window.print();
   }
@@ -1061,7 +1075,7 @@
       setTimeout(() => imprimirInforme(conExplica), Mov.reducido() ? 30 : 190);
     });
     window.addEventListener('beforeprint', () => {
-      if (R && !document.body.classList.contains('con-informe')) construirInforme($('#inf-explica').checked);
+      if (!fuenteInforme && R && !document.body.classList.contains('con-informe')) construirInforme($('#inf-explica').checked);
     });
     window.addEventListener('afterprint', () => {
       limpiarInforme();
@@ -1153,6 +1167,7 @@
       mostrarPantalla('opciones');
     },
     avisar,
+    abrirInforme(fuente) { fuenteInforme = fuente; llenarDialogoInforme(fuente.info()); },
   };
 
   document.addEventListener('DOMContentLoaded', iniciar);

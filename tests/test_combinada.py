@@ -289,3 +289,25 @@ def test_mesa_memoria(navegador, url):
     pagina.wait_for_selector("#memoria .dp-cap")
     assert pagina.locator("#diapo-sig").count() == 1
     assert not errores, errores
+
+
+def test_mesa_pdf(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.evaluate("window.print = () => {}")
+    pagina.click("#mesa-pdf")
+    pagina.wait_for_selector("#dlg-informe[open]")
+    pagina.fill("#inf-titulo", "Memoria combinada C-1")
+    pagina.click("#inf-imprimir")
+    pagina.wait_for_function("document.body.classList.contains('con-informe')")
+    assert pagina.title() == "Memoria combinada C-1"
+    assert pagina.locator("#informe .hoja").count() >= 6
+    texto = pagina.text_content("#informe")
+    assert "Zapata combinada" in texto and "Punzonamiento" in texto and "Despiece" in texto
+    assert pagina.locator("#informe .katex-error").count() == 0
+    desbordes = pagina.evaluate("[...document.querySelectorAll('#informe .hoja')].filter(h => h.scrollHeight > h.clientHeight + 1).length")
+    assert desbordes == 0
+    assert pagina.evaluate("Mesa.estado().informe.titulo") == "Memoria combinada C-1"
+    pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
+    pagina.wait_for_function("!document.body.classList.contains('con-informe')")
+    assert not errores, errores

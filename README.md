@@ -6,7 +6,7 @@ Diseño de zapatas de concreto reforzado según la **NSR-10** (Reglamento Colomb
 
 ![Portada de ZapatAPP](docs/capturas/portada.png)
 
-ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La beta 1.1 diseña **zapatas aisladas con carga axial y momento en dos direcciones**; los demás tipos (concéntrica, medianera, esquinera, combinada y corrida) llegarán en próximas versiones.
+ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La beta 1.2 diseña **zapatas aisladas con carga axial y momento en dos direcciones** y **zapatas combinadas de dos columnas**; los demás tipos (concéntrica, medianera, esquinera y corrida) llegarán en próximas versiones.
 
 ## Qué hace
 
@@ -20,7 +20,14 @@ ZapatAPP es una aplicación web estática: no necesita servidor ni instalación 
 - **Memoria de cálculo por diapositivas**: cada paso con texto, ecuaciones en LaTeX (KaTeX) y una figura.
 - **Unidades**: sistema del curso (tonf · m · kgf/cm²), SI (kN · m · MPa, NSR-10 en MPa) e inglés (kip · ft · psi, ACI 318). Los coeficientes de cortante y anclaje cambian con el sistema.
 - **PDF profesional**: portada, contenido, información general, normas y materiales, cargas y combinaciones, suelo y geometría, planos, análisis y diseño, conclusiones y firmas.
-- Exportar e importar proyectos en `.json`, proyectos recientes, tema claro u oscuro y ajuste de animaciones.
+- Exportar e importar proyectos en `.json`, proyectos recientes, ejemplos del curso por tipo, tema claro u oscuro y ajuste de animaciones.
+
+### Zapata combinada
+
+- **Mesa interactiva** en lugar del asistente: las columnas se arrastran sobre una regla (o se mueven con el teclado) y el centroide, el largo, la presión del suelo y los diagramas de cortante y momento cambian en vivo; al pasar el cursor se leen V y M.
+- Chequeos: presión del suelo (con y sin sismo), punzonamiento de cada columna (la exterior con perímetro de tres lados), cortante longitudinal y transversal, flexión, aplastamiento y desarrollo.
+- Planta con franjas, corte longitudinal con el acero superior cortado en los puntos de inflexión, cortes transversales, 3D, refuerzo por grupos, **despiece** con longitudes y pesos, memoria por diapositivas y PDF.
+- Opción **Método del documento** que reproduce los números del ejemplo del curso.
 
 | Veredicto | Memoria | Refuerzo |
 |---|---|---|
@@ -43,7 +50,7 @@ La forma más fácil es abrir [zapatapp.netlify.app](https://zapatapp.netlify.ap
 
 ## Método y validación
 
-El cálculo sigue el método del curso *Diseño de Concreto II* (zapata aislada con momento) y la NSR-10. El motor se valida automáticamente contra 26 valores del ejemplo del curso (tolerancia de 1 %). Se corrigen tres detalles del documento de referencia: el área de flexión en Y (L<sub>x</sub>·K<sub>y</sub>), la cuantía ρ<sub>y</sub> con R<sub>ny</sub> y el área A<sub>2</sub> limitada a la zapata.
+El cálculo sigue el método del curso *Diseño de Concreto II* y la NSR-10. El motor de la aislada se valida automáticamente contra 26 valores de su ejemplo y el de la combinada contra 18 valores del suyo (con el método del documento). En la aislada se corrigen tres detalles del documento de referencia: el área de flexión en Y (L<sub>x</sub>·K<sub>y</sub>), la cuantía ρ<sub>y</sub> con R<sub>ny</sub> y el área A<sub>2</sub> limitada a la zapata. En la combinada, por defecto, la presión última queda en equilibrio exacto, la cuantía mínima usa b·h y se agregan punzonamiento, aplastamiento y desarrollo.
 
 > Herramienta académica: verifique los resultados antes de usarlos en un proyecto real.
 
@@ -65,6 +72,7 @@ css/                  estilos (tokens, componentes, informe)
 js/app.js             interfaz: bienvenida, asistente, pestañas, ajustes
 js/nucleo/            módulos compartidos: unidades, memoria, dibujos, 3D, PDF, refuerzo
 js/tipos/             motor de cálculo y memoria de cada tipo de zapata
+js/combinada/         mesa interactiva, dibujos, 3D, despiece e informe de la combinada
 vendor/               three.js, KaTeX y fuentes (locales, sin CDN)
 tests/                pruebas automáticas
 ```

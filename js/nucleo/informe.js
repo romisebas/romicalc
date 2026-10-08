@@ -38,6 +38,7 @@
   function figuraCapitulo(R, f, k) {
     if (!f) return '';
     const pre = 'infc' + k;
+    if (f.svg) return f.svg;
     if (f.tipo === 'planta') return global.Dibujo.planta(R, f.capa, pre);
     if (f.tipo === 'corte') return global.Dibujo.corte(R, f.dir, pre);
     return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R, f.dir !== undefined ? f.dir : f.ult) : '';
@@ -97,7 +98,7 @@
       (i.elaboro ? '<tr><th>Elaboró</th><td>' + esc(i.elaboro) + '</td></tr>' : '') +
       (resp.length ? '<tr><th>Responsables</th><td>' + resp.map(esc).join('<br>') + '</td></tr>' : '') +
       '<tr><th>Fecha</th><td>' + fechaLarga(i.fecha) + '</td></tr></tbody></table>');
-    add('<p class="inf-p">Esta memoria presenta el diseño de una zapata aislada de concreto reforzado que recibe la carga axial y los momentos en dos direcciones de una columna. Se verifican los esfuerzos sobre el suelo, el cortante en una y dos direcciones, la flexión con su refuerzo, el aplastamiento y la longitud de desarrollo de las barras de la columna.</p>');
+    add('<p class="inf-p">' + (d.descripcion || 'Esta memoria presenta el diseño de una zapata aislada de concreto reforzado que recibe la carga axial y los momentos en dos direcciones de una columna. Se verifican los esfuerzos sobre el suelo, el cortante en una y dos direcciones, la flexión con su refuerzo, el aplastamiento y la longitud de desarrollo de las barras de la columna.') + '</p>');
 
     seccion('Normas, materiales y unidades', false);
     add('<p class="inf-p">El diseño sigue ' + S.norma + '. Sistema de unidades: <b>' + S.nombre + '</b> (' + S.detalle + '). Las cargas mayoradas siguen las combinaciones de la NSR-10 B.2.4.</p>');
@@ -106,12 +107,13 @@
       '<li>Reglamento Colombiano de Construcción Sismo Resistente NSR-10, Título C, Concreto estructural.</li>' +
       (sis === 'ingles' ? '<li>ACI 318, Building Code Requirements for Structural Concrete (ecuaciones en psi).</li>' : '') +
       '<li>Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026 (si se usa malla).</li>' +
-      '<li>Método de diseño de zapatas aisladas con momento del curso Diseño de Concreto II.</li>' +
+      '<li>' + (d.metodoRef || 'Método de diseño de zapatas aisladas con momento del curso Diseño de Concreto II.') + '</li>' +
       '<li>ZapatAPP, Sebastian Romario Martinez Guerrero (software de cálculo).</li></ul>');
 
     seccion('Cargas y combinaciones', false);
     add(tablaDatos(grupo('Cargas de servicio'), L));
-    add('<h4 class="inf-sub">Combinaciones de carga mayoradas</h4>' +
+    if (d.tablaCombos) add('<h4 class="inf-sub">Combinaciones de carga mayoradas</h4>' + d.tablaCombos);
+    else add('<h4 class="inf-sub">Combinaciones de carga mayoradas</h4>' +
       '<table class="inf-tabla inf-comb"><thead><tr><th>Combinación</th><th>P<sub>u</sub> (' + UN.u('fuerza', sis) + ')</th><th>M<sub>xu</sub> (' + UN.u('momento', sis) + ')</th><th>M<sub>yu</sub> (' + UN.u('momento', sis) + ')</th><th>σ<sub>max</sub> (' + UN.u('presion', sis) + ')</th></tr></thead><tbody>' +
       R.ult.lista.map((c) => '<tr' + (c === R.ult.gob ? ' class="inf-gob"' : '') + '><td>' + c.id + (c === R.ult.gob ? ' (gobierna)' : '') + '</td><td class="inf-mono">' + UN.num(c.P, 'fuerza', sis) + '</td><td class="inf-mono">' + UN.num(c.Mx, 'momento', sis) + '</td><td class="inf-mono">' + UN.num(c.My, 'momento', sis) + '</td><td class="inf-mono">' + UN.num(c.su, 'presion', sis) + '</td></tr>').join('') +
       '</tbody></table>');
@@ -144,7 +146,8 @@
     add('<table class="inf-tabla inf-resumen"><thead><tr><th>Chequeo</th><th>Verificación</th><th>Utilización</th><th>Estado</th></tr></thead><tbody>' +
       d.chequeos.map((c) => '<tr><td>' + c.titulo + '</td><td class="inf-tex">' + (c.tex ? L(c.tex) : c.det) + '</td><td class="inf-mono">' + (c.util * 100).toFixed(0) + ' %</td><td class="' + (c.ok ? 'ok' : 'mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</td></tr>').join('') +
       '</tbody></table>');
-    add('<h4 class="inf-sub">Elemento diseñado</h4><table class="inf-tabla inf-info"><tbody>' +
+    if (d.elemento) add('<h4 class="inf-sub">Elemento diseñado</h4><table class="inf-tabla inf-info"><tbody>' + d.elemento.map((f) => '<tr><th>' + f[0] + '</th><td>' + f[1] + '</td></tr>').join('') + '</tbody></table>');
+    else add('<h4 class="inf-sub">Elemento diseñado</h4><table class="inf-tabla inf-info"><tbody>' +
       '<tr><th>Dimensiones en planta</th><td>' + UN.num(R.Lx, 'longitud', sis) + ' × ' + UN.fmt(R.Ly, 'longitud', sis) + '</td></tr>' +
       '<tr><th>Altura total</th><td>' + UN.fmt(R.h, 'longitud', sis, 3) + ' (d = ' + UN.fmt(R.d, 'longitud', sis, 3) + ')</td></tr>' +
       '<tr><th>Refuerzo inferior</th><td>' + esc(global.Dibujo.refuerzoDibujo(R).etq) + '</td></tr>' +

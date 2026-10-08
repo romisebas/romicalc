@@ -232,7 +232,7 @@
       p.push('<text class="fig-txt" x="' + f2(X(c.x)) + '" y="22" text-anchor="middle">' + (ult ? 'Pu = ' + U.fmt(c.Pu, 'fuerza') : 'Ps = ' + U.fmt(c.Ps, 'fuerza')) + '</text>');
     });
     p.push('<g class="fig-xbar"><path d="M' + f2(X(R.xbar)) + ' ' + (yZ + 30) + 'l-6 10h12z"/><text x="' + f2(X(R.xbar)) + '" y="' + (yZ + 56) + '" text-anchor="middle">x̄ = ' + U.fmt(R.xbar, 'longitud') + '</text></g>');
-    p.push(cotaH(X(0), X(R.L), yZ + 72, 'L = ' + U.fmt(R.L, 'longitud')).replace('class="cota ', 'class="cota zapata-cota '));
+    p.push(cotaH(X(0), X(R.L), yZ + 88, 'L = ' + U.fmt(R.L, 'longitud')).replace('class="cota ', 'class="cota zapata-cota '));
     return '<svg class="fig-comb" viewBox="0 0 ' + FW + ' ' + (H + 20) + '" role="img" aria-label="Cargas sobre la zapata">' + p.join('') + '</svg>';
   }
 

@@ -166,6 +166,14 @@
       R.resumen + ' ' + (R.todoOk ? 'Todos los chequeos cumplen con las cargas consideradas.' : 'Revise las dimensiones o el refuerzo hasta que todos los chequeos cumplan.'),
       R.chequeos.map((c) => ver(c.titulo, '\\text{Utilización} = ' + n(c.util * 100, 0) + '\\,\\%', c.ok)).concat(R.avisos.map((a) => nota('mal', a))),
       D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)));
+    caps.forEach((cap) => {
+      cap.items = [];
+      cap.diapos.forEach((d) => {
+        cap.items.push({ t: 'sub', txt: d.titulo });
+        if (d.texto) cap.items.push({ t: 'p', html: d.texto });
+        d.items.forEach((it) => cap.items.push(it));
+      });
+    });
     return caps;
   }
 
