@@ -263,3 +263,29 @@ def test_mesa_refuerzo_y_despiece(navegador, url):
     assert m and float(m.group(1)) > 0
     assert pagina.locator("#mesa-despiece svg").count() == 7
     assert not errores, errores
+
+
+def test_mesa_memoria(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.click('#mesa-tabs [data-p="memoria"]')
+    pagina.wait_for_selector("#mesa-p-memoria .dp-cap")
+    assert pagina.locator("#mesa-p-memoria .dp-cap").count() >= 10
+    assert pagina.locator("#mesa-p-memoria .katex").count() > 0
+    pagina.click('#mesa-p-memoria .dp-cap[data-cap="lon"]')
+    pagina.wait_for_selector("#mesa-p-memoria .diapo-fig svg .diagrama-v")
+    assert pagina.locator("#mesa-p-memoria .diapo-fig svg .diagrama-m").count() >= 1
+    pagina.click('#mesa-p-memoria .dp-cap[data-cap="planta"]')
+    pagina.wait_for_selector('#mesa-p-memoria .ec[data-liga="xbar"]')
+    pagina.hover('#mesa-p-memoria .ec[data-liga="xbar"]')
+    assert pagina.locator("#mesa-p-memoria .diapo-fig .fig-xbar.resaltado").count() == 1
+    assert "Correcciones" in pagina.text_content("#mesa-correcciones")
+    # La memoria de la aislada sigue funcionando con su propio visor
+    pagina.click("#mesa-inicio")
+    pagina.click("#op-ejemplo")
+    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
+    pagina.wait_for_selector("#chequeos .chequeo")
+    pagina.click("#tab-memoria")
+    pagina.wait_for_selector("#memoria .dp-cap")
+    assert pagina.locator("#diapo-sig").count() == 1
+    assert not errores, errores

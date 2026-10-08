@@ -52,10 +52,23 @@
       .concat(['Total\t\t\t\t\t\t' + R.despiece.total.toFixed(1)]).join('\n');
   }
 
+  // Memoria: su propio visor de diapositivas, con las correcciones al documento arriba
+  let visor = null;
+  function memoria(R, cont) {
+    if (!visor) {
+      cont.innerHTML = '<div class="mesa-correcciones" id="mesa-correcciones"></div><div class="memoria dp" id="mesa-memoria"></div>';
+      visor = global.Diapositivas.crear(cont.querySelector('#mesa-memoria'), { prefijo: 'mdiapo', ligas: global.MemoriaCombinada.LIGAS });
+    }
+    const notas = global.MemoriaCombinada.correcciones(R);
+    cont.querySelector('#mesa-correcciones').innerHTML = notas.length
+      ? '<details><summary>Correcciones respecto al documento (' + notas.length + ')</summary><ul>' + notas.map((x) => '<li>' + x + '</li>').join('') + '</ul></details>' : '';
+    visor.datos(global.MemoriaCombinada.generar(R), R);
+  }
+
   function pintarExtra(p, R, cont) {
-    if (!cont || !['refuerzo', 'despiece'].includes(p)) return;
-    if (!R) { cont.innerHTML = '<p class="mesa-ayuda">Completa los datos para ver esta sección.</p>'; return; }
-    (p === 'refuerzo' ? refuerzo : despiece)(R, cont);
+    if (!cont || !['refuerzo', 'despiece', 'memoria'].includes(p)) return;
+    if (!R) { if (p !== 'memoria' || !visor) cont.innerHTML = '<p class="mesa-ayuda">Completa los datos para ver esta sección.</p>'; return; }
+    ({ refuerzo, despiece, memoria })[p](R, cont);
   }
 
   document.addEventListener('click', (e) => {
