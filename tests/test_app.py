@@ -4,16 +4,11 @@ Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests -q
 Las capturas quedan en tests/capturas/.
 """
-import functools
-import http.server
 import json
-import threading
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import sync_playwright
 
-RAIZ = Path(__file__).resolve().parent.parent
 CAPTURAS = Path(__file__).resolve().parent / "capturas"
 EJEMPLO = {
     "cargas.D.P": "44.262", "cargas.D.Mx": "0.196", "cargas.D.My": "0.3",
@@ -21,35 +16,7 @@ EJEMPLO = {
 }
 
 
-@pytest.fixture(scope="session")
-def url():
-    manejador = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(RAIZ))
-    manejador.log_message = lambda *a, **k: None
-    # Cola amplia: el navegador pide muchos archivos a la vez y la cola por defecto (5) rechaza conexiones
-    servidor = type("Servidor", (http.server.ThreadingHTTPServer,), {"request_queue_size": 128})
-    srv = servidor(("127.0.0.1", 0), manejador)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    yield f"http://127.0.0.1:{srv.server_address[1]}/index.html"
-    srv.shutdown()
-
-
-@pytest.fixture(scope="session")
-def navegador():
-    with sync_playwright() as p:
-        b = p.chromium.launch()
-        yield b
-        b.close()
-
-
-CONTEXTOS = []
-
-
-@pytest.fixture(autouse=True)
-def cerrar_contextos():
-    """Cierra las páginas de cada prueba: si quedan abiertas, sus escenas 3D siguen consumiendo CPU."""
-    yield
-    while CONTEXTOS:
-        CONTEXTOS.pop().close()
+from conftest import CONTEXTOS  # noqa: E402
 
 
 def abrir(navegador, url, ancho=1440, alto=900, tema="light", intro=False, anim="desactivadas"):

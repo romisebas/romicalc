@@ -7,7 +7,6 @@
   'use strict';
 
   const RF = global.Refuerzo;
-  const KGFCM2_A_MPA = 0.0980665;
   const D_MIN = 0.15; // NSR-10 C.15.7: altura sobre el refuerzo inferior ≥ 150 mm
 
   // Ejemplo del documento (pág. 3–4).
@@ -118,11 +117,7 @@
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function get(obj, path) { return path.split('.').reduce((a, k) => (a == null ? a : a[k]), obj); }
 
-  function beta1(fc) {
-    const fcM = fc * KGFCM2_A_MPA;
-    if (fcM <= 28) return 0.85;
-    return Math.max(0.65, 0.85 - 0.05 * (fcM - 28) / 7);
-  }
+  const CO = global.Concreto;
 
   function pesoPropio(inp, Lx, Ly, d) {
     const s = inp.suelo;
@@ -175,14 +170,8 @@
   }
 
   // Coeficientes de la norma según el sistema de unidades (ver js/nucleo/unidades.js)
-  function coef(inp) {
-    return global.Unidades ? global.Unidades.coef(inp.unid || 'curso') : { sistema: 'curso', eq: { pz1: 0.53, pz2: 0.27, pz3: 1.0, cu: 0.53 } };
-  }
-
-  // Resistencia a cortante en tonf: k·λ·√f'c·b·d con b, d en cm y f'c en kgf/cm².
-  function vc(k, lambda, fc, b_m, d_m) {
-    return k * lambda * Math.sqrt(fc) * (b_m * 100) * (d_m * 100) / 1000;
-  }
+  function coef(inp) { return CO.coef(inp.unid); }
+  const vc = CO.vc;
 
   function punzonamiento(inp, Lx, Ly, d, su) {
     const { Cx, Cy, alpha } = inp.columna;
@@ -219,56 +208,27 @@
     const Af = b * K;
     const F = su * Af;
     const Mu = F * K / 2;
-    const Rn = Mu * 1e5 / (phiF * (b * 100) * Math.pow(d * 100, 2)); // kgf/cm²
-    const raiz = 1 - 2 * Rn / (0.85 * fc);
-    const rhoCalc = raiz >= 0 ? (0.85 * fc / fy) * (1 - Math.sqrt(raiz)) : NaN;
-    const b1 = beta1(fc);
-    const rhoMax = 0.85 * b1 * (fc / fy) * (0.003 / (0.003 + 0.005));
-    // NSR-10 C.7.12.2.1: 0.0018 para fy = 420 MPa; para fy mayor, 0.0018·420/fy ≥ 0.0014
-    const rhoMin = fy > 4200 ? Math.max(0.0018 * 4200 / fy, 0.0014) : 0.0018;
-    const rho = Math.max(isNaN(rhoCalc) ? Infinity : rhoCalc, rhoMin);
-    const As = rho * (b * 100) * (d * 100);
-    const ok = raiz >= 0 && rho <= rhoMax;
-    return { K, Af, F, Mu, Rn, raiz, rhoCalc, rhoMin, rhoMax, beta1: b1, rho, As, b, fy, ok, gobiernaMin: !(rhoCalc > rhoMin) };
+    const s = CO.flexion(Mu, b, d, fc, fy, phiF, 'bd');
+    return { K, Af, F, Mu, Rn: s.Rn, raiz: s.raiz, rhoCalc: s.rhoCalc, rhoMin: s.rhoMin, rhoMax: s.rhoMax, beta1: s.beta1, rho: s.rho, As: s.As, b, fy, ok: s.ok, gobiernaMin: !(s.rhoCalc > s.rhoMin) };
   }
 
   function aplastamiento(inp, Lx, Ly, h, Pu) {
     const { Cx, Cy } = inp.columna;
     const { fc, phiB } = inp.materiales;
-    const A1 = Cx * Cy;
     const a2x = Cx + 4 * h, a2y = Cy + 4 * h;
     const A2sin = a2x * a2y; // como en el PDF, sin limitar a la zapata
-    const A2 = Math.min(a2x, Lx) * Math.min(a2y, Ly); // A2 debe estar contenida en el apoyo
-    const raiz = Math.sqrt(A2 / A1);
-    const K = Math.min(raiz, 2);
-    const phiPnb1 = phiB * 0.85 * fc * (A1 * 1e4) / 1000;
-    const phiPnb2 = phiPnb1 * K;
+    // A2 debe estar contenida en el apoyo
+    const { A1, A2, raiz, K, phiPnb1, phiPnb2 } = CO.aplastamiento(Cx, Cy, Math.min(a2x, Lx), Math.min(a2y, Ly), fc, phiB, Pu);
     return { A1, A2, A2sin, a2x, a2y, raiz, K, phiPnb1, phiPnb2, ok1: Pu <= phiPnb1, ok2: Pu <= phiPnb2,
       recortada: A2 < A2sin - 1e-9, util: Pu / Math.min(phiPnb1, phiPnb2) };
   }
 
   function desarrollo(inp, d) {
     const { fc, fy, lambda } = inp.materiales;
-    const bar = RF.BARS[inp.columna.barra];
-    const fyM = fy * KGFCM2_A_MPA, fcM = fc * KGFCM2_A_MPA;
-    let l1, l2, lmin;
-    if (inp.unid === 'ingles') {
-      // ACI 318 25.4.9.2 en psi y pulgadas: 0.02·fy·db/(λ√f'c) ≥ 0.0003·fy·db ≥ 8 in
-      const aPsi = global.Unidades.a(1, 'esfuerzo', 'ingles');
-      const fyP = fy * aPsi, fcP = fc * aPsi, dbIn = bar.db / 25.4;
-      l1 = 0.02 * fyP * dbIn / (lambda * Math.sqrt(fcP)) * 25.4;
-      l2 = 0.0003 * fyP * dbIn * 25.4;
-      lmin = 8 * 25.4;
-    } else {
-      // NSR-10 C.12.3.2 en MPa y mm (el curso también la usa en MPa)
-      l1 = 0.24 * bar.db * fyM / (lambda * Math.sqrt(fcM));
-      l2 = 0.043 * bar.db * fyM;
-      lmin = 200;
-    }
-    const ldc = Math.max(l1, l2, lmin);
+    const { db, fyM, fcM, l1, l2, lmin, ldc } = CO.ldc(inp.columna.barra, fc, fy, lambda, inp.unid);
     const disponible = d * 1000; // h − r, como en el esquema del PDF (pág. 14)
     const tabla = Math.abs(fyM - 412) < 15 ? RF.interpTabla(inp.columna.barra, fcM) : null;
-    return { barra: inp.columna.barra, db: bar.db, fyM, fcM, l1, l2, lmin, ldc, disponible, tabla, ok: disponible >= ldc, util: ldc / disponible };
+    return { barra: inp.columna.barra, db, fyM, fcM, l1, l2, lmin, ldc, disponible, tabla, ok: disponible >= ldc, util: ldc / disponible };
   }
 
   function seleccionRefuerzo(inp, fx, fyv, Lx, Ly, h, r) {
