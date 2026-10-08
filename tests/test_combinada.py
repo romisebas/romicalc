@@ -219,3 +219,25 @@ def test_mesa_panel_veredicto_unidades(navegador, url):
     pagina.fill('#mesa-panel [data-k="materiales.fc"]', "28")
     assert abs(pagina.evaluate("Mesa.estado().materiales.fc") - 285.52) < 0.01
     assert not errores, errores
+
+
+def test_mesa_planos_y_3d(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    assert pagina.locator("#mesa-tabs [role=tab]").count() == 6
+    pagina.click('#mesa-tabs [data-p="planta"]')
+    pagina.wait_for_selector("#mesa-p-planta:not([hidden]) svg.dibujo")
+    assert pagina.locator("#mesa-p-planta svg .franja").count() == 2
+    assert "7.00" in pagina.text_content("#mesa-p-planta svg")
+    caja = pagina.locator("#mesa-p-planta svg.dibujo").bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] * 0.5, caja["y"] + caja["height"] * 0.5)
+    assert "σ =" in pagina.text_content("#mesa-p-planta .tip-planta")
+    pagina.click('#mesa-tabs [data-p="cortes"]')
+    pagina.wait_for_selector("#mesa-p-cortes:not([hidden])")
+    assert pagina.locator("#mesa-p-cortes svg.dibujo").count() == 3
+    assert pagina.locator("#mesa-p-cortes .acero-sup").count() >= 1
+    pagina.click('#mesa-tabs [data-p="3d"]')
+    pagina.wait_for_selector("#mesa-p-3d:not([hidden]) canvas")
+    pagina.click('.mesa-pildora[data-id="ct"]')
+    assert pagina.get_attribute('#mesa-tabs [data-p="cortes"]', "aria-selected") == "true"
+    assert not errores, errores

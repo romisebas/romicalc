@@ -129,5 +129,94 @@
       p.join('') + '</svg>';
   }
 
-  global.DibujoCombinada = { tono, miniCarga, miniatura, lienzo, escalaLienzo, geometria, LZ };
+  // ---------------------------------------------------------------- planos
+  // Presión de servicio del caso que gobierna: σ(x) = P/(L·B) + g·(x − L/2)
+  function servicioLineal(R) {
+    const s = R.serv.caso === 'con' ? R.serv.con : R.serv.sin;
+    const p = s.P / (R.L * R.B), g = 12 * s.P * (s.xr - R.L / 2) / (R.B * Math.pow(R.L, 3));
+    return { p, g, lim: s.lim, en: (x) => p + g * (x - R.L / 2) };
+  }
+
+  const flechaCota = (x0, y0, x1, y1) => '<path class="punta" d="M' + f2(x0) + ' ' + f2(y0) + 'L' + f2(x1) + ' ' + f2(y1) + '"/>';
+  function cotaH(x0, x1, y, txt, cls) {
+    return '<g class="cota ' + (cls || '') + '"><path d="M' + f2(x0) + ' ' + f2(y) + 'H' + f2(x1) + 'M' + f2(x0) + ' ' + f2(y - 6) + 'v12M' + f2(x1) + ' ' + f2(y - 6) + 'v12"/>' +
+      flechaCota(x0 + 7, y - 3, x0, y) + flechaCota(x0 + 7, y + 3, x0, y) + flechaCota(x1 - 7, y - 3, x1, y) + flechaCota(x1 - 7, y + 3, x1, y) +
+      '<text class="halo" x="' + f2((x0 + x1) / 2) + '" y="' + f2(y - 7) + '" text-anchor="middle">' + txt + '</text></g>';
+  }
+  function cotaV(x, y0, y1, txt) {
+    return '<g class="cota"><path d="M' + f2(x) + ' ' + f2(y0) + 'V' + f2(y1) + 'M' + f2(x - 6) + ' ' + f2(y0) + 'h12M' + f2(x - 6) + ' ' + f2(y1) + 'h12"/>' +
+      '<text class="halo" x="' + f2(x + 10) + '" y="' + f2((y0 + y1) / 2 + 4) + '">' + txt + '</text></g>';
+  }
+
+  function planta(R, pre) {
+    const U = global.Unidades, W = 760, k = (W - 150) / R.L, H = R.B * k + 150, x0 = 50, y0 = 60;
+    const X = (x) => x0 + x * k, Y = (y) => y0 + y * k, sv = servicioLineal(R), id = (pre || 'pc') + '-grad';
+    const stops = [0, 0.25, 0.5, 0.75, 1].map((t) => '<stop offset="' + t + '" stop-color="' + tono(sv.en(t * R.L), sv.lim) + '"/>').join('');
+    const p = [];
+    p.push('<defs><linearGradient id="' + id + '" x1="0" x2="1" y1="0" y2="0">' + stops + '</linearGradient>' +
+      '<pattern id="' + (pre || 'pc') + '-rayas" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v8" class="rayado"/></pattern></defs>');
+    p.push('<rect class="zap-presion" x="' + f2(X(0)) + '" y="' + f2(Y(0)) + '" width="' + f2(R.L * k) + '" height="' + f2(R.B * k) + '" fill="url(#' + id + ')"/>');
+    R.tr.forEach((t, i) => {
+      p.push('<g class="franja"><rect x="' + f2(X(t.x0)) + '" y="' + f2(Y(0)) + '" width="' + f2(t.b * k) + '" height="' + f2(R.B * k) + '" fill="url(#' + (pre || 'pc') + '-rayas)"/>' +
+        '<text class="halo" x="' + f2(X((t.x0 + t.x1) / 2)) + '" y="' + f2(Y(R.B) - 8) + '" text-anchor="middle">Franja ' + (i ? 'int.' : 'ext.') + ' b = ' + U.fmt(t.b, 'longitud') + '</text></g>');
+    });
+    p.push('<rect class="zap-contorno" x="' + f2(X(0)) + '" y="' + f2(Y(0)) + '" width="' + f2(R.L * k) + '" height="' + f2(R.B * k) + '"/>');
+    R.cols.forEach((c) => p.push('<rect class="col-planta" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + f2(Y((R.B - c.c2) / 2)) + '" width="' + f2(c.c1 * k) + '" height="' + f2(c.c2 * k) + '"/>'));
+    p.push('<g class="xbar-planta"><path d="M' + f2(X(R.xbar)) + ' ' + f2(Y(R.B) + 6) + 'l-6 10h12z"/><text x="' + f2(X(R.xbar)) + '" y="' + f2(Y(R.B) + 30) + '" text-anchor="middle">x̄ = ' + U.fmt(R.xbar, 'longitud') + '</text></g>');
+    p.push(cotaH(X(R.cols[0].x), X(R.cols[1].x), y0 - 22, 's = ' + U.fmt(R.cols[1].x - R.cols[0].x, 'longitud')));
+    if (R.inp.geometria.a > 0) p.push(cotaH(X(0), X(R.inp.geometria.a), y0 - 22, 'a = ' + U.fmt(R.inp.geometria.a, 'longitud')));
+    p.push(cotaH(X(0), X(R.L), Y(R.B) + 56, 'L = ' + U.fmt(R.L, 'longitud')));
+    p.push(cotaV(X(R.L) + 22, Y(0), Y(R.B), 'B = ' + U.fmt(R.B, 'longitud')));
+    p.push('<text class="pildora-txt" x="' + f2(X(0)) + '" y="' + f2(Y(0) - 8) + '">σ = ' + U.fmt(sv.en(0), 'presion') + '</text>' +
+      '<text class="pildora-txt" x="' + f2(X(R.L)) + '" y="' + f2(Y(0) - 8) + '" text-anchor="end">σ = ' + U.fmt(sv.en(R.L), 'presion') + '</text>');
+    return '<svg class="dibujo plano-comb" viewBox="0 0 ' + W + ' ' + f2(H) + '" role="img" aria-label="Planta de la zapata combinada"' +
+      ' data-cx="' + f2(X(R.L / 2)) + '" data-cy="' + f2(Y(R.B / 2)) + '" data-k="' + k + '" data-lx="' + R.L + '" data-ly="' + R.B + '"' +
+      ' data-p="' + sv.p + '" data-gx="' + sv.g + '" data-gy="0" data-qadm="' + sv.lim + '">' + p.join('') + '</svg>';
+  }
+
+  // Corte longitudinal: armado superior (cortado en PI ± ld) e inferior, columnas con dovelas
+  function corteLongitudinal(R) {
+    const U = global.Unidades, W = 760, k = (W - 150) / R.L, x0 = 50, yS = 90, h = R.h, r = R.inp.zapata.r;
+    const X = (x) => x0 + x * k, Y = (y) => yS + (h - y) * k, H = Y(0) + 110, sv = servicioLineal(R);
+    const L1 = R.despiece.marcas.find((m) => m.marca === 'L1'), PI = R.lon.puntos.PI, ld = R.ld.sup / 1000;
+    const xa = PI.length === 2 ? Math.max(r, PI[0] - ld) : r, xb = PI.length === 2 ? Math.min(R.L - r, PI[1] + ld) : R.L - r;
+    const gancho = 0.25 * h * k;
+    const p = [];
+    p.push('<rect class="zap-corte" x="' + f2(X(0)) + '" y="' + f2(Y(h)) + '" width="' + f2(R.L * k) + '" height="' + f2(h * k) + '"/>');
+    R.cols.forEach((c) => {
+      p.push('<rect class="col-corte" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + f2(Y(h) - 70) + '" width="' + f2(c.c1 * k) + '" height="70"/>');
+      p.push('<path class="dovela" d="M' + f2(X(c.x - c.c1 / 2) + 6) + ' ' + f2(Y(h) - 66) + 'V' + f2(Y(r) - 2) + 'h-14M' + f2(X(c.x + c.c1 / 2) - 6) + ' ' + f2(Y(h) - 66) + 'V' + f2(Y(r) - 2) + 'h14"/>');
+    });
+    const ySup = Y(h - r), yInf = Y(r);
+    p.push('<path class="acero-sup" d="M' + f2(X(xa)) + ' ' + f2(ySup + (L1.ganchos && xa <= r + 1e-9 ? gancho : 0)) + 'V' + f2(ySup) + 'H' + f2(X(xb)) + (xb >= R.L - r - 1e-9 ? 'v' + f2(gancho) : '') + '"/>');
+    p.push('<path class="acero-inf" d="M' + f2(X(r)) + ' ' + f2(yInf - gancho) + 'V' + f2(yInf) + 'H' + f2(X(R.L - r)) + 'v' + f2(-gancho) + '"/>');
+    p.push('<text class="halo etq-acero" x="' + f2(X((xa + xb) / 2)) + '" y="' + f2(ySup - 8) + '" text-anchor="middle">L1 · ' + R.fl.sup.sel.resumen + '</text>');
+    p.push('<text class="halo etq-acero" x="' + f2(X(R.L / 2)) + '" y="' + f2(Y(0) + 18) + '" text-anchor="middle">L2 · ' + R.fl.inf.sel.resumen + '</text>');
+    PI.forEach((x) => p.push('<path class="pi-corte" d="M' + f2(X(x)) + ' ' + f2(Y(h) - 14) + 'V' + f2(Y(0) + 4) + '"/><text class="pi-txt" x="' + f2(X(x)) + '" y="' + f2(Y(h) - 18) + '" text-anchor="middle">PI</text>'));
+    p.push(cotaH(X(0), X(R.L), Y(0) + 48, 'L = ' + U.fmt(R.L, 'longitud')));
+    p.push(cotaV(X(R.L) + 22, Y(h), Y(0), 'h = ' + U.fmt(h, 'longitud')));
+    p.push(cotaV(X(R.L) - 70, Y(h), Y(r), 'd = ' + U.fmt(R.d, 'longitud')));
+    return '<svg class="dibujo corte-comb" viewBox="0 0 ' + W + ' ' + f2(H) + '" role="img" aria-label="Corte longitudinal" data-modo="corte"' +
+      ' data-cx="' + f2(X(R.L / 2)) + '" data-k="' + k + '" data-l="' + R.L + '" data-izq="' + sv.en(0) + '" data-der="' + sv.en(R.L) + '" data-qadm="' + sv.lim + '">' + p.join('') + '</svg>';
+  }
+
+  // Corte transversal bajo la columna i: parrilla de su franja
+  function corteTransversal(R, i) {
+    const U = global.Unidades, t = R.tr[i], c = R.cols[i], W = 520, k = (W - 150) / R.B, x0 = 60, yS = 110, h = R.h, r = R.inp.zapata.r;
+    const X = (x) => x0 + x * k, Y = (y) => yS + (h - y) * k, H = Y(0) + 96, sv = servicioLineal(R), sig = sv.en(c.x);
+    const gancho = 0.25 * h * k, nSup = R.fl.sup.sel.n, nInf = R.fl.inf.sel.n;
+    const p = [];
+    p.push('<rect class="zap-corte" x="' + f2(X(0)) + '" y="' + f2(Y(h)) + '" width="' + f2(R.B * k) + '" height="' + f2(h * k) + '"/>');
+    p.push('<rect class="col-corte" x="' + f2(X((R.B - c.c2) / 2)) + '" y="' + f2(Y(h) - 70) + '" width="' + f2(c.c2 * k) + '" height="70"/>');
+    p.push('<path class="acero-trans" d="M' + f2(X(r)) + ' ' + f2(Y(r) - gancho) + 'V' + f2(Y(r)) + 'H' + f2(X(R.B - r)) + 'v' + f2(-gancho) + '"/>');
+    const puntos = (n, y, cls) => { let s = ''; for (let j = 0; j < n; j++) s += '<circle class="' + cls + '" cx="' + f2(X(r + (R.B - 2 * r) * (n > 1 ? j / (n - 1) : 0.5))) + '" cy="' + f2(y) + '" r="2.6"/>'; return s; };
+    p.push(puntos(nSup, Y(h - r), 'acero-sup-punto') + puntos(nInf, Y(r) - 5, 'acero-inf-punto'));
+    p.push('<text class="halo etq-acero" x="' + f2(X(R.B / 2)) + '" y="' + f2(Y(0) + 18) + '" text-anchor="middle">T' + (i + 1) + ' · ' + t.sel.resumen + '</text>');
+    p.push(cotaH(X(0), X(R.B), Y(0) + 46, 'B = ' + U.fmt(R.B, 'longitud')));
+    p.push(cotaH(X((R.B - c.c2) / 2 + c.c2), X(R.B), Y(h) - 84, 'Lv = ' + U.fmt(t.Lv, 'longitud')));
+    return '<svg class="dibujo corte-comb" viewBox="0 0 ' + W + ' ' + f2(H) + '" role="img" aria-label="Corte transversal bajo la columna ' + (i ? 'interior' : 'exterior') + '" data-modo="corte"' +
+      ' data-cx="' + f2(X(R.B / 2)) + '" data-k="' + k + '" data-l="' + R.B + '" data-izq="' + sig + '" data-der="' + sig + '" data-qadm="' + sv.lim + '">' + p.join('') + '</svg>';
+  }
+
+  global.DibujoCombinada = { tono, miniCarga, miniatura, lienzo, escalaLienzo, geometria, LZ, planta, corteLongitudinal, corteTransversal, servicioLineal };
 })(window);

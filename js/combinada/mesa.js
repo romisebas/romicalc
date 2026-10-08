@@ -8,7 +8,10 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const T = () => global.Tipos.combinada;
   let el = null, estado = null, id = null, R = null, falt = [], tGuardar = null;
-  let esc = null, arrastre = null, cuadro = 0, editando = null;
+  let esc = null, arrastre = null, cuadro = 0, editando = null, pestana = 'planta';
+  const PESTANAS = [['planta', 'Planta'], ['cortes', 'Cortes'], ['3d', '3D'], ['refuerzo', 'Refuerzo'], ['despiece', 'Despiece'], ['memoria', 'Memoria']];
+  // A qué pestaña lleva cada píldora del veredicto (el cortante longitudinal se lee en el lienzo)
+  const DESTINO = { suelo: 'planta', 'pz-ext': 'planta', 'pz-int': 'planta', ct: 'cortes', ap: 'cortes', fl: 'refuerzo', ld: 'despiece' };
   const PASO = 0.05;
   const NOMBRES = { c1: 'c₁', c2: 'c₂', D: 'D', L: 'L', E: 'E (sismo)', barra: 'barra', nBarras: 'n.º de barras' };
   // Magnitud de cada campo editable (para mostrarlo en el sistema de unidades activo)
@@ -51,6 +54,19 @@
             '<p class="mesa-lectura num" id="mesa-lectura" aria-live="polite">Pasa el cursor por los diagramas para leer V y M.</p>' +
           '</section>' +
           '<section class="mesa-resumen" id="mesa-resumen" aria-label="Resultados principales"></section>' +
+          '<nav class="mesa-tabs" id="mesa-tabs" role="tablist" aria-label="Secciones de la combinada">' +
+            PESTANAS.map(([p, t], i) => '<button type="button" role="tab" id="mesa-tab-' + p + '" data-p="' + p + '" aria-controls="mesa-p-' + p + '" aria-selected="' + (i ? 'false' : 'true') + '"' + (i ? ' tabindex="-1"' : '') + '>' + t + '</button>').join('') +
+          '</nav>' +
+          '<section class="mesa-pan" id="mesa-p-planta" role="tabpanel" aria-labelledby="mesa-tab-planta"><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-planta"></div></div></section>' +
+          '<section class="mesa-pan" id="mesa-p-cortes" role="tabpanel" aria-labelledby="mesa-tab-cortes" hidden>' +
+            '<h3 class="mesa-pan-tit">Corte longitudinal</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-l"></div></div>' +
+            '<div class="mesa-cortes-t"><div><h3 class="mesa-pan-tit">Bajo la columna exterior</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-0"></div></div></div>' +
+            '<div><h3 class="mesa-pan-tit">Bajo la columna interior</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-1"></div></div></div></div>' +
+          '</section>' +
+          '<section class="mesa-pan" id="mesa-p-3d" role="tabpanel" aria-labelledby="mesa-tab-3d" hidden><div class="mesa-3d" id="mesa-3d"></div><p class="mesa-ayuda">Arrastra para girar; la rueda acerca. El acero superior va en azul.</p></section>' +
+          '<section class="mesa-pan" id="mesa-p-refuerzo" role="tabpanel" aria-labelledby="mesa-tab-refuerzo" hidden></section>' +
+          '<section class="mesa-pan" id="mesa-p-despiece" role="tabpanel" aria-labelledby="mesa-tab-despiece" hidden></section>' +
+          '<section class="mesa-pan" id="mesa-p-memoria" role="tabpanel" aria-labelledby="mesa-tab-memoria" hidden></section>' +
         '</div>' +
         '<aside class="mesa-panel" id="mesa-panel" aria-label="Datos de la zapata">' +
           '<button type="button" class="mesa-panel-tog" id="mesa-panel-tog" aria-expanded="true" aria-controls="mesa-panel-cuerpo">Datos</button>' +
@@ -79,6 +95,13 @@
     $('#mesa-guia').addEventListener('click', (e) => { if (e.target.closest('[data-ejemplo]')) $('#mesa-ejemplo').click(); });
     $('#mesa-veredicto').addEventListener('click', (e) => { const p = e.target.closest('.mesa-pildora'); if (p && global.Mesa.irA) global.Mesa.irA(p.dataset.id); });
     document.addEventListener('zapatapp:unidades', () => { if (el && !el.hidden) { pintarPanel(); pintar(); } });
+    $('#mesa-tabs').addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) mostrarPestana(b.dataset.p); });
+    $('#mesa-tabs').addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const ids = PESTANAS.map((x) => x[0]), j = (ids.indexOf(pestana) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length;
+      mostrarPestana(ids[j]); $('#mesa-tab-' + ids[j]).focus();
+    });
+    ['#mesa-planta', '#mesa-corte-l', '#mesa-corte-0', '#mesa-corte-1'].forEach((s) => global.PlantaInteractiva.montar($(s)));
     $('#mesa-editor').addEventListener('input', alEditar);
     $('#mesa-editor').addEventListener('change', alEditar);
     $('#mesa-editor').addEventListener('click', (e) => { if (e.target.closest('[data-cerrar]')) cerrarEditor(); });
@@ -253,6 +276,7 @@
     pintarLienzo();
     pintarVeredicto();
     pintarResumen();
+    pintarPestana();
     $$('#mesa-metodo [data-metodo]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.metodo === estado.metodo)));
   }
 
@@ -399,5 +423,38 @@
     global.App.volverAOpciones();
   }
 
-  global.Mesa = { abrir, cerrar, estado: () => estado, resultado: () => R };
+  // ---------------------------------------------------------------- pestañas
+  function mostrarPestana(p) {
+    pestana = p;
+    PESTANAS.forEach(([id]) => {
+      const t = $('#mesa-tab-' + id), activo = id === p;
+      t.setAttribute('aria-selected', String(activo));
+      t.tabIndex = activo ? 0 : -1;
+      $('#mesa-p-' + id).hidden = !activo;
+    });
+    pintarPestana();
+  }
+
+  // Solo se dibuja la pestaña visible
+  function pintarPestana() {
+    const D = global.DibujoCombinada, PI = global.PlantaInteractiva;
+    const vacio = '<p class="mesa-ayuda">Completa los datos para ver esta sección.</p>';
+    if (pestana === 'planta') { $('#mesa-planta').innerHTML = R ? D.planta(R, 'mp') : vacio; PI.aplicar($('#mesa-planta')); }
+    if (pestana === 'cortes') {
+      $('#mesa-corte-l').innerHTML = R ? D.corteLongitudinal(R) : vacio;
+      $('#mesa-corte-0').innerHTML = R ? D.corteTransversal(R, 0) : '';
+      $('#mesa-corte-1').innerHTML = R ? D.corteTransversal(R, 1) : '';
+      ['#mesa-corte-l', '#mesa-corte-0', '#mesa-corte-1'].forEach((s) => PI.aplicar($(s)));
+    }
+    if (pestana === '3d' && R && global.Vista3DCombinada.montar($('#mesa-3d'))) global.Vista3DCombinada.mostrar(R);
+    if (global.Mesa.pintarExtra) global.Mesa.pintarExtra(pestana, R, $('#mesa-p-' + pestana));
+  }
+
+  function irA(idChequeo) {
+    const p = DESTINO[idChequeo];
+    if (p) { mostrarPestana(p); $('#mesa-tabs').scrollIntoView({ behavior: global.Mov && global.Mov.reducido() ? 'auto' : 'smooth', block: 'start' }); }
+    else $('#mesa-lienzo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  global.Mesa = { abrir, cerrar, irA, mostrarPestana, estado: () => estado, resultado: () => R };
 })(window);
