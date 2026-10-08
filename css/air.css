@@ -787,3 +787,14 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .dibujo .presion-flecha { stroke: #fff; stroke-width: 1; opacity: .7; }
 .dibujo .adm { stroke: var(--mal); stroke-width: 1.4; stroke-dasharray: 6 4; }
 .dibujo .pildora-g.mal .pildora { fill: var(--mal); }
+
+/* ===================================================================== beta 1.2 mesa de la combinada */
+.mesa { min-height: 100vh; padding: 20px clamp(16px, 4vw, 48px) 48px; background: var(--fondo); color: var(--tinta); }
+.mesa[hidden] { display: none; }
+.mesa-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-bottom: 20px; }
+.mesa-barra .bv-volver-ico { margin: 0; }
+.mesa-titulo { flex: 1 1 240px; min-width: 0; }
+.mesa-titulo .bv-eti { margin: 0 0 4px; }
+.mesa-h1 { margin: 0; font: 400 clamp(28px, 4vw, 44px)/1 var(--display); text-transform: uppercase; letter-spacing: .01em; overflow-wrap: anywhere; }
+.mesa-dim { margin: 0; font: 500 15px/1.2 var(--sans); color: var(--tinta-2); }
+.mesa-dim b { color: var(--tinta); font-weight: 600; }

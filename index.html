@@ -44,7 +44,7 @@
       <button type="button" class="bv-volver-ico" data-ir="portada"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Inicio</button>
       <p class="bv-eti">Paso 1 de 2 · Empezar</p>
       <h2 class="bv-h2" id="titulo-opciones">¿Qué quieres hacer?</h2>
-      <p class="bv-sub">Diseña una zapata desde cero, abre un proyecto guardado o explora el ejemplo del curso.</p>
+      <p class="bv-sub">Diseña una zapata desde cero, abre un proyecto guardado o explora los ejemplos del curso.</p>
       <div class="opciones">
         <button type="button" class="opcion opcion-principal" id="op-nueva">
           <svg class="op-ico ico-nueva" viewBox="0 0 48 48" aria-hidden="true">
@@ -67,7 +67,7 @@
             <path class="ic-hoja1" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/><path class="ic-hoja2" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/>
             <path class="ic-lineas" d="M11 16h8M11 21h8M11 26h6"/>
           </svg>
-          <span class="op-tit">Usar el ejemplo</span><span class="op-desc">Zapata del documento del curso, 2.50 × 2.00 m.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          <span class="op-tit">Ejemplos</span><span class="op-desc">Carga el ejemplo del curso del tipo de zapata que elijas.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
       </div>
       <div class="recientes" id="recientes" hidden>
@@ -78,12 +78,15 @@
 
     <section class="bv-pantalla" id="bv-tipos" aria-labelledby="titulo-tipos" hidden>
       <button type="button" class="bv-volver-ico" data-ir="opciones"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Atrás</button>
-      <p class="bv-eti">Paso 2 de 2 · Tipo de cimentación</p>
+      <p class="bv-eti" id="tipos-eti">Paso 2 de 2 · Tipo de cimentación</p>
       <h2 class="bv-h2" id="titulo-tipos">Tipo de zapata</h2>
-      <p class="bv-sub">Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.</p>
+      <p class="bv-sub" id="tipos-sub">Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.</p>
       <div class="tipos" id="tipos"></div>
     </section>
   </div>
+
+  <!-- ============================================================ Mesa de la combinada (la arma js/combinada/mesa.js) -->
+  <div class="mesa" id="mesa" hidden></div>
 
   <!-- ============================================================ App -->
   <div class="app" id="app" hidden>
@@ -524,6 +527,8 @@
   <script src="js/tipos/combinada.js"></script>
   <script src="js/tipos/aislada-momento-memoria.js"></script>
   <script src="js/nucleo/proyectos.js"></script>
+  <script src="js/combinada/dibujo-combinada.js"></script>
+  <script src="js/combinada/mesa.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

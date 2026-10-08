@@ -8,7 +8,8 @@
   'use strict';
   const ETAPAS = ['Esfuerzos en el suelo', 'Punzonamiento', 'Cortante en una dirección', 'Flexión y refuerzo', 'Aplastamiento', 'Longitud de desarrollo', 'Memoria de cálculo'];
   const DURACION = 2600;
-  const CORTO = { serv: 'Suelo', pz: 'Punzonamiento', cu: 'Cortante', fl: 'Flexión', ap: 'Aplastamiento', ld: 'Desarrollo' };
+  const CORTO = { serv: 'Suelo', pz: 'Punzonamiento', cu: 'Cortante', fl: 'Flexión', ap: 'Aplastamiento', ld: 'Desarrollo',
+    suelo: 'Suelo', 'pz-ext': 'Punzonamiento ext.', 'pz-int': 'Punzonamiento int.', cl: 'Cortante longitudinal', ct: 'Cortante transversal' };
   const ICONO_OK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
   const ICONO_MAL = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
 
@@ -16,6 +17,7 @@
 
   // Planta simplificada del proyecto, escalada a su proporción real
   function plano(R) {
+    if (R.inp && R.inp.tipo === 'combinada') return global.DibujoCombinada.miniCarga(R);
     const U = global.Unidades, W = 300, H = 230, M = 44;
     const k = Math.min((W - 2 * M) / R.Lx, (H - 2 * M) / R.Ly);
     const w = R.Lx * k, h = R.Ly * k, x0 = (W - w) / 2, y0 = (H - h) / 2;
@@ -66,7 +68,7 @@
         pct.textContent = Math.round(p * 100) + ' %';
         paso.textContent = ETAPAS[Math.min(ETAPAS.length - 1, Math.floor(p * ETAPAS.length))];
         // Los chequeos se marcan uno a uno entre el 30 % y el 85 % del tiempo
-        items.forEach((li, i) => { if (k > 0.3 + i * 0.09) li.classList.add('listo'); });
+        items.forEach((li, i) => { if (k > 0.3 + i * 0.54 / items.length) li.classList.add('listo'); });
         if (R && k > 0.86) escena.classList.add('con-sello');
         if (k < 1) { requestAnimationFrame(cuadro); return; }
         paso.textContent = 'Listo';

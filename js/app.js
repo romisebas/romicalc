@@ -538,6 +538,11 @@
 
   // Miniatura de la planta guardada (zapata y columna a escala)
   function miniatura(d) {
+    if (d && d.tipo === 'combinada') {
+      const C = Tipos.combinada, e = C.preparar(d);
+      if (!C.faltantes(e).length) { try { return DibujoCombinada.miniatura(C.calcular(e)); } catch (ex) { /* sin miniatura */ } }
+      return '<svg class="rc-mini" viewBox="0 0 48 48" aria-hidden="true"><path class="rc-vacio" d="M4 16h40v16H4z"/></svg>';
+    }
     const z = d && d.zapata, c = d && d.columna;
     if (!z || !(z.Lx > 0) || !(z.Ly > 0)) return '<svg class="rc-mini" viewBox="0 0 48 48" aria-hidden="true"><path class="rc-vacio" d="M10 10h28v28H10z"/></svg>';
     const k = 36 / Math.max(z.Lx, z.Ly), w = z.Lx * k, h = z.Ly * k;
@@ -563,6 +568,17 @@
     if (Mov.reducido()) { siguiente(); return; }
     boton.classList.remove(clase); void boton.offsetWidth; boton.classList.add(clase);
     setTimeout(() => { boton.classList.remove(clase); siguiente(); }, 950);
+  }
+
+  // El menú de tipos sirve para una zapata nueva o para cargar el ejemplo de cada tipo
+  let modoTipos = 'nuevo';
+  function abrirTipos(modo) {
+    modoTipos = modo;
+    const ej = modo === 'ejemplo';
+    $('#tipos-eti').textContent = ej ? 'Paso 2 de 2 · Ejemplos del curso' : 'Paso 2 de 2 · Tipo de cimentación';
+    $('#titulo-tipos').textContent = ej ? 'Elige un ejemplo' : 'Tipo de zapata';
+    $('#tipos-sub').textContent = ej ? 'Carga el ejemplo del documento del curso para el tipo de zapata que quieras.' : 'Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.';
+    mostrarPantalla('tipos');
   }
 
   function pintarTipos() {
@@ -616,6 +632,7 @@
   }
 
   function cargarProyecto(datos, id, conCarga) {
+    if (datos && datos.tipo === 'combinada') { Mesa.abrir(datos, id, conCarga); return; }
     estado = normalizar(datos);
     proyectoId = id || Proyectos.nuevoId();
     okPrevio = null;
@@ -802,18 +819,21 @@
       };
     });
     $$('[data-ir]').forEach((b) => b.addEventListener('click', () => mostrarPantalla(b.dataset.ir)));
-    $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => mostrarPantalla('tipos')));
+    $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => abrirTipos('nuevo')));
     $('#op-importar').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-importar', () => $('#archivo-importar').click()));
-    $('#op-ejemplo').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-ejemplo', () => {
-      cargarProyecto(T.clone(T.EJEMPLO));
-      avisar('Ejemplo del documento cargado: 2.50 × 2.00 m con d = 0.475 m.');
-    }));
+    $('#op-ejemplo').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-ejemplo', () => abrirTipos('ejemplo')));
     $('#tipos').addEventListener('click', (e) => {
       const t = e.target.closest('.tipo-tarjeta');
       if (!t) return;
       if (t.classList.contains('pronto')) { avisar(t.querySelector('.tt-nombre').textContent + ' estará disponible en una próxima versión.'); return; }
-      cargarProyecto(T.clone(T.VACIO));
-      abrirAsistente(0, 'nuevo');
+      const M = Tipos[t.dataset.tipo];
+      if (modoTipos === 'ejemplo') {
+        cargarProyecto(M.clone(M.EJEMPLO));
+        avisar(t.dataset.tipo === 'combinada' ? 'Ejemplo del documento cargado: dos columnas a 5.00 m.' : 'Ejemplo del documento cargado: 2.50 × 2.00 m con d = 0.475 m.');
+        return;
+      }
+      cargarProyecto(M.clone(M.VACIO));
+      if (t.dataset.tipo !== 'combinada') abrirAsistente(0, 'nuevo');
     });
     $('#lista-recientes').addEventListener('click', (e) => {
       const borrar = e.target.closest('[data-borrar]');
@@ -1018,7 +1038,7 @@
       lector.onload = () => {
         try {
           const datos = JSON.parse(lector.result);
-          if (!datos || typeof datos !== 'object' || !datos.cargas) throw new Error('formato');
+          if (!datos || typeof datos !== 'object' || !(datos.cargas || (datos.tipo === 'combinada' && datos.columnas))) throw new Error('formato');
           cargarProyecto(datos);
           avisar('Importado: ' + file.name);
         } catch (ex) {
@@ -1120,6 +1140,17 @@
     if (a.sinIntro || a.anim === 'desactivadas' || typeof THREE === 'undefined') mostrarPantalla('portada');
     else reproducirIntro();
   }
+
+  // Lo que la mesa de la combinada necesita de la app
+  window.App = {
+    volverAOpciones() {
+      $('#app').hidden = true;
+      $('#bienvenida').hidden = false;
+      document.body.classList.add('en-bienvenida');
+      mostrarPantalla('opciones');
+    },
+    avisar,
+  };
 
   document.addEventListener('DOMContentLoaded', iniciar);
 })();

@@ -46,6 +46,7 @@ def siguiente(pagina):
 def entrar_ejemplo(pagina):
     pagina.click("#btn-disenar")
     pagina.click("#op-ejemplo")
+    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo")
 
 
@@ -93,6 +94,7 @@ def test_identidad_zapatapp_oscura(navegador, url):
     assert pagina.locator(".esfera").count() == 0
     pagina.click("#btn-disenar")
     pagina.click("#op-ejemplo")
+    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo")
     assert pagina.text_content(".marca-nombre").strip() == "ZapatAPP"
     pagina.click("#btn-tema")
@@ -305,6 +307,7 @@ def test_pantalla_de_opciones(navegador, url):
     pagina.click('#bv-tipos [data-ir="opciones"]')
     pagina.click("#op-ejemplo")
     assert "elige-ejemplo" in pagina.get_attribute("#op-ejemplo", "class")
+    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo", timeout=4000)
     pagina.wait_for_timeout(500)
     pagina.click("#btn-inicio")
@@ -673,7 +676,7 @@ def test_tipos_de_zapata(navegador, url):
     pagina.click("#btn-disenar")
     pagina.click("#op-nueva")
     assert pagina.locator(".tipo-tarjeta").count() == 6
-    assert pagina.locator(".tipo-tarjeta.pronto").count() == 5
+    assert pagina.locator(".tipo-tarjeta.pronto").count() == 4
 
 
 def test_informe_paginado_y_documento_listo(navegador, url):
@@ -710,6 +713,7 @@ def test_capturas_y_sin_scroll_horizontal(navegador, url):
         pagina.click("#btn-disenar")
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-opciones.png"))
         pagina.click("#op-ejemplo")
+        pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
         pagina.wait_for_selector("#chequeos .chequeo")
         pagina.wait_for_timeout(300)
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-dashboard.png"), full_page=True)

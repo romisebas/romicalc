@@ -105,3 +105,46 @@ def test_combinada_chequeos_y_validacion(navegador, url):
     res = pagina.evaluate("Tipos['combinada'].validarContraPdf().map(r => ({lbl: r.lbl, ok: r.ok}))")
     assert len(res) == 18 and all(r["ok"] for r in res), res
     assert not errores
+
+
+# ---------------------------------------------------------------- mesa (interfaz)
+def a_tipos(pagina, opcion="#op-nueva"):
+    pagina.click("#btn-disenar")
+    pagina.click(opcion)
+    pagina.wait_for_selector("#bv-tipos:not([hidden])")
+
+
+def abrir_ejemplo_combinada(pagina):
+    a_tipos(pagina, "#op-ejemplo")
+    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
+    pagina.wait_for_selector("#mesa:not([hidden])")
+
+
+def test_mesa_desde_tipos_y_recientes(navegador, url, tmp_path):
+    pagina, errores = abrir(navegador, url)
+    assert "Ejemplos" in pagina.text_content("#op-ejemplo")
+    a_tipos(pagina)
+    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
+    pagina.wait_for_selector("#mesa:not([hidden])")
+    assert pagina.is_hidden("#app")
+    pagina.click("#mesa-ejemplo")
+    pagina.wait_for_function("document.querySelector('#mesa-L').textContent.includes('7.00')")
+    pagina.click("#mesa-inicio")
+    pagina.wait_for_selector("#bv-opciones:not([hidden])")
+    pagina.click("#lista-recientes .reciente")
+    pagina.wait_for_selector("#mesa:not([hidden])")
+    assert "7.00" in pagina.text_content("#mesa-L")
+    # Ejemplos: el mismo menú de tipos; la aislada carga su ejemplo en el dashboard
+    pagina.click("#mesa-inicio")
+    pagina.click("#op-ejemplo")
+    pagina.wait_for_selector("#bv-tipos:not([hidden])")
+    assert "ejemplo" in pagina.text_content("#titulo-tipos").lower()
+    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
+    pagina.wait_for_selector("#chequeos .chequeo")
+    # Importar un .json de combinada abre la mesa
+    datos = pagina.evaluate("JSON.stringify(Tipos['combinada'].EJEMPLO)")
+    archivo = tmp_path / "comb.json"
+    archivo.write_text(datos, encoding="utf-8")
+    pagina.set_input_files("#archivo-importar", str(archivo))
+    pagina.wait_for_selector("#mesa:not([hidden])")
+    assert not errores, errores
