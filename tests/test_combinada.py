@@ -380,3 +380,22 @@ def test_revision_franjas_traslapadas_y_excentricidad(navegador, url):
     R = calc_ejemplo(pagina, "e.columnas[0].E = -700", metodo="corregido")
     assert any("tercio central" in a for a in R["avisos"])
     assert not errores, errores
+
+
+def test_vista_3d_con_capas_y_separar(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.click("#c-tab-planos")
+    pagina.click('#c-vistas [data-vista="3d"]')
+    pagina.wait_for_selector("#c-3d canvas")
+    assert pagina.locator("#c-3d-barra [data-capa3d]").count() == 7
+    assert set(pagina.evaluate("Vista3DCombinada.grupos()")) >= {"concreto", "sup", "inf", "trans", "dovelas", "presion", "diagramas"}
+    pagina.click('#c-3d-barra [data-capa3d="concreto"]')
+    assert pagina.get_attribute('#c-3d-barra [data-capa3d="concreto"]', "aria-pressed") == "false"
+    pagina.click("#c-3d-barra [data-separar]")
+    assert pagina.get_attribute("#c-3d-barra [data-separar]", "aria-pressed") == "true"
+    # La cámara no se reencuadra con un cambio pequeño
+    pagina.evaluate("Vista3DCombinada.fijarCamara([1, 2, 3])")
+    pagina.evaluate("Mesa.ajustar('zapata.d', 0.70)")
+    assert pagina.evaluate("Vista3DCombinada.camara()") == [1, 2, 3]
+    assert not errores, errores

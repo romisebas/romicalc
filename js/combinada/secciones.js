@@ -38,7 +38,7 @@
       '<tr class="est-' + o.estado + (o.barra === g.sel.barra ? ' sel' : '') + '">' +
       '<td><label class="radio"><input type="radio" name="c-barra" data-ruta="' + g.ruta + '" value="' + o.barra + '"' + (o.barra === g.sel.barra ? ' checked' : '') + '> #' + o.barra + '</label></td>' +
       '<td class="num">' + o.n + '</td><td class="num">' + U.num(o.s, 'longitud') + '</td><td class="num">' + U.num(o.AsProv, 'acero') + '</td>' +
-      '<td class="num">' + f2(o.ratio * 100).replace(/\.00$/, '') + '%</td>' +
+      '<td class="num">' + Math.round(o.ratio * 100) + '%</td>' +
       '<td><span class="punto est-' + o.estado + '" aria-hidden="true"></span><span class="motivo">' + o.motivo + (o.gobiernaSmax && o.estado !== 'mal' ? ', por smax' : '') + '</span></td></tr>').join('');
     return '<h3>' + g.tit + '<small>A<sub>s</sub> requerido ' + U.fmt(g.As, 'acero') + ', repartido en ' + U.fmt(g.b, 'longitud') + '</small></h3>' +
       '<div class="tabla-scroll"><table class="tabla-acero"><thead><tr><th>Barra</th><th>n</th><th>s (' + U.u('longitud') + ')</th><th>As prov. (' + U.u('acero') + ')</th><th>Prov./req.</th><th>Estado</th></tr></thead><tbody>' + filas + '</tbody></table></div>';

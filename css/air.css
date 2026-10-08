@@ -990,3 +990,13 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .campo-ayuda { display: block; color: var(--tinta-3); font-size: 12px; }
 .mesa-lienzo-ancho.corto { min-width: 520px; padding-top: 48px; }
 .wz-lienzo.mesa-lienzo { overflow-x: auto; }
+.vista3d-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 10px; }
+.v3d-capas { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--linea); border-radius: var(--r-ctl); }
+.v3d-capas button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--tinta-3); padding: 7px 10px; border-radius: calc(var(--r-ctl) - 3px); font: 500 12px/1 var(--sans); cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.v3d-capas button[aria-pressed="true"] { color: var(--tinta); background: color-mix(in srgb, var(--tinta) 10%, transparent); }
+.v3d-muestra { width: 10px; height: 10px; border-radius: 3px; background: var(--c); opacity: .35; transition: opacity .2s ease; }
+.v3d-capas button[aria-pressed="true"] .v3d-muestra { opacity: 1; }
+.v3d-acciones { display: inline-flex; gap: 6px; }
+.v3d-acciones [aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
+.app-comb .mesa-3d { position: relative; height: min(520px, 62vh); }
+.tip-3d { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; }
