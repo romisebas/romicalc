@@ -31,7 +31,7 @@
 
   function crear(op) {
     const pre = op.pre, $ = (s) => document.getElementById(pre + '-' + s);
-    let dlg = null, i = 0, modo = 'nuevo';
+    let dlg = null, i = 0, modo = 'nuevo', tCerrar = 0;
 
     function construir() {
       if (dlg) return;
@@ -79,6 +79,7 @@
         v = txt === '' ? null : Number(txt);
         if (v !== null && !isFinite(v)) return;
         if (v !== null && el.dataset.mag) v = Number(global.Unidades.de(v, el.dataset.mag).toPrecision(12));
+        if (v !== null && t === 'int') v = Math.round(v);
       }
       op.escribir(el.dataset.k, v);
       el.classList.remove('invalido');
@@ -134,6 +135,7 @@
 
     function abrir(k, m, desde) {
       construir();
+      clearTimeout(tCerrar); // reabrir justo después de cerrar no lo vuelve a cerrar
       modo = m || 'nuevo';
       if (!dlg.open) {
         dlg.showModal();
@@ -154,7 +156,7 @@
       if (!dlg || !dlg.open) return;
       const m = modo;
       dlg.classList.remove('abierto');
-      setTimeout(() => { if (dlg.open) dlg.close(); }, global.Mov && global.Mov.reducido() ? 0 : 170);
+      tCerrar = setTimeout(() => { if (dlg.open) dlg.close(); }, global.Mov && global.Mov.reducido() ? 0 : 170);
       modo = 'editar';
       op.alCerrar(m);
     }

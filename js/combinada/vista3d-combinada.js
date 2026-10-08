@@ -10,7 +10,7 @@
   'use strict';
 
   let cont = null, barra = null, renderer = null, scene = null, camera = null, controls = null, q = null;
-  let raiz = null, grupos = {}, tip = null, clave = '', sep = 0, sepObjetivo = 0, sucio = true, Rult = null;
+  let raiz = null, grupos = {}, tip = null, clave = '', sep = 0, sepObjetivo = 0, sucio = true, Rult = null, resaltado = null;
   const visibles = { concreto: true, sup: true, inf: true, trans: true, dovelas: true, presion: true, diagramas: false };
   const COLOR = { sup: 0x4f7cb3, inf: 0x8a9099, trans: 0xb08a4a, dovelas: 0x6c8a5a };
   const BOTONES = [['concreto', 'Concreto'], ['sup', 'Superior'], ['inf', 'Inferior'], ['trans', 'Transversal'], ['dovelas', 'Dovelas'], ['presion', 'Presión'], ['diagramas', 'Diagramas V y M']];
@@ -88,7 +88,7 @@
   // Raycasting: la barra bajo el mouse resalta su grupo y muestra su marca
   function conectarRaton() {
     const THREE = global.THREE, ray = new THREE.Raycaster(), m = new THREE.Vector2();
-    let ultimo = 0, resaltado = null;
+    let ultimo = 0;
     renderer.domElement.addEventListener('pointermove', (ev) => {
       const ahora = performance.now();
       if (ahora - ultimo < 40 || !raiz) return; // como máximo 25 lecturas por segundo
@@ -100,9 +100,7 @@
       const hit = ray.intersectObjects(acero, true)[0];
       const g = hit ? hit.object.userData.grupo : null;
       if (g !== resaltado) {
-        if (resaltado) grupos[resaltado].traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setHex(0x000000); });
-        if (g) grupos[g].traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setHex(0x334466); });
-        resaltado = g; sucio = true;
+        resaltar(g);
         renderer.domElement.style.cursor = g ? 'pointer' : 'grab';
       }
       if (hit) {
@@ -112,6 +110,15 @@
       } else tip.hidden = true;
     });
     renderer.domElement.addEventListener('pointerleave', () => { tip.hidden = true; });
+  }
+
+  // Resalta las barras de un grupo (y apaga el anterior, si sigue existiendo)
+  function resaltar(g) {
+    const tono = (k, hex) => { if (k && grupos[k]) grupos[k].traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setHex(hex); }); };
+    tono(resaltado, 0x000000);
+    tono(g, 0x334466);
+    resaltado = g && grupos[g] ? g : null;
+    sucio = true;
   }
 
   function liberar(o) { o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); }
@@ -241,12 +248,15 @@
   function mostrar(R) {
     const THREE = global.THREE;
     if (!cont || !THREE || !R) return;
-    const firma = JSON.stringify([R.L, R.B, R.h, R.inp.geometria, R.fl.sup.sel.barra, R.fl.sup.sel.n, R.fl.inf.sel.n, R.tr.map((t) => t.sel.n), R.inp.columnas, R.inp.metodo]);
+    // Todo lo que cambia el dibujo: dimensiones, barras elegidas, cortes (ld), presiones y su límite
+    const sel = (s) => (s ? [s.barra, s.n] : null);
+    const firma = JSON.stringify([R.L, R.B, R.h, R.inp.zapata.r, R.inp.geometria, R.inp.columnas, sel(R.fl.sup.sel), sel(R.fl.inf.sel),
+      R.tr.map((t) => [t.x0, t.x1, sel(t.sel)]), sel(R.entre.sel), R.ld.sup, R.lon.puntos.PI, R.q.q1, R.q.q2, global.DibujoCombinada.servicioLineal(R).lim]);
     if (firma === clave) return;
     const anterior = clave ? JSON.parse(clave) : null;
     clave = firma;
     if (raiz) { scene.remove(raiz); liberar(raiz); }
-    raiz = new THREE.Group(); grupos = {};
+    raiz = new THREE.Group(); grupos = {}; resaltado = null;
     scene.add(raiz);
     construir(R);
     Object.keys(grupos).forEach((k) => { grupos[k].position.y = SUBE[k] * sep; });
@@ -260,6 +270,8 @@
   global.Vista3DCombinada = {
     montar, mostrar, grupos: () => Object.keys(grupos),
     camara: () => (camera ? camera.position.toArray().map((x) => +x.toFixed(3)) : null),
+    etiquetas: () => { const l = []; if (raiz) raiz.traverse((o) => { if (o.userData && o.userData.etq) l.push(o.userData.etq); }); return l; },
+    resaltar, // para pruebas
     fijarCamara: (p) => { if (camera) { camera.position.fromArray(p); sucio = true; } }, // para pruebas
   };
 })(window);

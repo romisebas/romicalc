@@ -589,6 +589,7 @@
   }
 
   function abrirApp(conCarga) {
+    if (window.Mesa && Mesa.visible()) Mesa.salir(); // por ejemplo, al importar una aislada desde la combinada
     document.body.classList.remove('en-bienvenida');
     $('#bienvenida').hidden = true;
     $('#app').hidden = false;

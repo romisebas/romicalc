@@ -399,3 +399,45 @@ def test_vista_3d_con_capas_y_separar(navegador, url):
     pagina.evaluate("Mesa.ajustar('zapata.d', 0.70)")
     assert pagina.evaluate("Vista3DCombinada.camara()") == [1, 2, 3]
     assert not errores, errores
+
+
+# ---------------------------------------------------------------- revisión del tablero
+def test_revision_importar_aislada_desde_la_combinada(navegador, url, tmp_path):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    datos = pagina.evaluate("JSON.stringify(Tipos['aislada-momento'].EJEMPLO)")
+    archivo = tmp_path / "ais.json"
+    archivo.write_text(datos, encoding="utf-8")
+    pagina.set_input_files("#archivo-importar", str(archivo))
+    pagina.wait_for_selector("#chequeos .chequeo")
+    assert pagina.is_hidden("#mesa") and not pagina.evaluate("Mesa.visible()")
+    assert not errores, errores
+
+
+def test_revision_3d_se_rehace_con_las_barras(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.click("#c-tab-planos")
+    pagina.click('#c-vistas [data-vista="3d"]')
+    pagina.wait_for_selector("#c-3d canvas")
+    pagina.evaluate("Mesa.ajustar('acero.barTrans', 7)")
+    assert any("T1" in e and "#7" in e for e in pagina.evaluate("Vista3DCombinada.etiquetas()"))
+    # Un resaltado de un grupo que desaparece no rompe el mouse
+    pagina.evaluate("Vista3DCombinada.resaltar('sup')")
+    pagina.evaluate("Mesa.ajustar('zapata.d', 0.1)")
+    caja = pagina.locator("#c-3d canvas").bounding_box()
+    for k in range(5):
+        pagina.mouse.move(caja["x"] + caja["width"] * (0.3 + 0.1 * k), caja["y"] + caja["height"] * 0.5)
+        pagina.wait_for_timeout(60)
+    assert not errores, errores
+
+
+def test_revision_asistente_reabre_y_enteros(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    pagina.evaluate("(() => { const a = Mesa.asistente(); a.abrir(a.indice('columnas'), 'editar'); a.cerrar(); a.abrir(a.indice('columnas'), 'editar'); })()")
+    pagina.wait_for_timeout(400)
+    assert pagina.evaluate("!!document.querySelector('#cw-asistente[open]')")
+    pagina.fill('#cw-asistente [data-k="columnas.0.nBarras"]', "8.6")
+    assert pagina.evaluate("Mesa.estado().columnas[0].nBarras") == 9
+    assert not errores, errores

@@ -389,6 +389,7 @@
   // ---------------------------------------------------------------- abrir, cerrar, exportar, informe
   function abrir(datos, pid, conCarga) {
     montar();
+    if (estado && id) guardar(); // una edición pendiente del proyecto anterior no se pierde
     estado = normalizar(datos);
     id = pid || global.Proyectos.nuevoId();
     okPrevio = null; fichaSel = null;
@@ -414,10 +415,15 @@
     asis.abrir(0, 'nuevo', boton);
   }
 
-  function cerrar() {
+  // Deja la pantalla de la combinada (guardando) sin ir a otra
+  function salir() {
     guardar();
     if (asis) asis.cerrar();
     el.hidden = true;
+  }
+
+  function cerrar() {
+    salir();
     global.App.volverAOpciones();
   }
 
@@ -447,7 +453,7 @@
   function irA(idChequeo) { mostrarPestana('veredicto'); fichaSel = idChequeo; pintarFicha(); }
 
   global.Mesa = {
-    abrir, nueva, cerrar, irA, mostrarPestana, mostrarVista, ajustar, fuente,
+    abrir, nueva, cerrar, salir, irA, mostrarPestana, mostrarVista, ajustar, fuente,
     asistente: () => asis, visible: () => !!el && !el.hidden, estado: () => estado, resultado: () => R,
   };
 })(window);
