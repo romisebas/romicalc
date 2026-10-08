@@ -46,3 +46,32 @@ def test_combinada_L_fija_insuficiente(navegador, url):
     R = calc_ejemplo(pagina, "e.geometria.modoL = 'fijo'; e.geometria.L = 6.0")
     assert R["serv"]["smin"] >= 0 and abs(R["e"] + 0.5) < 0.01
     assert not errores
+
+
+def test_combinada_longitudinal_documento(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    R = calc_ejemplo(pagina); p = R["lon"]["puntos"]
+    assert abs(R["q"]["q1"] - 15.20) < 0.08 and R["q"]["uniforme"]
+    assert abs(p["ext"]["Vizq"] - 12.91) < 0.07 and abs(p["ext"]["Vder"] + 113.27) < 0.57
+    assert abs(p["int"]["Vizq"] - 144.97) < 0.73 and abs(p["int"]["Vder"] + 90.39) < 0.46
+    assert abs(p["V0"] - R["cols"][0]["x"] - 2.19) < 0.01
+    assert abs(R["lon"]["Mneg"]["M"] + 122.42) < 0.62
+    assert abs(p["int"]["M"] - 81.26) < 0.82 and abs(p["ext"]["M"] - 1.61) < 0.02
+    assert len(p["PI"]) == 2 and p["PI"][0] < p["V0"] < p["PI"][1]
+    assert not errores
+
+
+def test_combinada_equilibrio_corregido(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    R = calc_ejemplo(pagina, metodo="corregido"); V, M = R["lon"]["V"], R["lon"]["M"]
+    assert abs(V[-1]) < 1e-6 and abs(M[-1]) < 1e-6 and not R["q"]["uniforme"]
+    assert len(R["lon"]["xs"]) >= 400 and R["lon"]["xs"] == sorted(R["lon"]["xs"])
+    assert not errores
+
+
+def test_combinada_sin_carga(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    f = pagina.evaluate("""() => { const T = Tipos['combinada'], e = T.clone(T.EJEMPLO);
+      e.columnas[1].D = 0; e.columnas[1].L = 0; return T.faltantes(e); }""")
+    assert "columnas.1.D" in f
+    assert not errores

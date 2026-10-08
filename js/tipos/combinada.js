@@ -131,13 +131,74 @@
     return { R, cols, Ps, PsE, xbar, xbarE, L, B, e: L / 2 - xbar, area: L * B, serv, ult, avisos };
   }
 
+  // ---------------------------------------------------------------- presión última y viga invertida
+  // w(x) = B·q(x) = w0 + gw·(x − L/2). Corregido: resultante en el punto de aplicación de ΣPu (equilibrio exacto).
+  // Documento: presión uniforme qu = ΣPu/(L·B).
+  function presionUltima(inp, R) {
+    const P = R.cols[0].Pu + R.cols[1].Pu;
+    const xr = (R.cols[0].Pu * R.cols[0].x + R.cols[1].Pu * R.cols[1].x) / P;
+    const w0 = P / R.L;
+    const gw = inp.metodo === 'documento' ? 0 : 12 * P * (xr - R.L / 2) / Math.pow(R.L, 3);
+    const q = (x) => (w0 + gw * (x - R.L / 2)) / R.B;
+    return { Pu: P, xr, w0, gw, q1: q(0), q2: q(R.L), qm: w0 / R.B, uniforme: Math.abs(gw) < 1e-12 };
+  }
+
+  // Cortante y momento en x (V a la izquierda de una carga en x, salvo con lado = 'der').
+  function esfuerzos(R, x, lado) {
+    const { w0, gw } = R.q, L = R.L;
+    let V = w0 * x + gw * (x * x / 2 - L * x / 2);
+    let M = w0 * x * x / 2 + gw * (x * x * x / 6 - L * x * x / 4);
+    R.cols.forEach((c) => {
+      if (x > c.x + 1e-12 || (lado === 'der' && Math.abs(x - c.x) <= 1e-12)) { V -= c.Pu; M -= c.Pu * (x - c.x); }
+    });
+    return { V, M, q: (w0 + gw * (x - L / 2)) / R.B };
+  }
+
+  function raiz(f, a, b) {
+    let fa = f(a);
+    if (fa * f(b) > 0) return null;
+    for (let k = 0; k < 80; k++) {
+      const m = (a + b) / 2, fm = f(m);
+      if (fa * fm <= 0) b = m; else { a = m; fa = fm; }
+    }
+    return (a + b) / 2;
+  }
+
+  function longitudinal(R) {
+    const L = R.L, [c0, c1] = R.cols, eps = 1e-9;
+    const V = (x) => esfuerzos(R, x).V, M = (x) => esfuerzos(R, x).M;
+    const V0 = raiz((x) => esfuerzos(R, x, 'der').V, c0.x + eps, c1.x - eps);
+    const PI = [];
+    if (V0 !== null) {
+      [[c0.x, V0], [V0, c1.x]].forEach(([a, b]) => { const r = raiz(M, a, b); if (r !== null) PI.push(r); });
+    }
+    const punto = (c) => ({ x: c.x, Vizq: V(c.x), Vder: esfuerzos(R, c.x, 'der').V, M: M(c.x) });
+    // Muestreo uniforme más los puntos singulares; en las cargas, dos puntos (izquierda y derecha)
+    const marcas = [c0.x, c1.x, c0.x - c0.c1 / 2, c0.x + c0.c1 / 2, c1.x - c1.c1 / 2, c1.x + c1.c1 / 2].concat(V0 !== null ? [V0] : [], PI);
+    const todos = [];
+    for (let k = 0; k <= 400; k++) todos.push(L * k / 400);
+    marcas.forEach((x) => { if (x > 0 && x < L) todos.push(x); });
+    todos.sort((a, b) => a - b);
+    const xs = [], Vs = [], Ms = [];
+    todos.forEach((x, k) => {
+      if (k > 0 && Math.abs(x - todos[k - 1]) < 1e-12) return;
+      xs.push(x); Vs.push(V(x)); Ms.push(M(x));
+      if (R.cols.some((c) => Math.abs(c.x - x) < 1e-12)) { xs.push(x); Vs.push(esfuerzos(R, x, 'der').V); Ms.push(M(x)); }
+    });
+    const Mneg = V0 !== null ? { x: V0, M: M(V0) } : { x: null, M: Math.min.apply(null, Ms) };
+    return { xs, V: Vs, M: Ms, puntos: { V0, PI, ext: punto(c0), int: punto(c1) }, Mneg,
+      Mpos: [{ x: c0.x, M: M(c0.x) }, { x: c1.x, M: M(c1.x) }] };
+  }
+
   function calcular(inp) {
     const R = planta(inp);
     R.inp = inp;
+    R.q = presionUltima(inp, R);
+    R.lon = longitudinal(R);
     return R;
   }
 
-  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, clone, redondear };
+  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, esfuerzos, clone, redondear };
   global.Tipos = global.Tipos || {};
   global.Tipos.combinada = modulo;
 })(window);
