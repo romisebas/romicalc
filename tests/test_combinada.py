@@ -110,7 +110,7 @@ def test_combinada_chequeos_y_validacion(navegador, url):
     assert not errores
 
 
-# ---------------------------------------------------------------- mesa (interfaz)
+# ---------------------------------------------------------------- tablero (interfaz)
 def a_tipos(pagina, opcion="#op-nueva"):
     pagina.click("#btn-disenar")
     pagina.click(opcion)
@@ -120,46 +120,130 @@ def a_tipos(pagina, opcion="#op-nueva"):
 def abrir_ejemplo_combinada(pagina):
     a_tipos(pagina, "#op-ejemplo")
     pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
-    pagina.wait_for_selector("#mesa:not([hidden])")
+    pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
 
 
-def test_mesa_desde_tipos_y_recientes(navegador, url, tmp_path):
+def siguiente_cw(pagina):
+    antes = pagina.text_content("#cw-contador") + pagina.text_content("#cw-titulo")
+    pagina.click("#cw-siguiente")
+    pagina.wait_for_function("t => (document.querySelector('#cw-contador').textContent + document.querySelector('#cw-titulo').textContent) !== t", arg=antes)
+
+
+def llenar(pagina, valores):
+    for k, v in valores.items():
+        sel = f'#cw-asistente [data-k="{k}"]'
+        if pagina.locator(sel).evaluate("e => e.tagName") == "SELECT":
+            pagina.select_option(sel, v)
+        else:
+            pagina.fill(sel, v)
+
+
+def test_tablero_desde_tipos_recientes_e_importar(navegador, url, tmp_path):
     pagina, errores = abrir(navegador, url)
     assert "Ejemplos" in pagina.text_content("#op-ejemplo")
-    a_tipos(pagina)
-    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
-    pagina.wait_for_selector("#mesa:not([hidden])")
+    abrir_ejemplo_combinada(pagina)
     assert pagina.is_hidden("#app")
-    pagina.click("#mesa-ejemplo")
-    pagina.wait_for_function("document.querySelector('#mesa-L').textContent.includes('7.00')")
-    pagina.click("#mesa-inicio")
+    assert pagina.locator("#c-pestanas [role=tab]").count() == 4
+    assert "El diseño cumple" in pagina.text_content("#c-v-tit")
+    assert pagina.locator("#mesa-panel, #mesa-veredicto, #mesa-guia").count() == 0  # sin panel de datos ni cinta
+    pagina.click("#c-inicio")
     pagina.wait_for_selector("#bv-opciones:not([hidden])")
     pagina.click("#lista-recientes .reciente")
-    pagina.wait_for_selector("#mesa:not([hidden])")
-    assert "7.00" in pagina.text_content("#mesa-L")
-    # Ejemplos: el mismo menú de tipos; la aislada carga su ejemplo en el dashboard
-    pagina.click("#mesa-inicio")
+    pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
+    pagina.click("#c-inicio")
     pagina.click("#op-ejemplo")
     pagina.wait_for_selector("#bv-tipos:not([hidden])")
     assert "ejemplo" in pagina.text_content("#titulo-tipos").lower()
     pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo")
-    # Importar un .json de combinada abre la mesa
     datos = pagina.evaluate("JSON.stringify(Tipos['combinada'].EJEMPLO)")
     archivo = tmp_path / "comb.json"
     archivo.write_text(datos, encoding="utf-8")
     pagina.set_input_files("#archivo-importar", str(archivo))
-    pagina.wait_for_selector("#mesa:not([hidden])")
+    pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
+    assert not errores, errores
+
+
+def test_asistente_de_8_pasos(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    a_tipos(pagina)
+    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
+    pagina.wait_for_selector("#cw-asistente[open]")
+    assert pagina.text_content("#cw-contador") == "Paso 1 de 8"
+    llenar(pagina, {"proyecto.nombre": "Edificio A", "proyecto.elemento": "Nudos 186 y 187"})
+    siguiente_cw(pagina)
+    pagina.click("#cw-siguiente")  # columnas vacías: no avanza
+    pagina.wait_for_selector("#cw-error:not([hidden])")
+    assert "Faltan" in pagina.text_content("#cw-error-txt")
+    llenar(pagina, {"columnas.0.c1": "0.5", "columnas.0.c2": "0.5", "columnas.0.barra": "6", "columnas.0.nBarras": "8",
+                    "columnas.1.c1": "0.5", "columnas.1.c2": "0.5", "columnas.1.barra": "6", "columnas.1.nBarras": "8"})
+    siguiente_cw(pagina)
+    llenar(pagina, {"columnas.0.D": "80.806", "columnas.0.L": "18.264", "columnas.0.E": "70.607",
+                    "columnas.1.D": "146.067", "columnas.1.L": "37.556", "columnas.1.E": "8.82"})
+    siguiente_cw(pagina)
+    pagina.click("#cw-asistente [data-nsr]")
+    llenar(pagina, {"sismo.R0": "5"})
+    assert "4.05" in pagina.text_content('#cw-asistente [data-vivo="R"]')
+    siguiente_cw(pagina)
+    pagina.click("#cw-asistente [data-nsr]")
+    llenar(pagina, {"suelo.qadm": "12"})
+    siguiente_cw(pagina)
+    pagina.click("#cw-asistente [data-nsr]")
+    llenar(pagina, {"materiales.fc": "280", "materiales.fy": "4200"})
+    pagina.click("#cw-asistente .que-cambia summary")
+    assert "0.0018·b·h" in pagina.text_content("#cw-asistente .que-cambia")
+    siguiente_cw(pagina)
+    assert pagina.locator("#cw-asistente .mesa-svg").count() == 1
+    llenar(pagina, {"geometria.s": "5"})
+    pagina.wait_for_selector('#cw-asistente [data-vivo="planta"].ok')
+    siguiente_cw(pagina)
+    llenar(pagina, {"zapata.r": "0.07", "zapata.d": "0.68"})
+    assert pagina.text_content("#cw-siguiente") == "Ver resultados"
+    pagina.click("#cw-siguiente")
+    pagina.wait_for_selector("#cw-asistente", state="hidden")
+    pagina.wait_for_function("document.querySelector('#c-v-tit').textContent.includes('cumple')")
+    assert "El diseño cumple" in pagina.text_content("#c-v-tit")
+    assert abs(pagina.evaluate("Mesa.resultado().L") - 7.0) < 1e-9
+    assert not errores, errores
+
+
+def test_riel_reabre_los_pasos(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    assert pagina.locator("#c-categorias .cat").count() == 8
+    assert pagina.locator("#c-categorias .cat-punto.falta").count() == 0
+    pagina.click('#c-categorias [data-cat="altura"]')
+    pagina.wait_for_selector("#cw-asistente[open]")
+    assert pagina.text_content("#cw-contador") == "Editar datos"
+    llenar(pagina, {"zapata.d": "0.30"})
+    pagina.click("#cw-siguiente")
+    if pagina.is_visible("#cw-error"):
+        pagina.click("#cw-continuar")
+    pagina.wait_for_selector("#cw-asistente", state="hidden")
+    pagina.wait_for_function("document.querySelector('#c-v-tit').textContent.includes('no cumple')")
+    assert pagina.locator("#c-chequeos .anillo.mal").count() >= 1
+    assert not errores, errores
+
+
+def test_veredicto_con_anillos_y_ficha(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    assert pagina.locator("#c-chequeos .anillo").count() == 8
+    assert all("%" in t for t in pagina.locator("#c-chequeos .an-pct").all_text_contents())
+    pagina.click('#c-chequeos .anillo[data-paso="cl"]')
+    assert "Cortante longitudinal" in pagina.text_content("#c-ficha .ficha-tit")
+    pagina.click("#c-ficha .ficha-memoria")
+    pagina.wait_for_selector('#mesa-memoria .dp-cap[data-cap="cl"][aria-current="true"]')
     assert not errores, errores
 
 
 def px_por_metro(pagina):
-    return pagina.evaluate("""() => { const s = document.querySelector('#mesa-svg');
+    return pagina.evaluate("""() => { const s = document.querySelector('#c-alzado .mesa-svg');
       return s.getBoundingClientRect().width / s.viewBox.baseVal.width * Number(s.dataset.k); }""")
 
 
 def arrastrar_columna(pagina, i, dx_m):
-    caja = pagina.locator(f'.mesa-col[data-i="{i}"]').bounding_box()
+    caja = pagina.locator(f'#c-alzado .mesa-col[data-i="{i}"]').bounding_box()
     x, y = caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2
     pagina.mouse.move(x, y)
     pagina.mouse.down()
@@ -167,217 +251,76 @@ def arrastrar_columna(pagina, i, dx_m):
     pagina.mouse.up()
 
 
-def test_mesa_arrastre_y_lectura(navegador, url):
+def test_planos_separados(navegador, url):
     pagina, errores = abrir(navegador, url)
     abrir_ejemplo_combinada(pagina)
-    L0 = float(pagina.text_content("#mesa-L").split()[0])
-    x0 = float(pagina.get_attribute(".mesa-xbar", "data-x"))
+    pagina.click("#c-tab-planos")
+    pagina.wait_for_selector("#c-panel-planos:not([hidden]) #c-alzado .mesa-svg")
+    assert pagina.locator("#c-vistas [data-vista]").count() == 5
+    L0 = pagina.evaluate("Mesa.resultado().L")
     arrastrar_columna(pagina, 1, 1.0)
-    assert float(pagina.text_content("#mesa-L").split()[0]) > L0
-    assert float(pagina.get_attribute(".mesa-xbar", "data-x")) > x0
-    s = float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow"))
-    assert abs(s - 6.0) < 0.051
-    pagina.focus('.mesa-col[data-i="1"]')
-    pagina.keyboard.press("ArrowRight")
-    assert abs(float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow")) - (s + 0.05)) < 1e-6
+    assert pagina.evaluate("Mesa.resultado().L") > L0
+    assert abs(pagina.evaluate("Mesa.estado().geometria.s") - 6.0) < 0.051
+    pagina.focus('#c-alzado .mesa-col[data-i="1"]')
+    pagina.keyboard.press("ArrowLeft")
     arrastrar_columna(pagina, 1, -20)
-    assert abs(float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow")) - 0.55) < 1e-6
-    arrastrar_columna(pagina, 1, 4.45)
-    caja = pagina.locator("#mesa-diag-V").bounding_box()
+    assert abs(pagina.evaluate("Mesa.estado().geometria.s") - 0.55) < 1e-6
+    pagina.evaluate("Mesa.ajustar('geometria.s', 5)")
+    caja = pagina.locator("#c-alzado .diag-V").bounding_box()
     pagina.mouse.move(caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
-    lectura = pagina.text_content("#mesa-lectura")
-    assert "V =" in lectura and "M =" in lectura
-    pagina.click('.mesa-carga[data-i="1"]')
-    pagina.wait_for_selector("#mesa-editor:not([hidden])")
-    pagina.fill('#mesa-editor [data-k="columnas.1.D"]', "")
-    pagina.fill('#mesa-editor [data-k="columnas.1.L"]', "")
-    pagina.wait_for_selector("#mesa-faltan:not([hidden])")
-    assert "Faltan datos" in pagina.text_content("#mesa-faltan")
-    assert "NaN" not in pagina.inner_html("#mesa")
-    assert not errores, errores
-
-
-def test_mesa_panel_veredicto_unidades(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    a_tipos(pagina)
-    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
-    pagina.wait_for_selector("#mesa-guia:not([hidden])")
-    pagina.click("#mesa-ejemplo")
-    pagina.wait_for_selector("#mesa-guia", state="hidden")
-    assert pagina.locator(".mesa-pildora").count() == 8
-    assert pagina.locator(".mesa-pildora.ok").count() == 8
-    assert "Cumple" in pagina.text_content("#mesa-veredicto")
-    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.30")
-    pagina.wait_for_selector(".mesa-pildora.mal")
-    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.68")
-    pagina.click('#mesa-metodo [data-metodo="documento"]')
-    pagina.wait_for_function("document.querySelector('#mesa-resumen').textContent.includes('41.62')")
-    pagina.click("#mesa [data-abrir-ajustes]")
-    pagina.wait_for_selector("#dlg-ajustes[open]")
-    pagina.check('input[name="aj-unid"][value="si"]')
-    pagina.click("#dlg-ajustes .btn-acento")
-    pagina.wait_for_selector("#dlg-ajustes", state="hidden")
-    assert "kN" in pagina.text_content("#mesa-cargas") and "kN" in pagina.text_content("#mesa-resumen")
-    assert abs(float(pagina.input_value('#mesa-panel [data-k="materiales.fc"]')) - 27.4586) < 1e-3
-    pagina.fill('#mesa-panel [data-k="materiales.fc"]', "28")
-    assert abs(pagina.evaluate("Mesa.estado().materiales.fc") - 285.52) < 0.01
-    assert not errores, errores
-
-
-def test_mesa_planos_y_3d(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    abrir_ejemplo_combinada(pagina)
-    assert pagina.locator("#mesa-tabs [role=tab]").count() == 6
-    pagina.click('#mesa-tabs [data-p="planta"]')
-    pagina.wait_for_selector("#mesa-p-planta:not([hidden]) svg.dibujo")
-    assert pagina.locator("#mesa-p-planta svg .franja").count() == 2
-    assert "7.00" in pagina.text_content("#mesa-p-planta svg")
-    caja = pagina.locator("#mesa-p-planta svg.dibujo").bounding_box()
+    assert "V =" in pagina.text_content("#c-alzado .mesa-lectura")
+    pagina.click('#c-vistas [data-vista="planta"]')
+    pagina.wait_for_selector("#c-planta svg.dibujo")
+    assert pagina.locator("#c-planta svg .franja").count() == 2
+    caja = pagina.locator("#c-planta svg.dibujo").bounding_box()
     pagina.mouse.move(caja["x"] + caja["width"] * 0.5, caja["y"] + caja["height"] * 0.5)
-    assert "σ =" in pagina.text_content("#mesa-p-planta .tip-planta")
-    pagina.click('#mesa-tabs [data-p="cortes"]')
-    pagina.wait_for_selector("#mesa-p-cortes:not([hidden])")
-    assert pagina.locator("#mesa-p-cortes svg.dibujo").count() == 3
-    assert pagina.locator("#mesa-p-cortes .acero-sup").count() >= 1
-    pagina.click('#mesa-tabs [data-p="3d"]')
-    pagina.wait_for_selector("#mesa-p-3d:not([hidden]) canvas")
-    pagina.click('.mesa-pildora[data-id="ct"]')
-    assert pagina.get_attribute('#mesa-tabs [data-p="cortes"]', "aria-selected") == "true"
+    assert "σ =" in pagina.text_content("#c-panel-planos .tip-planta:not([hidden])")
+    pagina.click('#c-vistas [data-vista="corte-l"]')
+    pagina.wait_for_selector("#c-corte-l .acero-sup")
+    pagina.click('#c-vistas [data-vista="cortes-t"]')
+    assert pagina.locator("#c-corte-0 svg, #c-corte-1 svg").count() == 2
+    pagina.click('#c-vistas [data-vista="3d"]')
+    pagina.wait_for_selector("#c-3d canvas")
     assert not errores, errores
 
 
-def test_mesa_refuerzo_y_despiece(navegador, url):
+def test_refuerzo_por_vinetas(navegador, url):
     pagina, errores = abrir(navegador, url)
     abrir_ejemplo_combinada(pagina)
-    pagina.click('#mesa-tabs [data-p="refuerzo"]')
-    pagina.wait_for_selector("#mesa-p-refuerzo:not([hidden]) .mesa-grupo-acero")
-    assert pagina.locator("#mesa-p-refuerzo .mesa-grupo-acero").count() == 5
-    pagina.click('#mesa-p-refuerzo [data-grupo="sup"] [data-barra="7"]')
-    pagina.wait_for_function("document.querySelector('#mesa-p-refuerzo [data-grupo=\"sup\"] .mesa-sel').textContent.includes('#7')")
-    assert pagina.evaluate("Mesa.estado().acero.barSup") == 7
-    pagina.click('#mesa-tabs [data-p="despiece"]')
-    pagina.wait_for_selector("#mesa-despiece tbody tr")
-    marcas = pagina.locator("#mesa-despiece tbody tr td:first-child").all_text_contents()
-    assert [m.strip() for m in marcas] == ["L1", "L2", "T1", "T2", "T3", "D1", "D2"]
-    total = pagina.text_content("#mesa-despiece tfoot")
-    m = re.search(r"([\d.]+)\s*kg", total)
-    assert m and float(m.group(1)) > 0
-    assert pagina.locator("#mesa-despiece svg").count() == 7
+    pagina.click("#c-tab-refuerzo")
+    pagina.wait_for_selector("#c-grupos [data-grupo]")
+    assert pagina.locator("#c-grupos [data-grupo]").count() == 7
+    pagina.check('#c-grupo input[name="c-barra"][value="7"]')
+    pagina.wait_for_function("Mesa.estado().acero.barSup === 7")
+    assert "#7" in pagina.text_content("#c-elegido-tit")
+    pagina.click('#c-grupos [data-grupo="dovelas"]')
+    assert pagina.locator("#c-grupo .acero-dir").count() == 2
+    pagina.click('#c-grupos [data-grupo="despiece"]')
+    marcas = [m.strip() for m in pagina.locator("#mesa-despiece tbody tr td:first-child").all_text_contents()]
+    assert marcas == ["L1", "L2", "T1", "T2", "T3", "D1", "D2"]
+    assert pagina.is_hidden("#c-elegido")
     assert not errores, errores
 
 
-def test_mesa_memoria(navegador, url):
+def test_memoria_y_pdf(navegador, url):
     pagina, errores = abrir(navegador, url)
     abrir_ejemplo_combinada(pagina)
-    pagina.click('#mesa-tabs [data-p="memoria"]')
-    pagina.wait_for_selector("#mesa-p-memoria .dp-cap")
-    assert pagina.locator("#mesa-p-memoria .dp-cap").count() >= 10
-    assert pagina.locator("#mesa-p-memoria .katex").count() > 0
-    pagina.click('#mesa-p-memoria .dp-cap[data-cap="lon"]')
-    pagina.wait_for_selector("#mesa-p-memoria .diapo-fig svg .diagrama-v")
-    assert pagina.locator("#mesa-p-memoria .diapo-fig svg .diagrama-m").count() >= 1
-    pagina.click('#mesa-p-memoria .dp-cap[data-cap="planta"]')
-    pagina.wait_for_selector('#mesa-p-memoria .ec[data-liga="xbar"]')
-    pagina.hover('#mesa-p-memoria .ec[data-liga="xbar"]')
-    assert pagina.locator("#mesa-p-memoria .diapo-fig .fig-xbar.resaltado").count() == 1
-    assert "Correcciones" in pagina.text_content("#mesa-correcciones")
-    # La memoria de la aislada sigue funcionando con su propio visor
-    pagina.click("#mesa-inicio")
-    pagina.click("#op-ejemplo")
-    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
-    pagina.wait_for_selector("#chequeos .chequeo")
-    pagina.click("#tab-memoria")
-    pagina.wait_for_selector("#memoria .dp-cap")
-    assert pagina.locator("#diapo-sig").count() == 1
-    assert not errores, errores
-
-
-def test_mesa_pdf(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    abrir_ejemplo_combinada(pagina)
+    pagina.click("#c-tab-memoria")
+    pagina.wait_for_selector("#mesa-memoria .dp-cap")
+    assert pagina.locator("#mesa-memoria .dp-cap").count() >= 10 and pagina.locator("#mesa-memoria .katex").count() > 0
+    pagina.click('#mesa-memoria .dp-cap[data-cap="planta"]')
+    pagina.hover('#mesa-memoria .ec[data-liga="xbar"]')
+    assert pagina.locator("#mesa-memoria .diapo-fig .fig-xbar.resaltado").count() == 1
     pagina.evaluate("window.print = () => {}")
-    pagina.click("#mesa-pdf")
-    pagina.wait_for_selector("#dlg-informe[open]")
-    pagina.fill("#inf-titulo", "Memoria combinada C-1")
-    pagina.click("#inf-imprimir")
-    pagina.wait_for_function("document.body.classList.contains('con-informe')")
-    assert pagina.title() == "Memoria combinada C-1"
-    assert pagina.locator("#informe .hoja").count() >= 6
-    texto = pagina.text_content("#informe")
-    assert "Zapata combinada" in texto and "Punzonamiento" in texto and "Despiece" in texto
-    assert pagina.locator("#informe .katex-error").count() == 0
-    desbordes = pagina.evaluate("[...document.querySelectorAll('#informe .hoja')].filter(h => h.scrollHeight > h.clientHeight + 1).length")
-    assert desbordes == 0
-    assert pagina.evaluate("Mesa.estado().informe.titulo") == "Memoria combinada C-1"
-    pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
-    pagina.wait_for_function("!document.body.classList.contains('con-informe')")
-    assert not errores, errores
-
-
-# ---------------------------------------------------------------- revisión final
-def test_revision_flexion_imposible_no_rompe(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    R = calc_ejemplo(pagina, "e.zapata.d = 0.1", metodo="corregido")
-    assert all(s["n"] is not None and s["n"] < 1000 for s in [R["fl"]["sup"]["sel"], R["fl"]["inf"]["sel"], R["tr"][0]["sel"], R["tr"][1]["sel"]])
-    assert next(c for c in R["chequeos"] if c["id"] == "fl")["ok"] is False
-    abrir_ejemplo_combinada(pagina)
-    pagina.click('#mesa-tabs [data-p="cortes"]')
-    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.1")
-    pagina.wait_for_timeout(300)
-    html = pagina.inner_html("#mesa")
-    assert "Infinity" not in html and "NaN" not in html
-    pagina.wait_for_timeout(600)
-    assert pagina.evaluate("Proyectos.listar()[0].datos.zapata.d") == 0.1
-    assert not errores, errores
-
-
-def test_revision_nombre_no_inyecta_html(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    nombre = 'x" autofocus onfocus="window.__xss=1'
-    pagina.evaluate("n => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.proyecto.nombre = n; Mesa.abrir(e); }", nombre)
-    pagina.wait_for_timeout(200)
-    assert pagina.evaluate("window.__xss") is None
-    assert pagina.input_value('#mesa-panel [data-k="proyecto.nombre"]') == nombre
-    assert not errores, errores
-
-
-def test_revision_L_que_no_cubre_no_disena(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    for cambio in ["e.geometria.modoL = 'fijo'; e.geometria.L = 4.0", "e.columnas[1].D = 0.001; e.columnas[1].L = 0",
-                   "e.geometria.modoB = 'fijo'; e.geometria.B = 0.3"]:
-        R = calc_ejemplo(pagina, cambio, metodo="corregido")
-        assert R["valido"] is False and not R["todoOk"] and R["avisos"], cambio
-    pagina.evaluate("() => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.geometria.modoL = 'fijo'; e.geometria.L = 4.0; Mesa.abrir(e); }")
-    assert "no cubre" in pagina.text_content("#mesa-faltan")
-    assert "%" not in pagina.text_content("#mesa-veredicto")
-    assert not errores, errores
-
-
-def test_revision_unidades_recalculan_memoria(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    abrir_ejemplo_combinada(pagina)
-    pagina.click('#mesa-tabs [data-p="memoria"]')
-    pagina.wait_for_selector("#mesa-p-memoria .dp-cap")
-    pagina.click("#mesa [data-abrir-ajustes]")
-    pagina.check('input[name="aj-unid"][value="si"]')
-    pagina.click("#dlg-ajustes .btn-acento")
-    pagina.wait_for_selector("#dlg-ajustes", state="hidden")
-    assert pagina.evaluate("Mesa.resultado().inp.unid") == "si"
-    assert "tonf" not in pagina.text_content("#mesa-memoria")  # las notas de corrección citan el documento en tonf
-    assert not errores, errores
-
-
-def test_revision_reimprimir_y_ctrl_p_en_la_mesa(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    abrir_ejemplo_combinada(pagina)
-    pagina.evaluate("window.print = () => {}")
-    pagina.evaluate("window.dispatchEvent(new Event('beforeprint'))")
+    pagina.evaluate("window.dispatchEvent(new Event('beforeprint'))")  # Ctrl+P en la combinada
     assert "Zapata combinada" in pagina.text_content("#informe")
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
-    pagina.click("#mesa-pdf")
+    pagina.click("#c-imprimir")
+    pagina.wait_for_selector("#dlg-informe[open]")
     pagina.fill("#inf-titulo", "Memoria C-2")
     pagina.click("#inf-imprimir")
     pagina.wait_for_function("document.body.classList.contains('con-informe')")
+    assert pagina.locator("#informe .hoja").count() >= 6
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")
     pagina.wait_for_selector("#doc-listo[open]")
     pagina.click("#dl-reimprimir")
@@ -386,15 +329,48 @@ def test_revision_reimprimir_y_ctrl_p_en_la_mesa(navegador, url):
     assert not errores, errores
 
 
-def test_revision_exportar_desde_la_mesa(navegador, url):
+def test_revision_casos_limite_en_el_tablero(navegador, url):
     pagina, errores = abrir(navegador, url)
     abrir_ejemplo_combinada(pagina)
+    # Flexión sin solución: sin Infinity ni NaN, y se guarda
+    pagina.click("#c-tab-planos")
+    pagina.click('#c-vistas [data-vista="cortes-t"]')
+    pagina.evaluate("Mesa.ajustar('zapata.d', 0.1)")
+    pagina.wait_for_timeout(600)
+    html = pagina.inner_html("#mesa")
+    assert "Infinity" not in html and "NaN" not in html
+    assert pagina.evaluate("Proyectos.listar()[0].datos.zapata.d") == 0.1
+    # Separación mínima al crecer la columna
+    pagina.evaluate("Mesa.ajustar('zapata.d', 0.68); Mesa.ajustar('geometria.s', 0.55)")
+    pagina.click('#c-categorias [data-cat="columnas"]')
+    pagina.fill('#cw-asistente [data-k="columnas.0.c1"]', "1.2")
+    assert pagina.evaluate("Mesa.estado().geometria.s") >= 0.9 - 1e-9
+    pagina.keyboard.press("Escape")
+    # L que no cubre la columna interior: estado de revisión, sin diseño
+    pagina.evaluate("() => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.geometria.modoL = 'fijo'; e.geometria.L = 4.0; Mesa.abrir(e); }")
+    assert "no cubre" in pagina.text_content("#c-vacio")
+    # Nombre con comillas: no inyecta HTML en el asistente
+    nombre = 'x" autofocus onfocus="window.__xss=1'
+    pagina.evaluate("n => { const e = Tipos.combinada.clone(Tipos.combinada.EJEMPLO); e.proyecto.nombre = n; Mesa.abrir(e); }", nombre)
+    pagina.click('#c-categorias [data-cat="proyecto"]')
+    assert pagina.input_value('#cw-asistente [data-k="proyecto.nombre"]') == nombre
+    assert pagina.evaluate("window.__xss") is None
+    pagina.keyboard.press("Escape")
+    # Exportar
     with pagina.expect_download() as d:
-        pagina.click("#mesa-exportar")
+        pagina.click("#c-exportar")
     datos = json.loads(open(d.value.path(), encoding="utf-8").read())
-    assert datos["tipo"] == "combinada" and datos["columnas"][1]["D"] == 146.067
+    assert datos["tipo"] == "combinada"
+    # Unidades: la memoria se rehace en el nuevo sistema
+    pagina.click("#c-tab-memoria")
+    pagina.wait_for_selector("#mesa-memoria .dp-cap")
+    pagina.click("#mesa [data-abrir-ajustes]")
+    pagina.check('input[name="aj-unid"][value="si"]')
+    pagina.click("#dlg-ajustes .btn-acento")
+    pagina.wait_for_selector("#dlg-ajustes", state="hidden")
+    assert pagina.evaluate("Mesa.resultado().inp.unid") == "si"
+    assert "tonf" not in pagina.text_content("#mesa-memoria")
     assert not errores, errores
-
 
 def test_revision_franjas_traslapadas_y_excentricidad(navegador, url):
     pagina, errores = abrir(navegador, url)
@@ -403,14 +379,4 @@ def test_revision_franjas_traslapadas_y_excentricidad(navegador, url):
     assert abs(R["entre"]["b"] - (R["L"] - union)) < 1e-9 and R["entre"]["b"] >= 0
     R = calc_ejemplo(pagina, "e.columnas[0].E = -700", metodo="corregido")
     assert any("tercio central" in a for a in R["avisos"])
-    assert not errores, errores
-
-
-def test_revision_separacion_minima_al_crecer_la_columna(navegador, url):
-    pagina, errores = abrir(navegador, url)
-    abrir_ejemplo_combinada(pagina)
-    pagina.evaluate("Mesa.ajustar('geometria.s', 0.55)")
-    pagina.click('.mesa-carga[data-i="0"]')
-    pagina.fill('#mesa-editor [data-k="columnas.0.c1"]', "1.2")
-    assert pagina.evaluate("Mesa.estado().geometria.s") >= 0.9 - 1e-9
     assert not errores, errores

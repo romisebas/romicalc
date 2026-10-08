@@ -365,6 +365,17 @@
     return R;
   }
 
+  // Solo la planta (cargas, centroide, L, B y presiones de servicio), sin altura ni materiales:
+  // sirve para el paso de ubicación del asistente. Devuelve null si faltan esos datos.
+  function vistaPlanta(e) {
+    const inp = preparar(e);
+    const falta = faltantes(inp).filter((k) => !/^(zapata|materiales)\./.test(k) && !/\.(barra|nBarras)$/.test(k));
+    if (falta.length) return null;
+    const R = planta(inp);
+    R.inp = inp;
+    return R;
+  }
+
   // ---------------------------------------------------------------- validación contra el documento
   function validarContraPdf() {
     const e = clone(EJEMPLO);
@@ -396,7 +407,7 @@
       ok: pares.every(([app, pdf]) => f(app, pdf, tol)) }));
   }
 
-  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, esfuerzos, validarContraPdf, clone, redondear };
+  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, vistaPlanta, esfuerzos, validarContraPdf, clone, redondear };
   global.Tipos = global.Tipos || {};
   global.Tipos.combinada = modulo;
 })(window);

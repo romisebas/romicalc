@@ -53,7 +53,9 @@
     return { Xmax: Math.max(G.L, G.x2 + G.c1i / 2) * 1.06 + 0.2 };
   }
 
-  function lienzo(e, R, esc) {
+  // op.diagramas = false: solo el alzado con el centroide y L (paso de ubicación del asistente)
+  function lienzo(e, R, esc, op) {
+    const conDiagramas = !op || op.diagramas !== false;
     const U = global.Unidades, G = geometria(e, R), { W, H, ML, yCol, yZap, hZap, yQ, hQ, yV, yM, hD } = LZ;
     const k = (W - ML - LZ.MR) / esc.Xmax, X = (x) => f2(ML + x * k);
     const p = [];
@@ -74,16 +76,17 @@
     const cota = (x0, x1, y, txt) => '<g class="mesa-cota"><path d="M' + X(x0) + ' ' + y + 'H' + X(x1) + 'M' + X(x0) + ' ' + (y - 5) + 'v10M' + X(x1) + ' ' + (y - 5) + 'v10"/>' +
       '<text x="' + f2(ML + (x0 + x1) / 2 * k) + '" y="' + (y - 6) + '" text-anchor="middle">' + txt + '</text></g>';
     p.push(cota(G.x1, G.x2, yZap - 14, 's = ' + U.fmt(G.s, 'longitud')));
-    if (!R) return envolver(p, k, esc);
+    if (!R) return envolver(p, k, esc, conDiagramas ? null : yZap + hZap + 64);
 
     // Centroide x̄ y largo L
     p.push('<g class="mesa-xbar" data-x="' + R.xbar.toFixed(4) + '"><path d="M' + X(R.xbar) + ' ' + (yZap + hZap + 4) + 'l-7 11h14z"/>' +
       '<text x="' + X(R.xbar) + '" y="' + (yZap + hZap + 30) + '" text-anchor="middle">x̄ = ' + U.fmt(R.xbar, 'longitud') + '</text></g>');
     p.push(cota(0, R.L, yZap + hZap + 50, 'L = ' + U.fmt(R.L, 'longitud')));
+    if (!conDiagramas) return envolver(p, k, esc, yZap + hZap + 64);
 
     // Presión última (hacia arriba)
     const qmax = Math.max(R.q.q1, R.q.q2, 1e-9), hq = (q) => hQ * q / qmax;
-    p.push('<g id="mesa-diag-q" class="mesa-diag"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yQ - 12) + '">Presión última del suelo</text>' +
+    p.push('<g class="mesa-diag diag-q"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yQ - 12) + '">Presión última del suelo</text>' +
       '<polygon class="mesa-q" points="' + X(0) + ',' + yQ + ' ' + X(R.L) + ',' + yQ + ' ' + X(R.L) + ',' + f2(yQ + hq(R.q.q2)) + ' ' + X(0) + ',' + f2(yQ + hq(R.q.q1)) + '"/>' +
       [0.1, 0.3, 0.5, 0.7, 0.9].map((t) => '<path class="mesa-q-flecha" d="M' + X(t * R.L) + ' ' + f2(yQ + hq(R.q.q1 + (R.q.q2 - R.q.q1) * t) - 2) + 'V' + (yQ + 4) + 'm-4 6l4-6 4 6"/>').join('') +
       '<text class="mesa-val" x="' + f2(ML + 4) + '" y="' + f2(yQ + hq(R.q.q1) + 14) + '">' + U.fmt(R.q.q1, 'presion') + '</text>' +
@@ -96,7 +99,7 @@
     const kV = hD / Vmax, kM = hD / Mmax;
     const pp = R.lon.puntos;
     const etqV = (x, v, dy) => '<text class="mesa-val" x="' + X(x) + '" y="' + f2(yV - v * kV + dy) + '" text-anchor="middle">' + U.num(v, 'fuerza') + '</text>';
-    p.push('<g id="mesa-diag-V" class="mesa-diag"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yV - hD - 18) + '">Cortante V (' + U.u('fuerza') + ')</text>' +
+    p.push('<g class="mesa-diag diag-V"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yV - hD - 18) + '">Cortante V (' + U.u('fuerza') + ')</text>' +
       '<line class="mesa-eje" x1="' + X(0) + '" y1="' + yV + '" x2="' + X(R.L) + '" y2="' + yV + '"/>' +
       '<polygon class="mesa-area diagrama-v" points="' + X(0) + ',' + yV + ' ' + pts(R.lon.V, yV, kV) + ' ' + X(R.L) + ',' + yV + '"/>' +
       '<polyline class="mesa-linea" points="' + pts(R.lon.V, yV, kV) + '"/>' +
@@ -104,7 +107,7 @@
       (pp.V0 !== null ? '<g class="mesa-v0"><circle cx="' + X(pp.V0) + '" cy="' + yV + '" r="4"/><text x="' + X(pp.V0) + '" y="' + (yV + 18) + '" text-anchor="middle">V = 0</text></g>' : '') +
       zona(X(0), yV - hD - 6, R.L * k, 2 * hD + 12) + '</g>');
     const ld = R.ld.sup / 1000;
-    p.push('<g id="mesa-diag-M" class="mesa-diag"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yM - hD - 18) + '">Momento M (' + U.u('momento') + ')</text>' +
+    p.push('<g class="mesa-diag diag-M"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yM - hD - 18) + '">Momento M (' + U.u('momento') + ')</text>' +
       '<line class="mesa-eje" x1="' + X(0) + '" y1="' + yM + '" x2="' + X(R.L) + '" y2="' + yM + '"/>' +
       '<polygon class="mesa-area diagrama-m" points="' + X(0) + ',' + yM + ' ' + pts(R.lon.M.map((m) => -m), yM, kM) + ' ' + X(R.L) + ',' + yM + '"/>' +
       '<polyline class="mesa-linea" points="' + pts(R.lon.M.map((m) => -m), yM, kM) + '"/>' +
@@ -118,14 +121,14 @@
           '<text x="' + f2(ML + (x + x2) / 2 * k) + '" y="' + (yM + hD + 40) + '" text-anchor="middle">ld</text></g>';
       }).join('') +
       zona(X(0), yM - hD - 6, R.L * k, 2 * hD + 12) + '</g>');
-    p.push('<line id="mesa-lector" class="mesa-lector" x1="0" y1="' + (yCol - 30) + '" x2="0" y2="' + (H - 10) + '" visibility="hidden"/>');
+    p.push('<line class="mesa-lector" x1="0" y1="' + (yCol - 30) + '" x2="0" y2="' + (H - 10) + '" visibility="hidden"/>');
     return envolver(p, k, esc);
   }
 
   function zona(x, y, w, h) { return '<rect class="mesa-zona" x="' + x + '" y="' + y + '" width="' + f2(w) + '" height="' + h + '"/>'; }
 
-  function envolver(p, k, esc) {
-    return '<svg id="mesa-svg" class="mesa-svg" viewBox="0 0 ' + LZ.W + ' ' + LZ.H + '" data-k="' + k + '" data-ml="' + LZ.ML + '" data-xmax="' + esc.Xmax + '" role="img" aria-label="Alzado de la zapata combinada con diagramas de cortante y momento">' +
+  function envolver(p, k, esc, alto) {
+    return '<svg class="mesa-svg" viewBox="0 0 ' + LZ.W + ' ' + (alto || LZ.H) + '" data-k="' + k + '" data-ml="' + LZ.ML + '" data-xmax="' + esc.Xmax + '" role="img" aria-label="Alzado de la zapata combinada con diagramas de cortante y momento">' +
       p.join('') + '</svg>';
   }
 

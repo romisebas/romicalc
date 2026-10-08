@@ -123,7 +123,7 @@
 
   function alCambiar(e) {
     const el = e.target;
-    if (!el.dataset || !el.dataset.k || el.closest('#mesa')) return; // la mesa de la combinada maneja sus campos
+    if (!el.dataset || !el.dataset.k || !el.closest('#app, #asistente')) return; // solo los campos de la aislada
     const tipo = el.dataset.tipo;
     let val;
     if (tipo === 'texto') val = el.value;
@@ -184,12 +184,9 @@
     altura: '<path d="M4 15h16v5H4z"/><path class="ic-mov" d="M12 3v9M9.5 5.5 12 3l2.5 2.5M9.5 9.5 12 12l2.5-2.5"/>',
   };
   function pintarCategorias(falt) {
-    $('#categorias').innerHTML = '<span class="riel-tit">Datos</span>' + PASOS.map((p) => {
-      const ok = !falt[p.id];
-      return '<button type="button" class="cat" data-cat="' + p.id + '" title="' + p.nombre + '">' +
-        '<span class="cat-ico" aria-hidden="true"><svg viewBox="0 0 24 24">' + ICONOS[p.id] + '</svg><span class="cat-punto ' + (ok ? 'ok' : 'falta') + '"></span></span>' +
-        '<span class="cat-nom">' + p.nombre + '</span><span class="sr-only">' + (ok ? ', completo' : ', faltan datos') + '</span></button>';
-    }).join('');
+    const completos = {};
+    PASOS.forEach((p) => { completos[p.id] = !falt[p.id]; });
+    $('#categorias').innerHTML = TableroComun.riel(PASOS, completos, ICONOS);
   }
 
   function pintarVacio(falt, error) {
@@ -202,7 +199,6 @@
     okPrevio = null;
   }
 
-  function claseUtil(u, ok) { return !ok || u > 1 ? 'mal' : u > 0.9 ? 'aviso' : 'ok'; }
 
   function pintarResumen(animar) {
     const v = $('#veredicto');
@@ -223,14 +219,7 @@
     $('[data-cifra="util"]').classList.toggle('es-mal', R.utilMax > 1);
     // Anillos de utilización (uno por chequeo); la ficha muestra el seleccionado o el más exigido
     if (!fichaSel || !R.chequeos.some((c) => c.id === fichaSel)) fichaSel = R.chequeos.reduce((a, b) => (b.util > a.util ? b : a)).id;
-    $('#chequeos').innerHTML = R.chequeos.map((c) => {
-      const cls = claseUtil(c.util, c.ok), u = Math.min(1, c.util) * 100;
-      return '<li><button type="button" role="tab" class="chequeo anillo ' + (c.ok ? 'ok' : 'mal') + ' u-' + cls + '" data-paso="' + c.id + '" aria-selected="' + (c.id === fichaSel) + '">' +
-        '<svg class="an-svg" viewBox="0 0 64 64" aria-hidden="true"><circle class="an-pista" cx="32" cy="32" r="26" pathLength="100"/>' +
-        '<circle class="an-valor" cx="32" cy="32" r="26" pathLength="100" style="--u:' + u.toFixed(1) + '"/></svg>' +
-        '<span class="an-pct num">' + f(c.util * 100, 0) + '%</span><span class="an-nom">' + (CORTO[c.id] || c.titulo) + '</span>' +
-        '<span class="sr-only">' + c.titulo + (c.ok ? ', cumple' : ', no cumple') + '</span></button></li>';
-    }).join('');
+    $('#chequeos').innerHTML = TableroComun.anillos(R.chequeos, fichaSel, CORTO);
     pintarFicha();
   }
 
@@ -238,14 +227,8 @@
   function pintarFicha() {
     const c = R.chequeos.find((x) => x.id === fichaSel);
     if (!c) return;
-    const cls = claseUtil(c.util, c.ok);
     $$('#chequeos .anillo').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.paso === fichaSel)));
-    $('#ficha').innerHTML = '<div class="ficha-cab"><h3 class="ficha-tit">' + c.titulo + '</h3>' +
-      '<span class="tag ' + (c.ok ? 'tag-ok' : 'tag-mal') + '">' + (c.ok ? 'Cumple' : 'No cumple') + '</span></div>' +
-      '<p class="ficha-det">' + c.det + '</p>' +
-      '<div class="ficha-barra u-' + cls + '"><span class="ch-pista"><span class="ch-barra" style="width:' + Math.max(2, Math.min(1, c.util) * 100) + '%"></span></span>' +
-      '<span class="num">' + f(c.util * 100, 0) + '% de la capacidad</span></div>' +
-      '<a href="#" class="ficha-memoria" data-paso="' + c.id + '">Ver en la memoria ›</a>';
+    $('#ficha').innerHTML = TableroComun.ficha(c);
     $('#ficha').classList.remove('entra'); void $('#ficha').offsetWidth; $('#ficha').classList.add('entra');
   }
 
@@ -847,8 +830,9 @@
         avisar(t.dataset.tipo === 'combinada' ? 'Ejemplo del documento cargado: dos columnas a 5.00 m.' : 'Ejemplo del documento cargado: 2.50 × 2.00 m con d = 0.475 m.');
         return;
       }
+      if (t.dataset.tipo === 'combinada') { Mesa.nueva(t); return; }
       cargarProyecto(M.clone(M.VACIO));
-      if (t.dataset.tipo !== 'combinada') abrirAsistente(0, 'nuevo');
+      abrirAsistente(0, 'nuevo');
     });
     $('#lista-recientes').addEventListener('click', (e) => {
       const borrar = e.target.closest('[data-borrar]');
@@ -1121,7 +1105,9 @@
       dlg.addEventListener('cancel', (e) => { e.preventDefault(); cerrarDialogo(dlg); });
       dlg.addEventListener('click', (e) => { if (e.target === dlg) cerrarDialogo(dlg); });
     });
-    $('#btn-tema').addEventListener('click', () => {
+    // Tema: el botón de la aislada y el de la combinada (data-alternar-tema)
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#btn-tema, [data-alternar-tema]')) return;
       const raiz = document.documentElement;
       const oscuro = raiz.dataset.theme !== 'light'; // oscuro por defecto
       raiz.classList.add('cambiando-tema');

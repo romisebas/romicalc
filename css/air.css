@@ -969,3 +969,24 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .mesa-correcciones details { padding: 10px 14px; border: 1px solid var(--linea); border-radius: var(--r-ctl); font: 500 14px/1.45 var(--sans); }
 .mesa-correcciones summary { cursor: pointer; font-weight: 600; }
 .mesa-correcciones ul { margin: 8px 0 0; padding-left: 18px; color: var(--tinta-2); }
+
+/* ===================================================================== beta 1.2 tablero de la combinada (igual a la aislada) */
+.app-comb .anillos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 700px) { .app-comb .anillos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.app-comb .vista-ancha { grid-column: 1 / -1; }
+.app-comb .c-vista[hidden] { display: none; }
+.app-comb .vista .seg { flex-wrap: wrap; }
+.app-comb .mesa-lienzo { border: 0; border-radius: 0; background: transparent; }
+.app-comb .seg-vinetas { flex-wrap: wrap; }
+.app-comb #c-grupo .acero-dir { margin-top: 4px; }
+.wz-sub { margin: 18px 0 8px; font: 600 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-3); }
+.asistente .seg button[aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
+.asistente .seg button { border: 0; background: transparent; color: var(--tinta-2); padding: 8px 12px; border-radius: calc(var(--r-ctl) - 3px); font: 500 13px/1 var(--sans); cursor: pointer; }
+.asistente .seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--linea); border-radius: var(--r-ctl); }
+.que-cambia { margin-top: 12px; }
+.que-cambia summary { cursor: pointer; font: 600 14px var(--sans); color: var(--acento-10); }
+.que-cambia table { margin-top: 10px; }
+.que-cambia td, .que-cambia th { font-size: 13px; white-space: normal; }
+.campo-ayuda { display: block; color: var(--tinta-3); font-size: 12px; }
+.mesa-lienzo-ancho.corto { min-width: 520px; padding-top: 48px; }
+.wz-lienzo.mesa-lienzo { overflow-x: auto; }

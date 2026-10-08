@@ -1,23 +1,36 @@
-/* Mesa de la zapata combinada (beta 1.2): una sola pantalla, sin asistente.
- * Las columnas se arrastran sobre una regla; el centroide, el largo, la presión y los diagramas
- * de cortante y momento cambian en vivo. Guarda el proyecto en los recientes.
+/* Tablero de la zapata combinada (beta 1.2): misma estructura que la aislada.
+ * Asistente de 8 pasos en ventanas emergentes, riel flotante de datos a la izquierda y pestañas
+ * Veredicto (anillos y ficha), Planos (alzado y diagramas, planta, cortes, 3D), Refuerzo por viñetas
+ * y Memoria. Guarda el proyecto en los recientes. Se expone como window.Mesa.
  */
 (function (global) {
   'use strict';
 
-  const $ = (s, r) => (r || document).querySelector(s);
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
   const T = () => global.Tipos.combinada;
   let el = null, estado = null, id = null, R = null, falt = [], tGuardar = null, errorCalc = '';
-  let esc = null, arrastre = null, cuadro = 0, editando = null, pestana = 'planta';
-  const PESTANAS = [['planta', 'Planta'], ['cortes', 'Cortes'], ['3d', '3D'], ['refuerzo', 'Refuerzo'], ['despiece', 'Despiece'], ['memoria', 'Memoria']];
-  // A qué pestaña lleva cada píldora del veredicto (el cortante longitudinal se lee en el lienzo)
-  const DESTINO = { suelo: 'planta', 'pz-ext': 'planta', 'pz-int': 'planta', ct: 'cortes', ap: 'cortes', fl: 'refuerzo', ld: 'despiece' };
-  const PASO = 0.05;
-  const NOMBRES = { c1: 'c₁', c2: 'c₂', D: 'D', L: 'L', E: 'E (sismo)', barra: 'barra', nBarras: 'n.º de barras' };
-  // Magnitud de cada campo editable (para mostrarlo en el sistema de unidades activo)
-  const MAG = { c1: 'longitud', c2: 'longitud', D: 'fuerza', L: 'fuerza', E: 'fuerza' };
+  let pestana = 'veredicto', vista = 'alzado', fichaSel = null, okPrevio = null, asis = null, lienzo = null, pasos = null, salida = null;
+  const movers = {};
+  const PESTANAS = [['veredicto', 'Veredicto'], ['planos', 'Planos'], ['refuerzo', 'Refuerzo'], ['memoria', 'Memoria']];
+  const VISTAS = [['alzado', 'Alzado y diagramas'], ['planta', 'Planta'], ['corte-l', 'Corte longitudinal'], ['cortes-t', 'Cortes transversales'], ['3d', '3D']];
+  const CORTO = { suelo: 'Suelo', 'pz-ext': 'Punz. exterior', 'pz-int': 'Punz. interior', cl: 'Cortante long.', ct: 'Cortante transv.', fl: 'Flexión', ap: 'Aplastamiento', ld: 'Desarrollo' };
+  // Capítulo de la memoria de cada chequeo (para "Ver en la memoria")
+  const CAPITULO = { suelo: 'planta', 'pz-ext': 'pz', 'pz-int': 'pz', cl: 'cl', ct: 'tr', fl: 'fl', ap: 'ap', ld: 'ap' };
+  // Paso del asistente al que pertenece cada ruta
+  function pasoDe(k) {
+    if (k.startsWith('proyecto') || k.startsWith('informe')) return 'proyecto';
+    const m = k.match(/^columnas\.\d\.(\w+)$/);
+    if (m) return ['D', 'L', 'E'].includes(m[1]) ? 'cargas' : 'columnas';
+    if (k.startsWith('sismo')) return 'sismo';
+    if (k.startsWith('suelo')) return 'suelo';
+    if (k.startsWith('materiales') || k === 'metodo') return 'materiales';
+    if (k.startsWith('geometria')) return 'ubicacion';
+    return 'altura';
+  }
 
-  const FLECHA_IZQ = '<span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>';
+  const get = (o, k) => k.split('.').reduce((a, x) => (a == null ? a : a[x]), o);
+  function set(o, k, v) { const p = k.split('.'), u = p.pop(); p.reduce((a, x) => a[x], o)[u] = v; }
 
   // Mezcla los datos guardados sobre la forma vacía (las columnas se mezclan una por una)
   function normalizar(d) {
@@ -33,240 +46,200 @@
     return base;
   }
 
+  // ---------------------------------------------------------------- estructura (igual a la de la aislada)
   function montar() {
     if (el) return;
     el = $('#mesa');
+    const U = global.Unidades;
     el.innerHTML =
-      '<header class="mesa-barra">' +
-        '<button type="button" class="bv-volver-ico" id="mesa-inicio">' + FLECHA_IZQ + 'Inicio</button>' +
-        '<div class="mesa-titulo"><p class="bv-eti">Zapata combinada</p><h1 class="mesa-h1" id="mesa-nombre">Nueva zapata</h1></div>' +
-        '<p class="mesa-dim">L = <b class="num" id="mesa-L">—</b> · B = <b class="num" id="mesa-B">—</b></p>' +
-        '<button type="button" class="btn btn-quieto" id="mesa-ejemplo">Cargar ejemplo del documento</button>' +
-        '<button type="button" class="btn btn-quieto" id="mesa-exportar">Exportar</button>' +
-        '<button type="button" class="btn btn-acento" id="mesa-pdf" aria-haspopup="dialog">PDF</button>' +
-        '<button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>' +
-      '</header>' +
-      '<div class="mesa-veredicto" id="mesa-veredicto" aria-live="polite"></div>' +
-      '<div class="mesa-cuerpo">' +
-        '<div class="mesa-centro">' +
-          '<section class="mesa-guia" id="mesa-guia" hidden></section>' +
-          '<p class="mesa-faltan" id="mesa-faltan" hidden></p>' +
-          '<section class="mesa-lienzo" id="mesa-lienzo" aria-label="Alzado de la zapata">' +
-            '<div class="mesa-lienzo-ancho"><div class="mesa-cargas" id="mesa-cargas"></div><div id="mesa-dibujo"></div></div>' +
-            '<p class="mesa-lectura num" id="mesa-lectura" aria-live="polite">Pasa el cursor por los diagramas para leer V y M.</p>' +
-          '</section>' +
-          '<section class="mesa-resumen" id="mesa-resumen" aria-label="Resultados principales"></section>' +
-          '<nav class="mesa-tabs" id="mesa-tabs" role="tablist" aria-label="Secciones de la combinada">' +
-            PESTANAS.map(([p, t], i) => '<button type="button" role="tab" id="mesa-tab-' + p + '" data-p="' + p + '" aria-controls="mesa-p-' + p + '" aria-selected="' + (i ? 'false' : 'true') + '"' + (i ? ' tabindex="-1"' : '') + '>' + t + '</button>').join('') +
+      '<header class="barra-sup" id="c-barra">' +
+        '<div class="barra-fila">' +
+          '<button type="button" class="marca" id="c-inicio" aria-label="Volver al inicio"><span id="c-logo"></span><span class="marca-nombre">ZapatAPP</span></button>' +
+          '<span class="tipo-actual">Combinada</span>' +
+          '<nav class="acciones" aria-label="Acciones">' +
+            '<button type="button" class="btn btn-quieto" id="c-exportar">Exportar</button>' +
+            '<label class="btn btn-quieto" for="archivo-importar">Importar</label>' +
+            '<button type="button" class="btn btn-acento" id="c-imprimir" aria-haspopup="dialog">Imprimir</button>' +
+            '<button type="button" class="btn-icono" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>' +
+            '<button type="button" class="btn-icono" data-alternar-tema aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="relleno" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>' +
           '</nav>' +
-          '<section class="mesa-pan" id="mesa-p-planta" role="tabpanel" aria-labelledby="mesa-tab-planta"><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-planta"></div></div></section>' +
-          '<section class="mesa-pan" id="mesa-p-cortes" role="tabpanel" aria-labelledby="mesa-tab-cortes" hidden>' +
-            '<h3 class="mesa-pan-tit">Corte longitudinal</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-l"></div></div>' +
-            '<div class="mesa-cortes-t"><div><h3 class="mesa-pan-tit">Bajo la columna exterior</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-0"></div></div></div>' +
-            '<div><h3 class="mesa-pan-tit">Bajo la columna interior</h3><div class="mesa-plano-marco"><div class="mesa-plano" id="mesa-corte-1"></div></div></div></div>' +
-          '</section>' +
-          '<section class="mesa-pan" id="mesa-p-3d" role="tabpanel" aria-labelledby="mesa-tab-3d" hidden><div class="mesa-3d" id="mesa-3d"></div><p class="mesa-ayuda">Arrastra para girar; la rueda acerca. El acero superior va en azul.</p></section>' +
-          '<section class="mesa-pan" id="mesa-p-refuerzo" role="tabpanel" aria-labelledby="mesa-tab-refuerzo" hidden></section>' +
-          '<section class="mesa-pan" id="mesa-p-despiece" role="tabpanel" aria-labelledby="mesa-tab-despiece" hidden></section>' +
-          '<section class="mesa-pan" id="mesa-p-memoria" role="tabpanel" aria-labelledby="mesa-tab-memoria" hidden></section>' +
         '</div>' +
-        '<aside class="mesa-panel" id="mesa-panel" aria-label="Datos de la zapata">' +
-          '<button type="button" class="mesa-panel-tog" id="mesa-panel-tog" aria-expanded="true" aria-controls="mesa-panel-cuerpo">Datos</button>' +
-          '<div class="mesa-panel-cuerpo" id="mesa-panel-cuerpo"></div>' +
-        '</aside>' +
-      '</div>' +
-      '<div class="mesa-editor popover" id="mesa-editor" role="dialog" aria-labelledby="mesa-editor-tit" hidden></div>';
-    $('#mesa-inicio').addEventListener('click', cerrar);
-    $('#mesa-pdf').addEventListener('click', () => {
+        '<div class="barra-fila2"><div class="pestanas" role="tablist" aria-label="Secciones del diseño" id="c-pestanas">' +
+          PESTANAS.map(([p, t], i) => '<button type="button" role="tab" id="c-tab-' + p + '" data-tab="' + p + '" aria-controls="c-panel-' + p + '" aria-selected="' + (i ? 'false' : 'true') + '"' + (i ? ' tabindex="-1"' : '') + '>' + t + '</button>').join('') +
+        '</div></div>' +
+      '</header>' +
+      '<nav class="riel" id="c-categorias" aria-label="Editar datos por categoría"></nav>' +
+      '<button type="button" class="btn btn-acento btn-datos" id="c-btn-datos" aria-controls="c-categorias" aria-expanded="false">Datos</button>' +
+      '<main class="principal" id="c-principal" tabindex="-1">' +
+        '<section class="estado-vacio" id="c-vacio" hidden><h1 class="v-tit"></h1><p class="v-det"></p><div class="faltan" id="c-faltan"></div>' +
+          '<div class="fila-btn"><button type="button" class="btn btn-acento" id="c-abrir-asistente">Ingresar los datos</button><button type="button" class="btn btn-quieto" id="c-ejemplo">Cargar ejemplo del documento</button></div></section>' +
+        '<div id="c-contenido">' +
+          // Veredicto
+          '<section class="panel" id="c-panel-veredicto" role="tabpanel" aria-labelledby="c-tab-veredicto">' +
+            '<div class="resumen" id="c-resumen" aria-live="polite">' +
+              '<div class="veredicto" id="c-veredicto"><svg class="v-icono" viewBox="0 0 96 96" aria-hidden="true"><circle class="vi-aro" cx="48" cy="48" r="42" pathLength="1"/>' +
+                '<path class="vi-check" d="M30 49 L43 62 L67 36" pathLength="1"/><path class="vi-x1" d="M34 34 L62 62" pathLength="1"/><path class="vi-x2" d="M62 34 L34 62" pathLength="1"/></svg>' +
+                '<h1 class="v-tit" id="c-v-tit">El diseño cumple</h1><ul class="v-fallas" id="c-v-fallas" aria-label="Chequeos que no cumplen"></ul></div>' +
+              '<dl class="cifras" id="c-cifras">' +
+                '<div><dt>Planta</dt><dd><span class="num" data-ccifra="L">0.00</span> × <span class="num" data-ccifra="B">0.00</span> <small data-cu="longitud">m</small></dd></div>' +
+                '<div><dt>Altura</dt><dd><span class="num" data-ccifra="h">0.00</span> <small data-cu="longitud">m</small></dd></div>' +
+                '<div><dt>Utilización máxima</dt><dd><span class="num" data-ccifra="util">0</span><small>%</small></dd></div></dl>' +
+              '<section class="detalle" aria-labelledby="c-detalle-tit"><h2 class="detalle-tit" id="c-detalle-tit">Detalle de los chequeos</h2>' +
+                '<ul class="v-contexto" id="c-contexto" aria-label="Condición que gobierna"></ul>' +
+                '<ol class="chequeos anillos" id="c-chequeos" role="tablist" aria-label="Utilización de cada chequeo"></ol>' +
+                '<div class="ficha" id="c-ficha" role="tabpanel" aria-live="polite"></div></section>' +
+            '</div></section>' +
+          // Planos
+          '<section class="panel" id="c-panel-planos" role="tabpanel" aria-labelledby="c-tab-planos" hidden>' +
+            '<section class="dims" aria-label="Ajuste rápido de dimensiones"><span class="dims-tit">Ajuste rápido</span>' +
+              [['geometria.s', 's', 0.05], ['geometria.a', 'a', 0.05], ['zapata.d', 'd', 0.025]].map(([k, n, p]) =>
+                '<div class="paso-num"><span class="pn-lbl">' + n + '</span><button type="button" class="pn-btn" data-cpaso="' + k + '" data-delta="-' + p + '" aria-label="Reducir ' + n + '">−</button>' +
+                '<input type="number" step="' + p + '" data-ck="' + k + '" aria-label="' + n + '"><button type="button" class="pn-btn" data-cpaso="' + k + '" data-delta="' + p + '" aria-label="Aumentar ' + n + '">+</button><small data-cu="longitud">m</small></div>').join('') +
+            '</section>' +
+            '<figure class="vista vista-ancha"><div class="vista-cab"><h2 id="c-vista-tit">Alzado y diagramas</h2>' +
+              '<div class="seg" role="tablist" aria-label="Vista" id="c-vistas">' + VISTAS.map(([v, t], i) => '<button type="button" role="tab" data-vista="' + v + '" aria-selected="' + (i ? 'false' : 'true') + '">' + t + '</button>').join('') + '</div></div>' +
+              '<div class="c-vista" data-v="alzado"><div id="c-alzado"></div></div>' +
+              '<div class="c-vista" data-v="planta" hidden><div class="lienzo"><div class="mesa-plano" id="c-planta"></div></div></div>' +
+              '<div class="c-vista" data-v="corte-l" hidden><div class="lienzo"><div class="mesa-plano" id="c-corte-l"></div></div></div>' +
+              '<div class="c-vista mesa-cortes-t" data-v="cortes-t" hidden><div><h3 class="mesa-pan-tit">Bajo la columna exterior</h3><div class="lienzo"><div class="mesa-plano" id="c-corte-0"></div></div></div>' +
+                '<div><h3 class="mesa-pan-tit">Bajo la columna interior</h3><div class="lienzo"><div class="mesa-plano" id="c-corte-1"></div></div></div></div>' +
+              '<div class="c-vista" data-v="3d" hidden><div class="vista3d-barra" id="c-3d-barra"></div><div class="lienzo lienzo-3d mesa-3d" id="c-3d"><p class="pista">Arrastre para girar, rueda para acercar</p></div></div>' +
+            '</figure></section>' +
+          // Refuerzo
+          '<section class="panel bloque" id="c-panel-refuerzo" role="tabpanel" aria-labelledby="c-tab-refuerzo" hidden><div id="c-refuerzo"></div></section>' +
+          // Memoria
+          '<section class="panel bloque" id="c-panel-memoria" role="tabpanel" aria-labelledby="c-tab-memoria" hidden>' +
+            '<div class="bloque-cab"><h2>Memoria de cálculo</h2><span class="dp-ayuda">Use las flechas del teclado o deslice para avanzar</span></div>' +
+            '<div class="mesa-correcciones" id="mesa-correcciones"></div><div id="mesa-memoria" class="memoria dp"></div></section>' +
+        '</div>' +
+      '</main>';
+    $('#c-logo').innerHTML = global.Logo.svg('logo');
+    conectar();
+    pasos = global.PasosCombinada.crear({ estado: () => estado, resultado: () => R, planta: () => T().vistaPlanta(estado), error: () => errorCalc, alMover: () => { cambio(); if (asis) asis.refrescar(); }, proponerD });
+    asis = global.Asistente.crear({
+      pre: 'cw', pasos,
+      leer: (k) => (k === 'metodo' ? estado.metodo : get(estado, k)),
+      escribir: (k, v) => set(estado, k, v),
+      faltantes: () => falt, nombre: global.PasosCombinada.nombre,
+      alCambiar: cambio,
+      alCerrar: (modo) => {
+        if (modo === 'nuevo' && R) { mostrarPestana('veredicto'); global.Cargando.mostrar('Calculando', R).then(animarVeredicto); }
+      },
+    });
+    lienzo = global.Lienzo.crear($('#c-alzado'), { estado: () => estado, resultado: () => R, alMover: cambio, diagramas: true,
+      alCarga: (i, b) => asis.abrir(asis.indice('cargas'), 'editar', b) });
+    ['#c-planta', '#c-corte-l', '#c-corte-0', '#c-corte-1'].forEach((s) => global.PlantaInteractiva.montar($(s)));
+    movers.pestanas = global.Mov.segmentado($('#c-pestanas'));
+    movers.vistas = global.Mov.segmentado($('#c-vistas'));
+  }
+
+  function conectar() {
+    $('#c-inicio').addEventListener('click', cerrar);
+    $('#c-exportar').addEventListener('click', exportar);
+    $('#c-imprimir').addEventListener('click', () => {
       const f = fuente();
       if (!f) { global.App.avisar('Complete los datos del proyecto para generar la memoria.'); return; }
       global.App.abrirInforme(f);
     });
-    $('#mesa-exportar').addEventListener('click', exportar);
-    $('#mesa-ejemplo').addEventListener('click', () => { estado = T().clone(T().EJEMPLO); esc = null; pintarPanel(); cambio(); });
-    const lz = $('#mesa-lienzo');
-    lz.addEventListener('pointerdown', alPresionar);
-    lz.addEventListener('pointermove', alMover);
-    lz.addEventListener('pointerup', alSoltar);
-    lz.addEventListener('pointercancel', alSoltar);
-    lz.addEventListener('pointerleave', () => { if (!arrastre) ocultarLector(); });
-    lz.addEventListener('keydown', alTeclear);
-    $('#mesa-cargas').addEventListener('click', (e) => { const b = e.target.closest('.mesa-carga'); if (b) abrirEditor(Number(b.dataset.i), b); });
-    $('#mesa-panel-cuerpo').addEventListener('input', alPanel);
-    $('#mesa-panel-cuerpo').addEventListener('change', alPanel);
-    $('#mesa-panel-cuerpo').addEventListener('click', alClicPanel);
-    $('#mesa-panel-tog').addEventListener('click', () => {
-      const b = $('#mesa-panel-tog'), abierto = b.getAttribute('aria-expanded') !== 'true';
-      b.setAttribute('aria-expanded', String(abierto));
-      $('#mesa-panel').classList.toggle('plegado', !abierto);
-    });
-    $('#mesa-guia').addEventListener('click', (e) => { if (e.target.closest('[data-ejemplo]')) $('#mesa-ejemplo').click(); });
-    $('#mesa-veredicto').addEventListener('click', (e) => { const p = e.target.closest('.mesa-pildora'); if (p && global.Mesa.irA) global.Mesa.irA(p.dataset.id); });
-    document.addEventListener('zapatapp:unidades', () => { if (el && !el.hidden) { recalcular(); pintarPanel(); pintar(); } });
-    $('#mesa-tabs').addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) mostrarPestana(b.dataset.p); });
-    $('#mesa-tabs').addEventListener('keydown', (e) => {
+    $('#c-pestanas').addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) mostrarPestana(b.dataset.tab); });
+    $('#c-pestanas').addEventListener('keydown', (e) => {
       if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
       const ids = PESTANAS.map((x) => x[0]), j = (ids.indexOf(pestana) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length;
-      mostrarPestana(ids[j]); $('#mesa-tab-' + ids[j]).focus();
+      mostrarPestana(ids[j]); $('#c-tab-' + ids[j]).focus();
     });
-    ['#mesa-planta', '#mesa-corte-l', '#mesa-corte-0', '#mesa-corte-1'].forEach((s) => global.PlantaInteractiva.montar($(s)));
-    $('#mesa-editor').addEventListener('input', alEditar);
-    $('#mesa-editor').addEventListener('change', alEditar);
-    $('#mesa-editor').addEventListener('click', (e) => { if (e.target.closest('[data-cerrar]')) cerrarEditor(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && editando !== null) cerrarEditor(); });
-    document.addEventListener('pointerdown', (e) => {
-      if (editando !== null && !e.target.closest('#mesa-editor') && !e.target.closest('.mesa-carga')) cerrarEditor();
+    // Riel: cada categoría reabre su ventana del asistente, creciendo desde el botón
+    $('#c-categorias').addEventListener('click', (e) => {
+      const b = e.target.closest('.cat');
+      if (!b) return;
+      ondaRiel(b, e);
+      asis.abrir(asis.indice(b.dataset.cat), 'editar', b);
+      cerrarRielMovil();
     });
+    $('#c-btn-datos').addEventListener('click', () => {
+      const r = $('#c-categorias'), abierto = !r.classList.contains('abierto');
+      r.classList.toggle('abierto', abierto);
+      $('#c-btn-datos').setAttribute('aria-expanded', String(abierto));
+    });
+    $('#c-faltan').addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (b) asis.abrir(asis.indice(b.dataset.cat), 'editar', b); });
+    $('#c-abrir-asistente').addEventListener('click', (e) => asis.abrir(primerPasoIncompleto(), 'nuevo', e.currentTarget));
+    $('#c-ejemplo').addEventListener('click', () => { estado = T().clone(T().EJEMPLO); okPrevio = null; cambio(); global.Cargando.mostrar('Calculando', R).then(animarVeredicto); });
+    $('#c-chequeos').addEventListener('click', (e) => { const b = e.target.closest('.anillo'); if (b) { fichaSel = b.dataset.paso; pintarFicha(); } });
+    $('#c-ficha').addEventListener('click', (e) => {
+      const a = e.target.closest('.ficha-memoria');
+      if (!a) return;
+      e.preventDefault();
+      if (global.MesaSecciones) global.MesaSecciones.irCapitulo(CAPITULO[a.dataset.paso]);
+      mostrarPestana('memoria');
+    });
+    $('#c-vistas').addEventListener('click', (e) => { const b = e.target.closest('[data-vista]'); if (b) mostrarVista(b.dataset.vista); });
+    // Ajuste rápido
+    el.querySelector('.dims').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cpaso]');
+      if (!b) return;
+      const k = b.dataset.cpaso, v = (Number(get(estado, k)) || 0) + Number(b.dataset.delta);
+      set(estado, k, Math.max(0, +v.toFixed(3)));
+      cambio(); pintarDims();
+    });
+    el.querySelector('.dims').addEventListener('input', (e) => {
+      const k = e.target.dataset.ck;
+      if (!k || e.target.value === '') return;
+      const v = Number(e.target.value);
+      if (!isFinite(v)) return;
+      set(estado, k, Number(global.Unidades.de(v, 'longitud').toPrecision(12)));
+      cambio();
+    });
+    // Botones dentro del asistente: valores de la NSR-10, modos y "Proponer d"
+    document.addEventListener('click', (e) => {
+      const dlg = asis && asis.elemento();
+      if (!dlg || !dlg.contains(e.target)) return;
+      const nsr = e.target.closest('[data-nsr]'), modo = e.target.closest('[data-modo]'), prop = e.target.closest('[data-proponer-d]');
+      if (nsr) { nsr.dataset.nsr.split(',').forEach((k) => set(estado, k, T().NSR[k])); cambio(); asis.refrescar(); }
+      if (modo) {
+        const k = modo.dataset.modo, v = modo.dataset.v;
+        if (k === 'metodo') estado.metodo = v; else set(estado, k, v);
+        if (v === 'fijo' && R) { const c = k === 'geometria.modoL' ? 'L' : 'B'; if (!(estado.geometria[c] > 0)) estado.geometria[c] = R[c]; }
+        cambio(); asis.rehacer();
+      }
+      if (prop) proponerD(prop.closest('.wz-paso').querySelector('[data-vivo="msg"]'));
+    });
+    document.addEventListener('zapatapp:unidades', () => { if (el && !el.hidden) { recalcular(); pintar(); if (asis) asis.rehacer(); } });
+    window.addEventListener('scroll', () => { if (el && !el.hidden) $('#c-barra').classList.toggle('con-borde', window.scrollY > 4); }, { passive: true });
   }
 
-  // ---------------------------------------------------------------- lienzo
-  const D = () => global.DibujoCombinada;
+  function ondaRiel(b, e) {
+    if (global.Mov && global.Mov.reducido()) return;
+    const r = b.getBoundingClientRect(), o = document.createElement('span');
+    o.className = 'cat-onda';
+    o.style.left = ((e.clientX || r.left + r.width / 2) - r.left) + 'px'; o.style.top = ((e.clientY || r.top + r.height / 2) - r.top) + 'px';
+    b.appendChild(o);
+    setTimeout(() => o.remove(), 700);
+    b.classList.remove('pulsado'); void b.offsetWidth; b.classList.add('pulsado');
+  }
+  function cerrarRielMovil() { $('#c-categorias').classList.remove('abierto'); $('#c-btn-datos').setAttribute('aria-expanded', 'false'); }
 
-  function pintarLienzo() {
-    if (!esc || !arrastre) esc = D().escalaLienzo(estado, R);
-    const foco = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.mesa-col') : null;
-    const iFoco = foco ? foco.dataset.i : null;
-    $('#mesa-dibujo').innerHTML = D().lienzo(estado, R, esc);
-    if (iFoco !== null) { const c = $('.mesa-col[data-i="' + iFoco + '"]'); if (c) c.focus({ preventScroll: true }); }
-    pintarCargas();
+  function primerPasoIncompleto() {
+    const p = falt.length ? pasoDe(falt[0]) : 'proyecto';
+    return Math.max(0, asis.indice(p));
   }
 
-  function pintarCargas() {
-    const U = global.Unidades, G = D().geometria(estado, R), LZ = D().LZ, k = (LZ.W - LZ.ML - LZ.MR) / esc.Xmax;
-    $('#mesa-cargas').innerHTML = estado.columnas.map((c, i) => {
-      const P = (Number(c.D) || 0) + (Number(c.L) || 0), x = (LZ.ML + G.cols[i].x * k) / LZ.W * 100;
-      const txt = c.D > 0 ? 'P<sub>s</sub> = ' + U.fmt(P, 'fuerza') : 'Escribe las cargas';
-      return '<button type="button" class="mesa-carga' + (c.D > 0 ? '' : ' vacia') + '" data-i="' + i + '" style="left:' + x.toFixed(3) + '%" aria-haspopup="dialog">' +
-        '<span class="mesa-carga-col">' + (i ? 'Interior' : 'Exterior') + '</span><span>' + txt + '</span></button>';
-    }).join('');
-  }
-
-  // px de pantalla → metros sobre el eje x del lienzo
-  function aMetros(clientX) {
-    const s = $('#mesa-svg'), r = s.getBoundingClientRect(), LZ = D().LZ;
-    return ((clientX - r.left) * LZ.W / r.width - LZ.ML) / Number(s.dataset.k);
-  }
-
-  function separacionMin() {
-    const c = estado.columnas, a = Number(c[0].c1) || 0.4, b = Number(c[1].c1) || 0.4;
-    return Math.round(((a + b) / 2 + PASO) / PASO) * PASO;
-  }
-
-  // Mueve una columna: la exterior cambia el voladizo a, la interior la separación s (pasos de 0.05 m)
-  function moverColumna(i, valor) {
-    const v = +(Math.round(valor / PASO) * PASO).toFixed(2);
-    if (i === 0) estado.geometria.a = Math.max(0, v);
-    else estado.geometria.s = Math.max(separacionMin(), v);
-  }
-
-  function alPresionar(e) {
-    const col = e.target.closest('.mesa-col');
-    if (!col || e.button !== 0) return;
-    e.preventDefault();
-    const i = Number(col.dataset.i), G = D().geometria(estado, R);
-    arrastre = { i, id: e.pointerId, desfase: aMetros(e.clientX) - G.cols[i].x };
-    $('#mesa-lienzo').setPointerCapture(e.pointerId);
-    $('#mesa-lienzo').classList.add('arrastrando');
-    col.focus({ preventScroll: true });
-  }
-
-  function alMover(e) {
-    if (arrastre && e.pointerId === arrastre.id) {
-      const G = D().geometria(estado, R), x = aMetros(e.clientX) - arrastre.desfase;
-      moverColumna(arrastre.i, arrastre.i === 0 ? x - G.c1e / 2 : x - G.x1);
-      if (!cuadro) cuadro = requestAnimationFrame(() => { cuadro = 0; cambio(); });
-      return;
+  // "Proponer d": la menor altura (cada 2.5 cm) con la que cumplen todos los chequeos de resistencia
+  function proponerD(msg) {
+    const base = T().preparar(estado);
+    if (T().faltantes(base).filter((k) => k !== 'zapata.d').length) { if (msg) msg.textContent = 'Complete primero los demás datos.'; return; }
+    for (let d = 0.2; d <= 2.5 + 1e-9; d += 0.025) {
+      const e = T().clone(base); e.zapata.d = +d.toFixed(3);
+      let r = null;
+      try { r = T().calcular(e); } catch (ex) { r = null; }
+      if (r && r.valido !== false && r.chequeos.every((c) => c.id === 'suelo' || c.ok)) {
+        estado.zapata.d = e.zapata.d; cambio(); asis.refrescar();
+        if (msg) msg.textContent = 'd = ' + global.Unidades.fmt(e.zapata.d, 'longitud', null, 3) + ' cumple todos los chequeos.';
+        return;
+      }
     }
-    leer(e);
+    if (msg) msg.textContent = 'Ninguna altura hasta 2.50 m cumple. Revise la planta o los materiales.';
   }
 
-  function alSoltar(e) {
-    if (!arrastre || e.pointerId !== arrastre.id) return;
-    const G = D().geometria(estado, R), x = aMetros(e.clientX) - arrastre.desfase, i = arrastre.i;
-    moverColumna(i, i === 0 ? x - G.c1e / 2 : x - G.x1);
-    arrastre = null;
-    $('#mesa-lienzo').classList.remove('arrastrando');
-    if (cuadro) { cancelAnimationFrame(cuadro); cuadro = 0; }
-    cambio();
-  }
-
-  function alTeclear(e) {
-    const col = e.target.closest('.mesa-col');
-    if (!col || !['ArrowLeft', 'ArrowRight', 'Home'].includes(e.key)) return;
-    e.preventDefault();
-    const i = Number(col.dataset.i), paso = (e.shiftKey ? 5 : 1) * PASO * (e.key === 'ArrowLeft' ? -1 : 1);
-    const G = D().geometria(estado, R);
-    if (e.key === 'Home') moverColumna(i, 0);
-    else moverColumna(i, (i === 0 ? G.a : G.s) + paso);
-    cambio();
-  }
-
-  // Lector: línea vertical con V(x), M(x) y q(x) bajo el cursor
-  function leer(e) {
-    const zona = e.target.closest ? e.target.closest('.mesa-diag') : null;
-    if (!R || !zona) { ocultarLector(); return; }
-    const U = global.Unidades, x = Math.min(R.L, Math.max(0, aMetros(e.clientX)));
-    const v = T().esfuerzos(R, x), lin = $('#mesa-lector'), X = D().LZ.ML + x * Number($('#mesa-svg').dataset.k);
-    lin.setAttribute('x1', X.toFixed(2)); lin.setAttribute('x2', X.toFixed(2)); lin.setAttribute('visibility', 'visible');
-    $('#mesa-lectura').textContent = 'x = ' + U.fmt(x, 'longitud') + ' · V = ' + U.fmt(v.V, 'fuerza') + ' · M = ' + U.fmt(v.M, 'momento') + ' · q = ' + U.fmt(v.q, 'presion');
-  }
-  function ocultarLector() { const l = $('#mesa-lector'); if (l) l.setAttribute('visibility', 'hidden'); }
-
-  // ---------------------------------------------------------------- editor de cargas de una columna
-  function abrirEditor(i, boton) {
-    const U = global.Unidades, ed = $('#mesa-editor'), c = estado.columnas[i];
-    editando = i;
-    const campo = (k, paso) => {
-      const v = c[k], mag = MAG[k], val = v === null || v === undefined ? '' : (mag ? Number(U.a(v, mag).toPrecision(6)) : v);
-      return '<label class="mesa-campo"><span>' + NOMBRES[k] + (mag ? ' <i>' + U.u(mag) + '</i>' : '') + '</span>' +
-        '<input type="number" inputmode="decimal" step="' + paso + '" data-k="columnas.' + i + '.' + k + '" value="' + val + '"></label>';
-    };
-    const barras = Object.keys(global.Refuerzo.BARS).map((n) => '<option value="' + n + '"' + (Number(c.barra) === Number(n) ? ' selected' : '') + '>#' + n + '</option>').join('');
-    ed.innerHTML = '<h2 class="mesa-editor-tit" id="mesa-editor-tit">Columna ' + (i ? 'interior' : 'exterior') + '</h2>' +
-      '<div class="mesa-editor-grid">' + campo('D', 'any') + campo('L', 'any') + campo('E', 'any') + campo('c1', 0.05) + campo('c2', 0.05) +
-      '<label class="mesa-campo"><span>Barra de la columna</span><select data-k="columnas.' + i + '.barra"><option value="">—</option>' + barras + '</select></label>' +
-      campo('nBarras', 1) + '</div>' +
-      '<p class="mesa-editor-nota">E es la fuerza sísmica vertical de la tabla de reacciones (se divide por R).</p>' +
-      '<button type="button" class="btn btn-quieto" data-cerrar>Listo</button>';
-    const r = boton.getBoundingClientRect(), m = el.getBoundingClientRect();
-    ed.style.left = Math.max(8, Math.min(r.left - m.left - 40, m.width - 348)) + 'px';
-    ed.style.top = (r.bottom - m.top + 8) + 'px';
-    ed.hidden = false;
-    const primero = ed.querySelector('input');
-    if (primero) primero.focus();
-  }
-
-  function cerrarEditor() {
-    const i = editando;
-    editando = null;
-    $('#mesa-editor').hidden = true;
-    const b = $('.mesa-carga[data-i="' + i + '"]');
-    if (b) b.focus();
-  }
-
-  function alEditar(e) {
-    const k = e.target.dataset.k;
-    if (!k) return;
-    const partes = k.split('.'), i = Number(partes[1]), campo = partes[2], txt = e.target.value;
-    let v = txt === '' ? null : Number(txt);
-    if (v !== null && !isFinite(v)) return;
-    if (v !== null && MAG[campo]) v = Number(global.Unidades.de(v, MAG[campo]).toPrecision(12));
-    estado.columnas[i][campo] = v;
-    cambio();
-  }
-
-  function pintarFaltan() {
-    const p = $('#mesa-faltan');
-    if (!falt.length) { p.textContent = errorCalc; p.hidden = !errorCalc; return; }
-    const nombre = (k) => {
-      const m = k.match(/^columnas\.(\d)\.(\w+)$/);
-      if (m) return NOMBRES[m[2]] + ' de la columna ' + (m[1] === '0' ? 'exterior' : 'interior');
-      return k.split('.').pop();
-    };
-    p.textContent = 'Faltan datos: ' + falt.slice(0, 6).map(nombre).join(', ') + (falt.length > 6 ? ' y ' + (falt.length - 6) + ' más.' : '.');
-    p.hidden = false;
-  }
-
+  // ---------------------------------------------------------------- cálculo y guardado
   function recalcular() {
     const listo = T().preparar(estado);
     falt = T().faltantes(listo);
@@ -276,128 +249,6 @@
     if (R && R.valido === false) { errorCalc = R.avisos.join(' '); R = null; }
   }
 
-  function pintar() {
-    const U = global.Unidades;
-    $('#mesa-nombre').textContent = estado.proyecto.nombre || 'Nueva zapata';
-    $('#mesa-L').textContent = R ? U.fmt(R.L, 'longitud') : '—';
-    $('#mesa-B').textContent = R ? U.fmt(R.B, 'longitud') : '—';
-    pintarFaltan();
-    pintarGuia();
-    pintarLienzo();
-    pintarVeredicto();
-    pintarResumen();
-    pintarPestana();
-    $$('#mesa-metodo [data-metodo]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.metodo === estado.metodo)));
-  }
-
-  // ---------------------------------------------------------------- panel de datos
-  // [ruta, etiqueta, magnitud, paso]; sin magnitud = adimensional
-  const PANEL = [
-    ['Proyecto', [['proyecto.nombre', 'Nombre', 'texto'], ['proyecto.elemento', 'Elemento', 'texto']]],
-    ['Suelo', [['suelo.qadm', 'σadm', 'presion', 0.5], ['suelo.factorSismo', 'Aumento con sismo', null, 0.01]]],
-    ['Sismo', [['sismo.R0', 'R₀', null, 0.5], ['sismo.phiA', 'φa', null, 0.05], ['sismo.phiP', 'φp', null, 0.05], ['sismo.phiR', 'φr', null, 0.05]]],
-    ['Materiales', [['materiales.fc', "f'c", 'esfuerzo', 10], ['materiales.fy', 'fy', 'esfuerzo', 100], ['materiales.lambda', 'λ', null, 0.05],
-      ['materiales.phiV', 'φ cortante', null, 0.05], ['materiales.phiF', 'φ flexión', null, 0.05], ['materiales.phiB', 'φ aplastamiento', null, 0.05]]],
-    ['Zapata', [['zapata.d', 'd', 'longitud', 0.01], ['zapata.r', 'Recubrimiento r', 'longitud', 0.005]]],
-  ];
-  const get = (o, k) => k.split('.').reduce((a, x) => (a == null ? a : a[x]), o);
-  function set(o, k, v) { const p = k.split('.'), u = p.pop(); p.reduce((a, x) => a[x], o)[u] = v; }
-  const $$ = (s) => Array.from(el.querySelectorAll(s));
-
-  function valorCampo(k, mag) {
-    const v = get(estado, k);
-    if (v === null || v === undefined || v === '') return '';
-    if (mag === 'texto') return global.Informe ? global.Informe.esc(v) : v;
-    return mag ? String(Number(global.Unidades.a(v, mag).toPrecision(6))) : String(v);
-  }
-
-  function pintarPanel() {
-    const U = global.Unidades, g = estado.geometria;
-    const campo = ([k, etq, mag, paso]) => '<label class="mesa-campo"><span>' + etq + (mag && mag !== 'texto' ? ' <i>' + U.u(mag) + '</i>' : '') + '</span>' +
-      '<input ' + (mag === 'texto' ? 'type="text"' : 'type="number" inputmode="decimal" step="' + (mag && U.actual() !== 'curso' ? 'any' : paso) + '"') +
-      ' data-k="' + k + '"' + (mag ? ' data-mag="' + mag + '"' : '') + ' value="' + valorCampo(k, mag) + '"></label>';
-    const modo = (k, val, etq) => '<button type="button" data-modo="' + k + '" data-v="' + val + '" aria-pressed="' + String(get(estado, k) === val) + '">' + etq + '</button>';
-    $('#mesa-panel-cuerpo').innerHTML =
-      '<div class="mesa-grupo"><h3>Método</h3><div class="mesa-seg" id="mesa-metodo" role="group" aria-label="Método de cálculo">' +
-        '<button type="button" data-metodo="corregido" aria-pressed="' + String(estado.metodo !== 'documento') + '">Corregido</button>' +
-        '<button type="button" data-metodo="documento" aria-pressed="' + String(estado.metodo === 'documento') + '">Documento</button></div>' +
-        '<p class="mesa-ayuda">Documento reproduce el PDF: presión uniforme, ρmin·b·d y Vud proporcional.</p></div>' +
-      '<div class="mesa-grupo"><h3>Planta</h3>' +
-        '<div class="mesa-seg" role="group" aria-label="Largo">' + modo('geometria.modoL', 'uniforme', 'L = 2x̄') + modo('geometria.modoL', 'fijo', 'L fijo') + '</div>' +
-        (g.modoL === 'fijo' ? campo(['geometria.L', 'L', 'longitud', 0.05]) : '') +
-        '<div class="mesa-seg" role="group" aria-label="Ancho">' + modo('geometria.modoB', 'auto', 'B por σadm') + modo('geometria.modoB', 'fijo', 'B fijo') + '</div>' +
-        (g.modoB === 'fijo' ? campo(['geometria.B', 'B', 'longitud', 0.05]) : '') + '</div>' +
-      PANEL.map(([tit, campos]) => '<div class="mesa-grupo"><h3>' + tit + '</h3><div class="mesa-grid2">' + campos.map(campo).join('') + '</div></div>').join('') +
-      '<button type="button" class="btn btn-quieto mesa-nsr" id="mesa-nsr">Usar valores de la NSR-10</button>';
-  }
-
-  function alPanel(e) {
-    const k = e.target.dataset.k;
-    if (!k) return;
-    const mag = e.target.dataset.mag, txt = e.target.value;
-    let v;
-    if (mag === 'texto') v = txt;
-    else {
-      v = txt === '' ? null : Number(txt);
-      if (v !== null && !isFinite(v)) return;
-      if (v !== null && mag) v = Number(global.Unidades.de(v, mag).toPrecision(12));
-    }
-    set(estado, k, v);
-    cambio();
-  }
-
-  function alClicPanel(e) {
-    const met = e.target.closest('[data-metodo]'), modo = e.target.closest('[data-modo]');
-    if (met) { estado.metodo = met.dataset.metodo; cambio(); return; }
-    if (modo) {
-      set(estado, modo.dataset.modo, modo.dataset.v);
-      // Al fijar L o B se parte del valor calculado
-      if (modo.dataset.v === 'fijo' && R) { const k = modo.dataset.modo === 'geometria.modoL' ? 'L' : 'B'; if (!(estado.geometria[k] > 0)) estado.geometria[k] = R[k]; }
-      pintarPanel(); cambio(); return;
-    }
-    if (e.target.closest('#mesa-nsr')) {
-      Object.entries(T().NSR).forEach(([k, v]) => { if (get(estado, k) === null || get(estado, k) === undefined) set(estado, k, v); });
-      pintarPanel(); cambio();
-    }
-  }
-
-  // ---------------------------------------------------------------- veredicto, resumen y guía
-  const CORTO = { suelo: 'Suelo', 'pz-ext': 'Punz. ext.', 'pz-int': 'Punz. int.', cl: 'Cortante long.', ct: 'Cortante transv.', fl: 'Flexión', ap: 'Aplastamiento', ld: 'Desarrollo' };
-  function pintarVeredicto() {
-    const v = $('#mesa-veredicto');
-    if (!R) { v.innerHTML = '<span class="mesa-estado incompleto">Incompleto</span>'; return; }
-    v.innerHTML = '<span class="mesa-estado ' + (R.todoOk ? 'ok' : 'mal') + '">' + (R.todoOk ? 'Cumple' : 'No cumple') + '</span>' +
-      R.chequeos.map((c) => '<button type="button" class="mesa-pildora ' + (c.ok ? 'ok' : 'mal') + '" data-id="' + c.id + '" title="' + c.titulo + ': ' + c.det + '">' +
-        '<span>' + CORTO[c.id] + '</span><b class="num">' + Math.round(c.util * 100) + ' %</b></button>').join('');
-  }
-
-  function pintarResumen() {
-    const s = $('#mesa-resumen'), U = global.Unidades;
-    if (!R) { s.innerHTML = ''; return; }
-    const fila = (t, v) => '<div><dt>' + t + '</dt><dd class="num">' + v + '</dd></div>';
-    s.innerHTML = '<dl class="mesa-cifras">' +
-      fila('σmax servicio', U.fmt(R.serv.smax, 'presion')) +
-      fila('M<sub>u</sub>⁻ / M<sub>u</sub>⁺', U.num(R.lon.Mneg.M, 'momento') + ' / ' + U.fmt(Math.max(R.lon.Mpos[0].M, R.lon.Mpos[1].M), 'momento')) +
-      fila('A<sub>s</sub> superior', (isFinite(R.fl.sup.As) ? U.fmt(R.fl.sup.As, 'acero') + ' · ' : '') + R.fl.sup.sel.resumen) +
-      fila('A<sub>s</sub> inferior', (isFinite(R.fl.inf.As) ? U.fmt(R.fl.inf.As, 'acero') + ' · ' : '') + R.fl.inf.sel.resumen) +
-      fila('V<sub>ud</sub> / φV<sub>c</sub>', U.num(R.cl.Vud, 'fuerza') + ' / ' + U.fmt(R.cl.phiVc, 'fuerza')) +
-      fila('Franjas b', U.num(R.tr[0].b, 'longitud') + ' / ' + U.fmt(R.tr[1].b, 'longitud')) +
-      '</dl>' + (R.avisos.length ? '<p class="mesa-aviso">' + R.avisos.join(' ') + '</p>' : '');
-  }
-
-  function pintarGuia() {
-    const g = $('#mesa-guia'), c = estado.columnas;
-    if (!falt.length) { g.hidden = true; return; }
-    const pasos = [
-      ['Coloca la columna exterior', 'Arrástrala desde el lindero o escribe su tamaño en su etiqueta.', c[0].c1 > 0 && c[0].c2 > 0],
-      ['Ubica la interior', 'Arrástrala para fijar la separación s entre centros.', estado.geometria.s > 0 && c[1].c1 > 0 && c[1].c2 > 0],
-      ['Escribe las cargas', 'Toca la etiqueta de cada columna y llena D, L y E.', c[0].D > 0 && c[1].D > 0],
-    ];
-    g.innerHTML = '<ol class="mesa-pasos">' + pasos.map(([t, d, ok], i) => '<li class="' + (ok ? 'hecho' : '') + '"><span class="mesa-paso-n">' + (ok ? '✓' : i + 1) + '</span><div><b>' + t + '</b><p>' + d + '</p></div></li>').join('') +
-      '</ol><p class="mesa-guia-pie">Completa también el panel de datos, o <button type="button" class="mesa-enlace" data-ejemplo>carga el ejemplo del documento</button>.</p>';
-    g.hidden = false;
-  }
-
   function guardar() {
     clearTimeout(tGuardar);
     if (id) global.Proyectos.guardar(id, estado, R ? (R.todoOk ? 'cumple' : 'no-cumple') : 'incompleto');
@@ -405,70 +256,171 @@
 
   function cambio() {
     // Las columnas no pueden encimarse aunque crezca su tamaño
-    if (estado.geometria.s > 0 && estado.geometria.s < separacionMin()) estado.geometria.s = separacionMin();
+    if (estado.geometria.s > 0 && estado.geometria.s < global.Lienzo.separacionMin(estado)) estado.geometria.s = global.Lienzo.separacionMin(estado);
     recalcular();
     clearTimeout(tGuardar);
     tGuardar = setTimeout(guardar, 400); // antes de pintar: un error de dibujo no impide guardar
     pintar();
   }
 
+  // ---------------------------------------------------------------- pintar
+  function pintar() {
+    const completos = {};
+    pasos.forEach((p) => { completos[p.id] = true; });
+    falt.forEach((k) => { completos[pasoDe(k)] = false; });
+    if (errorCalc && !falt.length) completos.ubicacion = false;
+    $('#c-categorias').innerHTML = global.TableroComun.riel(pasos, completos, global.PasosCombinada.ICONOS);
+    $$('#mesa [data-cu]').forEach((s) => { s.textContent = global.Unidades.u(s.dataset.cu); });
+    const vacio = !R;
+    $('#c-vacio').hidden = !vacio;
+    $('#c-contenido').hidden = vacio;
+    if (vacio) { pintarVacio(); return; }
+    pintarVeredicto(false);
+    pintarDims();
+    pintarPestana();
+  }
+
+  function pintarVacio() {
+    const cats = pasos.filter((p) => falt.some((k) => pasoDe(k) === p.id));
+    $('#c-vacio .v-tit').textContent = errorCalc ? 'Revise los datos' : 'Faltan datos para calcular';
+    $('#c-vacio .v-det').textContent = errorCalc || 'Completa estas categorías para ver el veredicto, los planos y la memoria.';
+    $('#c-faltan').innerHTML = (errorCalc ? pasos.filter((p) => p.id === 'ubicacion') : cats).map((p) =>
+      '<button type="button" class="falta-item" data-cat="' + p.id + '"><span class="fi-tit">' + p.nombre + '</span><span class="fi-det">' +
+      (errorCalc ? 'Revisar' : 'Falta: ' + falt.filter((k) => pasoDe(k) === p.id).map(global.PasosCombinada.nombre).join(', ')) + '</span></button>').join('');
+    okPrevio = null;
+  }
+
+  function pintarVeredicto(animar) {
+    const v = $('#c-veredicto'), ok = R.todoOk, U = global.Unidades;
+    v.className = 'veredicto ' + (ok ? 'ok' : 'mal') + (v.classList.contains('anima') ? ' anima' : '');
+    $('#c-v-tit').textContent = ok ? 'El diseño cumple' : 'El diseño no cumple';
+    const cambio = okPrevio !== null && okPrevio !== ok;
+    okPrevio = ok;
+    if (cambio && pestana === 'veredicto') { animarVeredicto(); return; } // animarVeredicto vuelve a pintar con conteo
+    $('#c-contexto').innerHTML = '<li>Gobierna ' + R.ult.combo + '</li><li>Método ' + (R.inp.metodo === 'documento' ? 'del documento' : 'corregido') + '</li>' +
+      '<li>q<sub>u</sub> ' + U.num(Math.min(R.q.q1, R.q.q2), 'presion') + '–' + U.fmt(Math.max(R.q.q1, R.q.q2), 'presion') + '</li>';
+    const utilMax = Math.max.apply(null, R.chequeos.map((c) => c.util));
+    const cifras = { L: [U.a(R.L, 'longitud'), 2], B: [U.a(R.B, 'longitud'), 2], h: [U.a(R.h, 'longitud'), 2], util: [utilMax * 100, 0] };
+    Object.keys(cifras).forEach((k) => global.Mov.contar($('[data-ccifra="' + k + '"]'), cifras[k][0], cifras[k][1], animar));
+    $('[data-ccifra="util"]').classList.toggle('es-mal', utilMax > 1);
+    $('#c-v-fallas').innerHTML = R.chequeos.filter((c) => !c.ok).map((c) => '<li>' + c.titulo + '</li>').join('');
+    if (!fichaSel || !R.chequeos.some((c) => c.id === fichaSel)) fichaSel = R.chequeos.reduce((a, b) => (b.util > a.util ? b : a)).id;
+    $('#c-chequeos').innerHTML = global.TableroComun.anillos(R.chequeos, fichaSel, CORTO);
+    pintarFicha();
+  }
+
+  function pintarFicha() {
+    const c = R && R.chequeos.find((x) => x.id === fichaSel);
+    if (!c) return;
+    $$('#c-chequeos .anillo').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.paso === fichaSel)));
+    const f = $('#c-ficha');
+    f.innerHTML = global.TableroComun.ficha(c);
+    f.classList.remove('entra'); void f.offsetWidth; f.classList.add('entra');
+  }
+
+  function animarVeredicto() {
+    const v = $('#c-veredicto'), r = $('#c-resumen');
+    v.classList.remove('anima'); r.classList.remove('anima');
+    void v.offsetWidth;
+    v.classList.add('anima'); r.classList.add('anima');
+    if (R) pintarVeredicto(true);
+  }
+
+  function pintarDims() {
+    $$('#mesa .dims [data-ck]').forEach((i) => {
+      if (i === document.activeElement) return;
+      const v = get(estado, i.dataset.ck);
+      i.value = v == null ? '' : String(Number(global.Unidades.a(v, 'longitud').toPrecision(6)));
+    });
+  }
+
+  function mostrarPestana(p) {
+    const cambia = p !== pestana, anterior = $('#c-panel-' + pestana);
+    pestana = p;
+    PESTANAS.forEach(([q]) => {
+      const t = $('#c-tab-' + q), activo = q === p;
+      t.setAttribute('aria-selected', String(activo));
+      t.tabIndex = activo ? 0 : -1;
+    });
+    if (movers.pestanas) movers.pestanas();
+    if (salida) { salida.cancel(); salida = null; }
+    const abrirNuevo = () => {
+      PESTANAS.forEach(([q]) => {
+        const pan = $('#c-panel-' + q), activo = q === p;
+        pan.hidden = !activo;
+        if (activo && cambia) { pan.classList.remove('entra'); void pan.offsetWidth; pan.classList.add('entra'); }
+      });
+      if (movers.vistas) movers.vistas(true);
+      if (cambia) window.scrollTo({ top: 0, behavior: 'auto' });
+      pintarPestana();
+    };
+    // La pestaña que se cierra sale hacia arriba y se desvanece; luego entra la nueva (como en la aislada)
+    if (cambia && anterior && !anterior.hidden && !global.Mov.reducido() && anterior.animate) {
+      anterior.classList.remove('entra');
+      salida = anterior.animate([{ opacity: 1, transform: 'none', filter: 'none' }, { opacity: 0, transform: 'translateY(-12px) scale(0.985)', filter: 'blur(2px)' }],
+        { duration: 200, easing: 'cubic-bezier(0.4, 0, 1, 1)' });
+      salida.onfinish = () => { salida = null; abrirNuevo(); };
+    } else abrirNuevo();
+  }
+
+  function mostrarVista(v) {
+    vista = v;
+    $$('#c-vistas [data-vista]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.vista === v)));
+    $$('#mesa .c-vista').forEach((d) => { d.hidden = d.dataset.v !== v; });
+    $('#c-vista-tit').textContent = VISTAS.find((x) => x[0] === v)[1];
+    if (movers.vistas) movers.vistas();
+    pintarPestana();
+  }
+
+  // Solo se dibuja lo visible
+  function pintarPestana() {
+    if (!R) return;
+    const D = global.DibujoCombinada, PI = global.PlantaInteractiva;
+    if (pestana === 'planos') {
+      if (vista === 'alzado') lienzo.pintar();
+      if (vista === 'planta') { $('#c-planta').innerHTML = D.planta(R, 'cp'); PI.aplicar($('#c-planta')); }
+      if (vista === 'corte-l') { $('#c-corte-l').innerHTML = D.corteLongitudinal(R); PI.aplicar($('#c-corte-l')); }
+      if (vista === 'cortes-t') { [0, 1].forEach((i) => { $('#c-corte-' + i).innerHTML = D.corteTransversal(R, i); PI.aplicar($('#c-corte-' + i)); }); }
+      if (vista === '3d' && global.Vista3DCombinada.montar($('#c-3d'), $('#c-3d-barra'))) global.Vista3DCombinada.mostrar(R);
+    }
+    if (global.MesaSecciones) global.MesaSecciones.pintar(pestana, R);
+  }
+
+  // ---------------------------------------------------------------- abrir, cerrar, exportar, informe
   function abrir(datos, pid, conCarga) {
     montar();
     estado = normalizar(datos);
     id = pid || global.Proyectos.nuevoId();
-    esc = null;
-    pintarPanel();
+    okPrevio = null; fichaSel = null;
     document.body.classList.remove('en-bienvenida', 'en-portada');
     $('#bienvenida').hidden = true;
     $('#app').hidden = true;
     el.hidden = false;
     window.scrollTo(0, 0);
     recalcular();
+    mostrarVista('alzado');
+    mostrarPestana('veredicto');
     pintar();
     guardar();
-    if (R && conCarga) global.Cargando.mostrar('Abriendo proyecto', R);
+    if (R) {
+      if (conCarga) global.Cargando.mostrar('Abriendo proyecto', R).then(animarVeredicto);
+      else animarVeredicto();
+    }
+  }
+
+  // Zapata nueva: abre el asistente desde el primer paso
+  function nueva(boton) {
+    abrir(T().clone(T().VACIO));
+    asis.abrir(0, 'nuevo', boton);
   }
 
   function cerrar() {
     guardar();
+    if (asis) asis.cerrar();
     el.hidden = true;
     global.App.volverAOpciones();
   }
 
-  // ---------------------------------------------------------------- pestañas
-  function mostrarPestana(p) {
-    pestana = p;
-    PESTANAS.forEach(([id]) => {
-      const t = $('#mesa-tab-' + id), activo = id === p;
-      t.setAttribute('aria-selected', String(activo));
-      t.tabIndex = activo ? 0 : -1;
-      $('#mesa-p-' + id).hidden = !activo;
-    });
-    pintarPestana();
-  }
-
-  // Solo se dibuja la pestaña visible
-  function pintarPestana() {
-    const D = global.DibujoCombinada, PI = global.PlantaInteractiva;
-    const vacio = '<p class="mesa-ayuda">Completa los datos para ver esta sección.</p>';
-    if (pestana === 'planta') { $('#mesa-planta').innerHTML = R ? D.planta(R, 'mp') : vacio; PI.aplicar($('#mesa-planta')); }
-    if (pestana === 'cortes') {
-      $('#mesa-corte-l').innerHTML = R ? D.corteLongitudinal(R) : vacio;
-      $('#mesa-corte-0').innerHTML = R ? D.corteTransversal(R, 0) : '';
-      $('#mesa-corte-1').innerHTML = R ? D.corteTransversal(R, 1) : '';
-      ['#mesa-corte-l', '#mesa-corte-0', '#mesa-corte-1'].forEach((s) => PI.aplicar($(s)));
-    }
-    if (pestana === '3d' && R && global.Vista3DCombinada.montar($('#mesa-3d'))) global.Vista3DCombinada.mostrar(R);
-    if (global.Mesa.pintarExtra) global.Mesa.pintarExtra(pestana, R, $('#mesa-p-' + pestana));
-  }
-
-  function irA(idChequeo) {
-    const p = DESTINO[idChequeo];
-    if (p) { mostrarPestana(p); $('#mesa-tabs').scrollIntoView({ behavior: global.Mov && global.Mov.reducido() ? 'auto' : 'smooth', block: 'start' }); }
-    else $('#mesa-lienzo').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  // Fuente del informe PDF para el diálogo de la app (null si faltan datos)
   function fuente() {
     if (!R) return null;
     return global.InformeCombinada.fuente(estado, () => R, (i) => {
@@ -492,5 +444,10 @@
   // Cambia un dato desde otra sección (por ejemplo, la barra elegida en Refuerzo)
   function ajustar(ruta, valor) { set(estado, ruta, valor); cambio(); }
 
-  global.Mesa = { abrir, cerrar, irA, mostrarPestana, ajustar, fuente, visible: () => !!el && !el.hidden, estado: () => estado, resultado: () => R };
+  function irA(idChequeo) { mostrarPestana('veredicto'); fichaSel = idChequeo; pintarFicha(); }
+
+  global.Mesa = {
+    abrir, nueva, cerrar, irA, mostrarPestana, mostrarVista, ajustar, fuente,
+    asistente: () => asis, visible: () => !!el && !el.hidden, estado: () => estado, resultado: () => R,
+  };
 })(window);
