@@ -24,7 +24,8 @@ ZapatAPP es una aplicación web estática: no necesita servidor ni instalación 
 
 ### Zapata combinada
 
-- **Mesa interactiva** en lugar del asistente: las columnas se arrastran sobre una regla (o se mueven con el teclado) y el centroide, el largo, la presión del suelo y los diagramas de cortante y momento cambian en vivo; al pasar el cursor se leen V y M.
+- Mismo diseño que la aislada: **asistente de 8 pasos** en ventanas emergentes (proyecto, columnas, cargas, sismo, suelo, materiales y método, ubicación con columnas arrastrables, altura), riel de datos a la izquierda y pestañas Veredicto, Planos, Refuerzo y Memoria.
+- Planos por vistas: alzado con diagramas de cortante y momento que se leen bajo el cursor, planta, corte longitudinal, cortes transversales y **3D** con capas, resaltado por grupo de barras, despiece animado y presión del suelo.
 - Chequeos: presión del suelo (con y sin sismo), punzonamiento de cada columna (la exterior con perímetro de tres lados), cortante longitudinal y transversal, flexión, aplastamiento y desarrollo.
 - Planta con franjas, corte longitudinal con el acero superior cortado en los puntos de inflexión, cortes transversales, 3D, refuerzo por grupos, **despiece** con longitudes y pesos, memoria por diapositivas y PDF.
 - Opción **Método del documento** que reproduce los números del ejemplo del curso.

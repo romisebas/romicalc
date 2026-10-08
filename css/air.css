@@ -1000,3 +1000,8 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .v3d-acciones [aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
 .app-comb .mesa-3d { position: relative; height: min(520px, 62vh); }
 .tip-3d { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; }
+/* Íconos del riel de la combinada: mismas animaciones que la aislada */
+.riel .cat[data-cat="columnas"]:hover .ic-mov { animation: icoCrece .55s var(--ease-out); transform-origin: bottom; }
+.riel .cat[data-cat="sismo"]:hover .ic-mov { animation: icoVibra .5s ease; }
+.riel .cat[data-cat="ubicacion"]:hover .ic-mov { animation: icoDesliza .6s var(--ease-out); }
+@keyframes icoDesliza { 0% { transform: translateX(-4px); } 60% { transform: translateX(1px); } 100% { transform: none; } }

@@ -20,14 +20,14 @@
 
   // Íconos del riel (trazos de 24 × 24)
   const ICONOS = {
-    proyecto: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/>',
-    columnas: '<path d="M5 4h4v16H5zM15 4h4v16h-4z"/><path d="M3 20h18"/>',
-    cargas: '<path d="M7 3v12M4 12l3 3 3-3M17 3v12M14 12l3 3 3-3"/><path d="M3 20h18"/>',
-    sismo: '<path d="M2 12h3l2-6 3 12 3-9 2 6 2-3h5"/>',
-    suelo: '<path d="M3 9h18"/><path d="M5 13h2M10 13h2M15 13h2M7 17h2M12 17h2M17 17h2"/>',
-    materiales: '<path d="M4 7l8-4 8 4-8 4z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4"/>',
-    ubicacion: '<path d="M3 17h18"/><path d="M6 17V9h3v8M15 17V9h3v8"/><path d="M12 5v4M10 7h4"/>',
-    altura: '<path d="M4 15h16v4H4z"/><path d="M12 3v9M9 6l3-3 3 3M9 9l3 3 3-3"/>',
+    proyecto: '<path d="M6 3h9l3 3v15H6z"/><path class="ic-mov" d="M9 11h6M9 15h6"/>',
+    columnas: '<path class="ic-mov" d="M5 4h4v16H5zM15 4h4v16h-4z"/><path d="M3 20h18"/>',
+    cargas: '<path class="ic-mov" d="M7 3v12M4 12l3 3 3-3M17 3v12M14 12l3 3 3-3"/><path d="M3 20h18"/>',
+    sismo: '<path class="ic-mov" d="M2 12h3l2-6 3 12 3-9 2 6 2-3h5"/>',
+    suelo: '<path d="M3 9h18"/><path class="ic-mov" d="M5 13h2M10 13h2M15 13h2M7 17h2M12 17h2M17 17h2"/>',
+    materiales: '<path d="M4 7l8-4 8 4-8 4z"/><path class="ic-mov" d="M4 12l8 4 8-4M4 17l8 4 8-4"/>',
+    ubicacion: '<path d="M3 17h18"/><path d="M6 17V9h3v8"/><path class="ic-mov" d="M15 17V9h3v8"/>',
+    altura: '<path d="M4 15h16v4H4z"/><path class="ic-mov" d="M12 3v9M9 6l3-3 3 3M9 9l3 3 3-3"/>',
   };
 
   const tablaColumnas = (filas) => '<table class="tabla-cargas"><thead><tr><th></th>' + filas.map((f) => '<th>' + f.etq + (f.mag ? ' <small data-u="' + f.mag + '">' + global.Unidades.u(f.mag) + '</small>' : '') + '</th>').join('') + '</tr></thead><tbody>' +
