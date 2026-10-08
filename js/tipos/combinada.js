@@ -190,11 +190,64 @@
       Mpos: [{ x: c0.x, M: M(c0.x) }, { x: c1.x, M: M(c1.x) }] };
   }
 
+  // ---------------------------------------------------------------- diseño
+  function elegirBarras(As, b, h, r, pedida) {
+    const RF = global.Refuerzo, ops = RF.opcionesBarras(As, b, h, r);
+    const barra = pedida && RF.BARS[pedida] ? pedida : RF.barraPorDefecto(ops);
+    const sel = ops.find((o) => o.barra === barra);
+    return Object.assign({ ops, resumen: sel.n + ' #' + sel.barra + ' @ ' + sel.s.toFixed(2) + ' m' }, sel);
+  }
+
+  function diseno(inp, R) {
+    const m = inp.materiales, z = inp.zapata, h = z.d + z.r, d = z.d, a = inp.acero;
+    const base = inp.metodo === 'documento' ? 'bd' : 'bh';
+    const kc = global.Concreto.coef(inp.unid).eq.cu;
+    const flex = (Mu, b) => global.Concreto.flexion(Mu, b, d, m.fc, m.fy, m.phiF, base, h);
+    const phiVc = (b) => m.phiV * global.Concreto.vc(kc, m.lambda, m.fc, b, d);
+
+    // Sentido longitudinal: acero superior con el momento negativo, inferior con el positivo mayor
+    const Mpos = Math.max(0, R.lon.Mpos[0].M, R.lon.Mpos[1].M);
+    const sup = flex(Math.abs(Math.min(0, R.lon.Mneg.M)), R.B);
+    const inf = flex(Mpos, R.B);
+    sup.sel = elegirBarras(sup.As, R.B, h, z.r, a.barSup);
+    inf.sel = elegirBarras(inf.As, R.B, h, z.r, a.barInf);
+
+    // Cortante longitudinal
+    const lim = phiVc(R.B), p = R.lon.puntos, [c0, c1] = R.cols;
+    let secciones;
+    if (inp.metodo === 'documento') {
+      // Fórmula del documento: Vud = Vu,centro·(X − d)/X, X = distancia de V = 0 a la cara hacia el vano
+      secciones = p.V0 === null ? [] : [
+        { x: c0.x + c0.c1 / 2, Vc: Math.abs(p.ext.Vder), X: p.V0 - (c0.x + c0.c1 / 2) },
+        { x: c1.x - c1.c1 / 2, Vc: Math.abs(p.int.Vizq), X: (c1.x - c1.c1 / 2) - p.V0 },
+      ].map((s) => ({ x: s.x, X: s.X, Vu: s.X > 0 ? s.Vc * Math.max(0, s.X - d) / s.X : 0 }));
+    } else {
+      secciones = [c0.x - c0.c1 / 2 - d, c0.x + c0.c1 / 2 + d, c1.x - c1.c1 / 2 - d, c1.x + c1.c1 / 2 + d]
+        .filter((x) => x > 0 && x < R.L).map((x) => ({ x, Vu: Math.abs(esfuerzos(R, x).V) }));
+    }
+    secciones.forEach((s) => { s.phiVc = lim; });
+    const Vud = secciones.reduce((mx, s) => Math.max(mx, s.Vu), 0);
+    const cl = { secciones, Vud, phiVc: lim, ok: Vud <= lim, util: Vud / lim };
+
+    // Sentido transversal: una franja bajo cada columna (d a cada lado, recortada por los bordes)
+    const tr = R.cols.map((c) => {
+      const x0 = Math.max(0, c.x - c.c1 / 2 - d), x1 = Math.min(R.L, c.x + c.c1 / 2 + d), b = x1 - x0;
+      const wu = c.Pu / R.B, Lv = (R.B - c.c2) / 2, Mu = wu * Lv * Lv / 2;
+      const fl = flex(Mu, b), Vu = wu * Math.max(Lv - d, 0), lv = phiVc(b);
+      return { x0, x1, b, wu, Lv, Mu, fl, Vu, phiVc: lv, ok: fl.ok && Vu <= lv, util: Vu / lv, sel: elegirBarras(fl.As, b, h, z.r, a.barTrans) };
+    });
+    const bEntre = Math.max(0, R.L - tr[0].b - tr[1].b);
+    const AsEntre = 0.0018 * bEntre * 100 * h * 100;
+    const entre = { b: bEntre, As: AsEntre, sel: bEntre > 0 ? elegirBarras(AsEntre, bEntre, h, z.r, a.barTrans) : null };
+    return { fl: { sup, inf }, cl, tr, entre };
+  }
+
   function calcular(inp) {
     const R = planta(inp);
     R.inp = inp;
     R.q = presionUltima(inp, R);
     R.lon = longitudinal(R);
+    Object.assign(R, diseno(inp, R));
     return R;
   }
 

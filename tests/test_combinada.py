@@ -75,3 +75,20 @@ def test_combinada_sin_carga(navegador, url):
       e.columnas[1].D = 0; e.columnas[1].L = 0; return T.faltantes(e); }""")
     assert "columnas.1.D" in f
     assert not errores
+
+
+def test_combinada_diseno_documento(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    R = calc_ejemplo(pagina)
+    assert abs(R["fl"]["sup"]["As"] - 48.53) < 0.49 and abs(R["fl"]["inf"]["As"] - 41.62) < 0.42
+    assert abs(R["cl"]["Vud"] - 106.46) < 0.54 and abs(R["cl"]["phiVc"] - 153.78) < 0.77
+    e, i = R["tr"][0], R["tr"][1]
+    assert abs(e["b"] - 1.18) < 1e-9 and abs(i["b"] - 1.86) < 1e-9
+    assert abs(e["Mu"] - 39.02) < 0.2 and abs(i["Mu"] - 72.78) < 0.37
+    assert abs(e["fl"]["As"] - 15.44) < 0.31 and abs(i["fl"]["As"] - 28.90) < 0.58
+    assert abs(e["Vu"] - 28.57) < 0.15 and abs(e["phiVc"] - 53.37) < 0.27
+    assert abs(i["Vu"] - 53.30) < 0.27 and abs(i["phiVc"] - 84.13) < 0.43
+    assert R["fl"]["sup"]["sel"]["barra"] and R["entre"]["As"] > 0
+    C = calc_ejemplo(pagina, metodo="corregido")
+    assert abs(C["fl"]["inf"]["As"] - 45.90) < 0.05 and abs(C["cl"]["Vud"] - 96.94) < 1.0
+    assert not errores
