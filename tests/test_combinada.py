@@ -192,3 +192,30 @@ def test_mesa_arrastre_y_lectura(navegador, url):
     assert "Faltan datos" in pagina.text_content("#mesa-faltan")
     assert "NaN" not in pagina.inner_html("#mesa")
     assert not errores, errores
+
+
+def test_mesa_panel_veredicto_unidades(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    a_tipos(pagina)
+    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
+    pagina.wait_for_selector("#mesa-guia:not([hidden])")
+    pagina.click("#mesa-ejemplo")
+    pagina.wait_for_selector("#mesa-guia", state="hidden")
+    assert pagina.locator(".mesa-pildora").count() == 8
+    assert pagina.locator(".mesa-pildora.ok").count() == 8
+    assert "Cumple" in pagina.text_content("#mesa-veredicto")
+    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.30")
+    pagina.wait_for_selector(".mesa-pildora.mal")
+    pagina.fill('#mesa-panel [data-k="zapata.d"]', "0.68")
+    pagina.click('#mesa-metodo [data-metodo="documento"]')
+    pagina.wait_for_function("document.querySelector('#mesa-resumen').textContent.includes('41.62')")
+    pagina.click("#mesa [data-abrir-ajustes]")
+    pagina.wait_for_selector("#dlg-ajustes[open]")
+    pagina.check('input[name="aj-unid"][value="si"]')
+    pagina.click("#dlg-ajustes .btn-acento")
+    pagina.wait_for_selector("#dlg-ajustes", state="hidden")
+    assert "kN" in pagina.text_content("#mesa-cargas") and "kN" in pagina.text_content("#mesa-resumen")
+    assert abs(float(pagina.input_value('#mesa-panel [data-k="materiales.fc"]')) - 27.4586) < 1e-3
+    pagina.fill('#mesa-panel [data-k="materiales.fc"]', "28")
+    assert abs(pagina.evaluate("Mesa.estado().materiales.fc") - 285.52) < 0.01
+    assert not errores, errores

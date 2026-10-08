@@ -846,3 +846,52 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .mesa-campo i { font-style: normal; color: var(--tinta-3); }
 .mesa-campo input, .mesa-campo select { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-ctl); background: transparent; color: var(--tinta); font: 500 15px var(--sans); }
 .mesa-editor-nota { margin: 12px 0; font: 500 12px/1.4 var(--sans); color: var(--tinta-3); }
+.mesa-barra .bv-ajustes-ico { flex: none; }
+.mesa-veredicto { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; }
+.mesa-estado { padding: 8px 14px; border-radius: 999px; font: 400 20px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.mesa-estado.ok { background: #3d6b47; color: #fff; }
+.mesa-estado.mal { background: var(--mal); color: #fff; }
+.mesa-estado.incompleto { border: 1px dashed var(--linea-fuerte); color: var(--tinta-2); }
+.mesa-pildora { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--linea); border-radius: 999px; background: transparent; color: var(--tinta); font: 500 13px/1 var(--sans); cursor: pointer; transition: border-color .2s ease, transform .2s var(--ease-out); }
+.mesa-pildora::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #3d6b47; }
+.mesa-pildora.mal::before { background: var(--mal); }
+.mesa-pildora.mal { border-color: color-mix(in srgb, var(--mal) 60%, transparent); }
+.mesa-pildora b { font-weight: 600; color: var(--tinta-2); }
+@media (hover: hover) and (pointer: fine) { .mesa-pildora:hover { border-color: var(--tinta); transform: translateY(-1px); } }
+.mesa-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.mesa-centro { min-width: 0; display: grid; gap: 16px; }
+.mesa-panel { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; padding: 16px; border: 1px solid var(--linea); border-radius: var(--r-cont); }
+.mesa-panel-tog { display: none; }
+.mesa-grupo { padding: 0 0 14px; margin: 0 0 14px; border-bottom: 1px solid var(--linea); display: grid; gap: 10px; }
+.mesa-grupo h3 { margin: 0; font: 600 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-3); }
+.mesa-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.mesa-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border: 1px solid var(--linea); border-radius: var(--r-ctl); }
+.mesa-seg button { padding: 8px 6px; border: 0; border-radius: calc(var(--r-ctl) - 3px); background: transparent; color: var(--tinta-2); font: 500 13px/1 var(--sans); cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.mesa-seg button[aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
+.mesa-ayuda { margin: 0; font: 500 12px/1.4 var(--sans); color: var(--tinta-3); }
+.mesa-nsr { width: 100%; }
+.mesa-resumen .mesa-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 0; }
+.mesa-cifras div { padding: 12px 14px; border: 1px solid var(--linea); border-radius: var(--r-ctl); }
+.mesa-cifras dt { font: 500 12px/1.2 var(--sans); color: var(--tinta-3); margin-bottom: 6px; }
+.mesa-cifras dd { margin: 0; font: 600 14px/1.3 var(--sans); }
+.mesa-aviso { margin: 10px 0 0; color: var(--mal); font: 500 13px/1.4 var(--sans); }
+.mesa-guia { padding: 18px; border: 1px dashed var(--linea-fuerte); border-radius: var(--r-cont); }
+.mesa-guia[hidden] { display: none; }
+.mesa-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.mesa-pasos li { display: flex; gap: 12px; align-items: flex-start; }
+.mesa-pasos b { font: 600 15px/1.2 var(--sans); }
+.mesa-pasos p { margin: 4px 0 0; font: 500 13px/1.4 var(--sans); color: var(--tinta-2); }
+.mesa-paso-n { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--linea-fuerte); font: 600 13px var(--sans); }
+.mesa-pasos li.hecho .mesa-paso-n { background: #3d6b47; border-color: transparent; color: #fff; }
+.mesa-guia-pie { margin: 14px 0 0; font: 500 13px/1.4 var(--sans); color: var(--tinta-2); }
+.mesa-enlace { border: 0; padding: 0; background: none; color: var(--acento-10); font: inherit; text-decoration: underline; cursor: pointer; }
+@media (max-width: 900px) {
+  .mesa-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .mesa-panel { position: static; max-height: none; }
+  .mesa-panel-tog { display: block; width: 100%; margin: -4px 0 12px; padding: 10px; border: 0; border-radius: var(--r-ctl); background: var(--tinta); color: var(--fondo); font: 600 14px var(--sans); cursor: pointer; }
+  .mesa-panel.plegado .mesa-panel-cuerpo { display: none; }
+  .mesa-panel.plegado .mesa-panel-tog { margin: 0; }
+}
+.mesa-lienzo { padding-top: 0; overflow-x: auto; }
+.mesa-lienzo-ancho { position: relative; min-width: 720px; padding-top: 48px; }
+.mesa-col { touch-action: none; }

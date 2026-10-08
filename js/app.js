@@ -85,6 +85,7 @@
     pintarUnidades();
     aFormulario();
     recalcular('programa');
+    document.dispatchEvent(new CustomEvent('zapatapp:unidades'));
   }
 
   function ajustes() {
@@ -1076,13 +1077,15 @@
     $('#dl-reimprimir').addEventListener('click', () => { cerrarDialogo($('#doc-listo')); setTimeout(abrirDialogoInforme, 180); });
 
     // --- ajustes y tema
-    $$('[data-abrir-ajustes]').forEach((b) => b.addEventListener('click', () => {
+    // Delegado: también sirve para los botones que se crean después (la mesa de la combinada)
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-abrir-ajustes]')) return;
       const a = ajustes();
       $$('input[name="aj-anim"]').forEach((r) => { r.checked = r.value === a.anim; });
       $('#aj-sin-intro').checked = !!a.sinIntro;
       $$('input[name="aj-unid"]').forEach((r) => { r.checked = r.value === Unidades.actual(); });
       abrirDialogo($('#dlg-ajustes'));
-    }));
+    });
     $('#dlg-ajustes').addEventListener('change', (e) => {
       const a = ajustes();
       if (e.target.name === 'aj-anim') { a.anim = e.target.value; Mov.configurar(a.anim); }
