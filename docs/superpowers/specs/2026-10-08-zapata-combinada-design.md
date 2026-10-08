@@ -42,7 +42,7 @@ Convención: eje x a lo largo de la zapata, origen en el borde izquierdo (linder
 
 Selección de barras: igual que la aislada (#2–#10, por defecto la menor con s entre 10 y 30 cm; mallas no aplican).
 
-Opción **"Método del documento"** (apagada por defecto): presión uniforme y ρmin con b·d (el redondeo de L y B es el mismo en ambos métodos). Sirve para comparar con el PDF; la memoria indica qué método se usó.
+Opción **"Método del documento"** (apagada por defecto): presión uniforme, ρmin con b·d y Vud longitudinal con la fórmula del documento, Vud = Vu,centro·(X − d)/X, con X = distancia de V = 0 a la cara (el redondeo de L y B es el mismo en ambos métodos). Sirve para comparar con el PDF; la memoria indica qué método se usó.
 
 ## 4. Experiencia: "mesa de la combinada"
 
@@ -99,7 +99,8 @@ Pruebas del método por defecto: equilibrio (ΣFy = 0 y ΣM = 0 con la presión 
 1. Mu⁺ bajo la columna interior: 81.26 según el documento. Con presión uniforme da 80.85 desde la izquierda y 79.09 desde la derecha, porque la resultante mayorada cae en 3.505 m; con la presión lineal ambos lados coinciden.
 2. ρmin para losas y zapatas: 0.0018·b·h (C.7.12), no b·d.
 3. Faltaban punzonamiento (exterior con 3 lados), aplastamiento y desarrollo.
-4. La carga exterior con sismo da 103.66 tonf, no 103.77 (no cambia el diseño).
+4. Vud longitudinal: el documento escala el cortante del centro de la columna (144.97) y obtiene 106.46 tonf; el cortante exacto a d de la cara es 96.94 tonf (cumple en ambos casos).
+5. La carga exterior con sismo da 103.66 tonf, no 103.77 (no cambia el diseño).
 
 ## 9. Pruebas
 
