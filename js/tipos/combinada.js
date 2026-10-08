@@ -242,16 +242,146 @@
     return { fl: { sup, inf }, cl, tr, entre };
   }
 
+  // ---------------------------------------------------------------- punzonamiento, aplastamiento y desarrollo
+  // Perímetro crítico a d/2 de la columna; un lado se pierde si el borde está a menos de d/2.
+  function punzonamiento(inp, R) {
+    const m = inp.materiales, d = inp.zapata.d, C = global.Concreto.coef(inp.unid).eq, vc = global.Concreto.vc;
+    return R.cols.map((c) => {
+      const oL = c.x - c.c1 / 2, oR = R.L - (c.x + c.c1 / 2);
+      const libres = (oL < d / 2 ? 1 : 0) + (oR < d / 2 ? 1 : 0);
+      const dx = c.c1 + Math.min(oL, d / 2) + Math.min(oR, d / 2), dy = c.c2 + d;
+      const lados = 4 - libres, alpha = lados === 4 ? 40 : lados === 3 ? 30 : 20;
+      const bo = 2 * dx + (2 - libres) * dy, A = dx * dy;
+      const Vu = c.Pu - esfuerzos(R, c.x).q * A;
+      const beta = Math.max(c.c1, c.c2) / Math.min(c.c1, c.c2);
+      const Vc1 = vc(C.pz1 * (1 + 2 / beta), m.lambda, m.fc, bo, d);
+      const Vc2 = vc(C.pz2 * (alpha * d / bo + 2), m.lambda, m.fc, bo, d);
+      const Vc3 = vc(C.pz3, m.lambda, m.fc, bo, d);
+      const Vc = Math.min(Vc1, Vc2, Vc3), phiVc = m.phiV * Vc;
+      return { lados, alpha, dx, dy, bo, A, Vu, beta, Vc1, Vc2, Vc3, Vc, phiVc, ok: Vu <= phiVc, util: Vu / phiVc };
+    });
+  }
+
+  function aplastamientos(inp, R) {
+    const m = inp.materiales, h = inp.zapata.d + inp.zapata.r;
+    return R.cols.map((c) => {
+      const A2x = Math.min(c.x + c.c1 / 2 + 2 * h, R.L) - Math.max(c.x - c.c1 / 2 - 2 * h, 0);
+      const A2y = Math.min(c.c2 + 4 * h, R.B);
+      return Object.assign({ A2x, A2y }, global.Concreto.aplastamiento(c.c1, c.c2, A2x, A2y, m.fc, m.phiB, c.Pu));
+    });
+  }
+
+  function desarrollo(inp, R) {
+    const m = inp.materiales, z = inp.zapata, CO = global.Concreto;
+    const dovelas = inp.columnas.map((col) => {
+      const l = CO.ldc(col.barra, m.fc, m.fy, m.lambda, inp.unid);
+      return Object.assign(l, { barra: col.barra, disponible: z.d * 1000, ok: z.d * 1000 >= l.ldc, util: l.ldc / (z.d * 1000) });
+    });
+    const sup = CO.ldTraccion(R.fl.sup.sel.barra, m.fc, m.fy, m.lambda, true, inp.unid);
+    const inf = CO.ldTraccion(R.fl.inf.sel.barra, m.fc, m.fy, m.lambda, false, inp.unid);
+    // Las barras transversales se anclan en el voladizo: disponible = Lv − r
+    const trans = R.tr.map((t) => {
+      const ld = CO.ldTraccion(t.sel.barra, m.fc, m.fy, m.lambda, false, inp.unid), disp = (t.Lv - z.r) * 1000;
+      return { barra: t.sel.barra, ld, disponible: disp, ok: disp >= ld, util: ld / disp };
+    });
+    const util = Math.max.apply(null, dovelas.map((x) => x.util).concat(trans.map((x) => x.util)));
+    return { dovelas, sup, inf, trans, ok: dovelas.every((x) => x.ok) && trans.every((x) => x.ok), util };
+  }
+
+  // ---------------------------------------------------------------- despiece
+  function despiece(inp, R) {
+    const RF = global.Refuerzo, z = inp.zapata, h = z.d + z.r, L = R.L, B = R.B;
+    const gancho = (n) => 12 * RF.BARS[n].db / 1000;
+    const marcas = [];
+    const add = (marca, desc, n, barra, recto, ganchos) => {
+      const largo = recto + ganchos * gancho(barra);
+      marcas.push({ marca, desc, barra, n, recto, ganchos, largo, forma: ganchos === 2 ? 'U' : ganchos === 1 ? 'L' : 'recta',
+        kg: RF.BARS[barra].A * 0.785 * largo * n });
+    };
+    // Superior: del punto de inflexión menos ld al punto de inflexión más ld (o hasta los extremos)
+    const PI = R.lon.puntos.PI, ldS = R.ld.sup / 1000;
+    const xa = PI.length === 2 ? Math.max(z.r, PI[0] - ldS) : z.r;
+    const xb = PI.length === 2 ? Math.min(L - z.r, PI[1] + ldS) : L - z.r;
+    add('L1', 'Longitudinal superior', R.fl.sup.sel.n, R.fl.sup.sel.barra, xb - xa, (xa <= z.r + 1e-9 ? 1 : 0) + (xb >= L - z.r - 1e-9 ? 1 : 0));
+    add('L2', 'Longitudinal inferior', R.fl.inf.sel.n, R.fl.inf.sel.barra, L - 2 * z.r, 2);
+    add('T1', 'Transversal, franja exterior', R.tr[0].sel.n, R.tr[0].sel.barra, B - 2 * z.r, 2);
+    add('T2', 'Transversal, franja interior', R.tr[1].sel.n, R.tr[1].sel.barra, B - 2 * z.r, 2);
+    if (R.entre.sel) add('T3', 'Transversal entre franjas', R.entre.sel.n, R.entre.sel.barra, B - 2 * z.r, 2);
+    inp.columnas.forEach((col, i) => {
+      const db = RF.BARS[col.barra].db, emp = Math.max(0.071 * inp.materiales.fy * global.Concreto.KGFCM2_A_MPA * db, 300) / 1000; // empalme a compresión C.12.16.1
+      add('D' + (i + 1), 'Dovelas, columna ' + (i ? 'interior' : 'exterior'), col.nBarras, col.barra, (h - z.r) + emp, 1);
+    });
+    return { marcas, total: marcas.reduce((s, x) => s + x.kg, 0) };
+  }
+
+  function chequeos(R) {
+    const fmt = (x) => x.toFixed(2);
+    const flOk = [R.fl.sup, R.fl.inf, R.tr[0].fl, R.tr[1].fl].every((f) => f.ok) &&
+      [R.fl.sup.sel, R.fl.inf.sel, R.tr[0].sel, R.tr[1].sel].every((s) => s.estado !== 'mal');
+    const flUtil = Math.max.apply(null, [R.fl.sup.sel, R.fl.inf.sel, R.tr[0].sel, R.tr[1].sel].map((s) => 1 / s.ratio));
+    const ct = R.tr[0].util > R.tr[1].util ? R.tr[0] : R.tr[1];
+    return [
+      { id: 'suelo', titulo: 'Presión del suelo', ok: R.serv.ok, util: R.serv.util, det: 'σmax = ' + fmt(R.serv.smax) + ' tonf/m²' },
+      { id: 'pz-ext', titulo: 'Punzonamiento, columna exterior', ok: R.pz[0].ok, util: R.pz[0].util, det: 'Vu = ' + fmt(R.pz[0].Vu) + ' ≤ φVc = ' + fmt(R.pz[0].phiVc) + ' tonf' },
+      { id: 'pz-int', titulo: 'Punzonamiento, columna interior', ok: R.pz[1].ok, util: R.pz[1].util, det: 'Vu = ' + fmt(R.pz[1].Vu) + ' ≤ φVc = ' + fmt(R.pz[1].phiVc) + ' tonf' },
+      { id: 'cl', titulo: 'Cortante longitudinal', ok: R.cl.ok, util: R.cl.util, det: 'Vud = ' + fmt(R.cl.Vud) + ' ≤ φVc = ' + fmt(R.cl.phiVc) + ' tonf' },
+      { id: 'ct', titulo: 'Cortante transversal', ok: R.tr[0].Vu <= R.tr[0].phiVc && R.tr[1].Vu <= R.tr[1].phiVc, util: ct.util, det: 'Vu = ' + fmt(ct.Vu) + ' ≤ φVc = ' + fmt(ct.phiVc) + ' tonf' },
+      { id: 'fl', titulo: 'Flexión', ok: flOk, util: flUtil, det: 'Superior ' + R.fl.sup.sel.resumen + '; inferior ' + R.fl.inf.sel.resumen },
+      { id: 'ap', titulo: 'Aplastamiento', ok: R.ap.every((a) => a.ok), util: Math.max(R.ap[0].util, R.ap[1].util), det: 'Pu ≤ φPnb en las dos columnas' },
+      { id: 'ld', titulo: 'Desarrollo', ok: R.ld.ok, util: R.ld.util, det: 'Dovelas y barras transversales anclan dentro de la zapata' },
+    ];
+  }
+
   function calcular(inp) {
     const R = planta(inp);
     R.inp = inp;
+    R.h = inp.zapata.d + inp.zapata.r;
+    R.d = inp.zapata.d;
     R.q = presionUltima(inp, R);
     R.lon = longitudinal(R);
     Object.assign(R, diseno(inp, R));
+    R.pz = punzonamiento(inp, R);
+    R.ap = aplastamientos(inp, R);
+    R.ld = desarrollo(inp, R);
+    R.despiece = despiece(inp, R);
+    R.chequeos = chequeos(R);
+    R.todoOk = R.chequeos.every((c) => c.ok);
+    R.resumen = 'Zapata de ' + R.L.toFixed(2) + ' × ' + R.B.toFixed(2) + ' m con h = ' + R.h.toFixed(2) + ' m.';
     return R;
   }
 
-  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, esfuerzos, clone, redondear };
+  // ---------------------------------------------------------------- validación contra el documento
+  function validarContraPdf() {
+    const e = clone(EJEMPLO);
+    e.metodo = 'documento'; e.unid = 'curso';
+    const R = calcular(preparar(e)), p = R.lon.puntos;
+    const rel = (app, pdf, t) => Math.abs(app - pdf) <= Math.abs(pdf) * t + 1e-9;
+    const absd = (app, pdf, t) => Math.abs(app - pdf) <= t + 1e-9;
+    const filas = [
+      ['Ps ext / int', [[R.cols[0].Ps, 99.07], [R.cols[1].Ps, 183.62]], rel, 0.005],
+      ['x̄', [[R.xbar, 3.50]], absd, 0.01],
+      ['L', [[R.L, 7.00]], absd, 0],
+      ['Área requerida', [[R.serv.A, 23.56]], rel, 0.005],
+      ['B', [[R.B, 3.40]], absd, 0],
+      ['qu / wu', [[R.q.qm, 15.20], [R.q.w0, 51.68]], rel, 0.005],
+      ['V ext (izq/der)', [[p.ext.Vizq, 12.91], [p.ext.Vder, -113.27]], rel, 0.005],
+      ['V int (izq/der)', [[p.int.Vizq, 144.97], [p.int.Vder, -90.39]], rel, 0.005],
+      ['x (V = 0) desde col. ext', [[p.V0 - R.cols[0].x, 2.19]], absd, 0.01],
+      ['Mu⁻', [[R.lon.Mneg.M, -122.42]], rel, 0.005],
+      ['Mu⁺ int / ext', [[p.int.M, 81.26], [p.ext.M, 1.61]], rel, 0.01],
+      ['As⁻ / As⁺', [[R.fl.sup.As, 48.53], [R.fl.inf.As, 41.62]], rel, 0.01],
+      ['Vud / φVc longitudinal', [[R.cl.Vud, 106.46], [R.cl.phiVc, 153.78]], rel, 0.005],
+      ['Franjas b ext / int', [[R.tr[0].b, 1.18], [R.tr[1].b, 1.86]], absd, 1e-6],
+      ['Mu transv ext / int', [[R.tr[0].Mu, 39.02], [R.tr[1].Mu, 72.78]], rel, 0.005],
+      ['As transv ext / int', [[R.tr[0].fl.As, 15.44], [R.tr[1].fl.As, 28.90]], rel, 0.02],
+      ['Vu / φVc transv ext', [[R.tr[0].Vu, 28.57], [R.tr[0].phiVc, 53.37]], rel, 0.005],
+      ['Vu / φVc transv int', [[R.tr[1].Vu, 53.30], [R.tr[1].phiVc, 84.13]], rel, 0.005],
+    ];
+    return filas.map(([lbl, pares, f, tol]) => ({ lbl, pdf: pares.map((x) => x[1]), app: pares.map((x) => x[0]), tol,
+      ok: pares.every(([app, pdf]) => f(app, pdf, tol)) }));
+  }
+
+  const modulo = { id: 'combinada', nombre: 'Combinada', EJEMPLO, VACIO, NSR, preparar, faltantes, calcular, esfuerzos, validarContraPdf, clone, redondear };
   global.Tipos = global.Tipos || {};
   global.Tipos.combinada = modulo;
 })(window);

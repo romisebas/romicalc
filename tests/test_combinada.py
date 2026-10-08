@@ -92,3 +92,16 @@ def test_combinada_diseno_documento(navegador, url):
     C = calc_ejemplo(pagina, metodo="corregido")
     assert abs(C["fl"]["inf"]["As"] - 45.90) < 0.05 and abs(C["cl"]["Vud"] - 96.94) < 1.0
     assert not errores
+
+
+def test_combinada_chequeos_y_validacion(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    C = calc_ejemplo(pagina, metodo="corregido")
+    assert C["pz"][0]["lados"] == 3 and C["pz"][1]["lados"] == 4
+    assert abs(C["pz"][0]["bo"] - 2.86) < 1e-6 and abs(C["pz"][1]["bo"] - 4.72) < 1e-6
+    assert {c["id"] for c in C["chequeos"]} == {"suelo", "pz-ext", "pz-int", "cl", "ct", "fl", "ap", "ld"}
+    assert C["todoOk"] and C["despiece"]["total"] > 0
+    assert {m["marca"] for m in C["despiece"]["marcas"]} == {"L1", "L2", "T1", "T2", "T3", "D1", "D2"}
+    res = pagina.evaluate("Tipos['combinada'].validarContraPdf().map(r => ({lbl: r.lbl, ok: r.ok}))")
+    assert len(res) == 18 and all(r["ok"] for r in res), res
+    assert not errores
