@@ -798,3 +798,51 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .mesa-h1 { margin: 0; font: 400 clamp(28px, 4vw, 44px)/1 var(--display); text-transform: uppercase; letter-spacing: .01em; overflow-wrap: anywhere; }
 .mesa-dim { margin: 0; font: 500 15px/1.2 var(--sans); color: var(--tinta-2); }
 .mesa-dim b { color: var(--tinta); font-weight: 600; }
+.mesa { position: relative; }
+.mesa-faltan { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--r-ctl); background: color-mix(in srgb, var(--mal) 12%, transparent); color: var(--tinta); font: 500 14px/1.4 var(--sans); }
+.mesa-faltan[hidden] { display: none; }
+.mesa-lienzo { position: relative; padding-top: 44px; border: 1px solid var(--linea); border-radius: var(--r-cont); background: color-mix(in srgb, var(--tinta) 3%, transparent); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.mesa-lienzo.arrastrando { cursor: grabbing; }
+.mesa-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mesa-svg text { font: 500 13px var(--sans); fill: var(--tinta-2); }
+.mesa-lindero { stroke: var(--tinta-3); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.mesa-zap { fill: color-mix(in srgb, var(--tinta) 14%, transparent); stroke: var(--tinta); stroke-width: 1.5; transition: width .25s var(--ease-out); }
+.mesa-zap.provisional { fill: none; stroke-dasharray: 6 5; stroke: var(--tinta-3); }
+.mesa-col { cursor: grab; outline: none; }
+.mesa-col-cuerpo { fill: var(--superficie, #d9d9d9); stroke: var(--tinta); stroke-width: 1.5; transition: fill .2s ease; }
+.mesa-col-agarre { stroke: var(--tinta-3); stroke-width: 1.5; stroke-linecap: round; }
+.mesa-flecha { fill: none; stroke: var(--tinta); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) and (pointer: fine) { .mesa-col:hover .mesa-col-cuerpo { fill: color-mix(in srgb, var(--acento-10) 30%, var(--fondo)); } }
+.mesa-col:focus-visible .mesa-col-cuerpo, .arrastrando .mesa-col:focus .mesa-col-cuerpo { fill: color-mix(in srgb, var(--acento-10) 45%, var(--fondo)); stroke: var(--acento-10); stroke-width: 2.5; }
+.mesa-cota path { stroke: var(--tinta-3); stroke-width: 1; fill: none; }
+.mesa-cota text { text-anchor: middle; }
+.mesa-xbar path { fill: var(--acento-10); }
+.mesa-xbar text { fill: var(--acento-10); font-weight: 600; }
+.mesa-xbar { transition: transform .25s var(--ease-out); }
+.mesa-tit-diag { font-weight: 600 !important; fill: var(--tinta) !important; text-transform: uppercase; letter-spacing: .04em; font-size: 11px !important; }
+.mesa-q { fill: color-mix(in srgb, var(--acento-10) 22%, transparent); stroke: var(--acento-10); stroke-width: 1.5; }
+.mesa-q-flecha { fill: none; stroke: var(--acento-10); stroke-width: 1.5; }
+.mesa-eje { stroke: var(--tinta-3); stroke-width: 1; }
+.mesa-area { fill: color-mix(in srgb, var(--tinta) 10%, transparent); }
+.mesa-linea { fill: none; stroke: var(--tinta); stroke-width: 2; stroke-linejoin: round; }
+.mesa-val { font-size: 12px !important; fill: var(--tinta) !important; paint-order: stroke; stroke: var(--fondo); stroke-width: 4px; }
+.mesa-v0 circle { fill: var(--acento-10); }
+.mesa-pi line { stroke: var(--acento-10); stroke-dasharray: 4 4; }
+.mesa-pi text { fill: var(--acento-10) !important; }
+.mesa-ld { stroke: var(--acento-10); stroke-width: 3; stroke-linecap: round; }
+.mesa-zona { fill: transparent; cursor: crosshair; }
+.mesa-lector { stroke: var(--acento-10); stroke-width: 1.5; pointer-events: none; }
+.mesa-lectura { margin: 0; padding: 10px 16px 14px; font: 500 14px/1.4 var(--sans); color: var(--tinta-2); min-height: 1.4em; }
+.mesa-cargas { position: absolute; inset: 0 0 auto 0; height: 0; z-index: 2; }
+.mesa-carga { position: absolute; top: 6px; translate: -50% 0; display: grid; gap: 2px; padding: 6px 10px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-ctl); background: var(--fondo); color: var(--tinta); font: 600 13px/1.1 var(--sans); white-space: nowrap; cursor: pointer; transition: border-color .2s ease, transform .2s var(--ease-out); }
+.mesa-carga-col { font: 500 10px/1 var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-3); }
+.mesa-carga.vacia { border-style: dashed; color: var(--tinta-2); }
+@media (hover: hover) and (pointer: fine) { .mesa-carga:hover { border-color: var(--tinta); transform: translateY(-1px); } }
+.mesa-editor { position: absolute; z-index: 20; width: min(340px, calc(100vw - 32px)); padding: 18px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-cont); background: var(--fondo); }
+.mesa-editor[hidden] { display: none; }
+.mesa-editor-tit { margin: 0 0 12px; font: 400 22px/1 var(--display); text-transform: uppercase; }
+.mesa-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.mesa-campo { display: grid; gap: 4px; font: 500 12px/1.2 var(--sans); color: var(--tinta-2); }
+.mesa-campo i { font-style: normal; color: var(--tinta-3); }
+.mesa-campo input, .mesa-campo select { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--linea-fuerte); border-radius: var(--r-ctl); background: transparent; color: var(--tinta); font: 500 15px var(--sans); }
+.mesa-editor-nota { margin: 12px 0; font: 500 12px/1.4 var(--sans); color: var(--tinta-3); }

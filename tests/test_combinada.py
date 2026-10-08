@@ -148,3 +148,47 @@ def test_mesa_desde_tipos_y_recientes(navegador, url, tmp_path):
     pagina.set_input_files("#archivo-importar", str(archivo))
     pagina.wait_for_selector("#mesa:not([hidden])")
     assert not errores, errores
+
+
+def px_por_metro(pagina):
+    return pagina.evaluate("""() => { const s = document.querySelector('#mesa-svg');
+      return s.getBoundingClientRect().width / s.viewBox.baseVal.width * Number(s.dataset.k); }""")
+
+
+def arrastrar_columna(pagina, i, dx_m):
+    caja = pagina.locator(f'.mesa-col[data-i="{i}"]').bounding_box()
+    x, y = caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2
+    pagina.mouse.move(x, y)
+    pagina.mouse.down()
+    pagina.mouse.move(x + dx_m * px_por_metro(pagina), y, steps=6)
+    pagina.mouse.up()
+
+
+def test_mesa_arrastre_y_lectura(navegador, url):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    L0 = float(pagina.text_content("#mesa-L").split()[0])
+    x0 = float(pagina.get_attribute(".mesa-xbar", "data-x"))
+    arrastrar_columna(pagina, 1, 1.0)
+    assert float(pagina.text_content("#mesa-L").split()[0]) > L0
+    assert float(pagina.get_attribute(".mesa-xbar", "data-x")) > x0
+    s = float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow"))
+    assert abs(s - 6.0) < 0.051
+    pagina.focus('.mesa-col[data-i="1"]')
+    pagina.keyboard.press("ArrowRight")
+    assert abs(float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow")) - (s + 0.05)) < 1e-6
+    arrastrar_columna(pagina, 1, -20)
+    assert abs(float(pagina.get_attribute('.mesa-col[data-i="1"]', "aria-valuenow")) - 0.55) < 1e-6
+    arrastrar_columna(pagina, 1, 4.45)
+    caja = pagina.locator("#mesa-diag-V").bounding_box()
+    pagina.mouse.move(caja["x"] + caja["width"] * 0.4, caja["y"] + caja["height"] / 2)
+    lectura = pagina.text_content("#mesa-lectura")
+    assert "V =" in lectura and "M =" in lectura
+    pagina.click('.mesa-carga[data-i="1"]')
+    pagina.wait_for_selector("#mesa-editor:not([hidden])")
+    pagina.fill('#mesa-editor [data-k="columnas.1.D"]', "")
+    pagina.fill('#mesa-editor [data-k="columnas.1.L"]', "")
+    pagina.wait_for_selector("#mesa-faltan:not([hidden])")
+    assert "Faltan datos" in pagina.text_content("#mesa-faltan")
+    assert "NaN" not in pagina.inner_html("#mesa")
+    assert not errores, errores

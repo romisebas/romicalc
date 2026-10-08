@@ -122,7 +122,7 @@
 
   function alCambiar(e) {
     const el = e.target;
-    if (!el.dataset || !el.dataset.k) return;
+    if (!el.dataset || !el.dataset.k || el.closest('#mesa')) return; // la mesa de la combinada maneja sus campos
     const tipo = el.dataset.tipo;
     let val;
     if (tipo === 'texto') val = el.value;
