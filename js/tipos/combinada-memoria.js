@@ -67,7 +67,7 @@
         eq('Área con sismo', 'A_{zE}', '\\dfrac{\\Sigma P_{sE}}{' + n(I.suelo.factorSismo, 2) + '\\,\\sigma_{adm}}', '\\dfrac{' + v(R.PsE, 'fuerza') + '}{' + v(I.suelo.qadm * I.suelo.factorSismo, 'presion') + '}', v(R.serv.Acon, 'area'), U('area')),
         eq('Ancho (redondeado a 0.05 m)', 'B', '\\dfrac{A}{L}', '\\dfrac{' + v(R.serv.A, 'area') + '}{' + v(R.L, 'longitud') + '}', v(R.B, 'longitud'), U('longitud'), 'franja'),
         ver('Presión de servicio', '\\sigma_{max} = ' + v(R.serv.smax, 'presion') + U('presion') + '\\;' + le(R.serv.ok) + '\\;\\sigma_{adm}', R.serv.ok)],
-      D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)));
+      { svg: D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)), m3d: { tipo: 'comb-planta', capa: 'dim' } });
 
     // 3. Presión última
     const k3 = capitulo('presion', 'Presión última del suelo', doc ? 'Método del documento' : 'Equilibrio exacto', true);
@@ -100,9 +100,9 @@
       eq(etq + ': acero', 'A_{s' + sub + '}', '\\rho\\,b\\,d' + (f.gobiernaMin && f.base === 'bh' ? '\\;(\\rho_{min}\\,b\\,h)' : ''), null, v(f.As, 'acero'), U('acero')),
       nota('ok', 'Se colocan ' + sel.resumen + '.'),
     ];
-    diapo(k5, 'Acero superior', 'El momento negativo tracciona la cara superior entre columnas.', flex('Superior', R.fl.sup, Math.abs(R.lon.Mneg.M), R.B, R.fl.sup.sel, 'sup'), D.corteLongitudinal(R));
+    diapo(k5, 'Acero superior', 'El momento negativo tracciona la cara superior entre columnas.', flex('Superior', R.fl.sup, Math.abs(R.lon.Mneg.M), R.B, R.fl.sup.sel, 'sup'), { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
     diapo(k5, 'Acero inferior', doc ? 'El momento positivo es pequeño y gobierna la cuantía mínima con b·d, como en el documento.' : 'El momento positivo bajo las columnas es pequeño; gobierna la cuantía mínima de retracción, 0.0018·b·h (NSR-10 C.7.12).',
-      flex('Inferior', R.fl.inf, Math.max(0, R.lon.Mpos[0].M, R.lon.Mpos[1].M), R.B, R.fl.inf.sel, 'inf'), D.corteLongitudinal(R));
+      flex('Inferior', R.fl.inf, Math.max(0, R.lon.Mpos[0].M, R.lon.Mpos[1].M), R.B, R.fl.inf.sel, 'inf'), { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
 
     // 6. Cortante longitudinal
     const k6 = capitulo('cl', 'Cortante longitudinal', en ? 'ACI 318 22.5' : 'NSR-10 C.11.2', R.cl.ok);
@@ -134,17 +134,26 @@
         eq('Acero', 'A_s', null, null, v(t.fl.As, 'acero'), U('acero')),
         ver('Cortante a d de la cara', 'V_u = w_u(L_v - d) = ' + v(t.Vu, 'fuerza') + U('fuerza') + '\\;' + le(t.Vu <= t.phiVc) + '\\;\\phi V_c = ' + v(t.phiVc, 'fuerza') + U('fuerza'), t.Vu <= t.phiVc),
         nota('ok', 'Se colocan ' + t.sel.resumen + '.')],
-      D.corteTransversal(R, i)));
+      { svg: D.corteTransversal(R, i), m3d: { tipo: 'comb-corte-t', i } }));
     if (R.entre.sel) diapo(k8, 'Entre franjas', 'Fuera de las franjas se coloca el acero mínimo de retracción.',
       [eq('Acero mínimo', 'A_{s,min}', '0.0018\\,b\\,h', '0.0018\\cdot' + v(R.entre.b, 'corto') + '\\cdot' + v(R.h, 'corto'), v(R.entre.As, 'acero'), U('acero'), 'franja'), nota('ok', 'Se colocan ' + R.entre.sel.resumen + '.')],
-      D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)));
+      { svg: D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)), m3d: { tipo: 'comb-planta', capa: 'acero' } });
+
+    const sm = R.supMin;
+    diapo(k8, 'Cara superior a cuantía mínima', 'Donde el cálculo no pide acero arriba se coloca la cuantía mínima de retracción y temperatura: ' +
+      (sm.tramos.length ? 'barras longitudinales en los extremos sin L1, empalmadas con ella 1.3·l<sub>d</sub>, y ' : '') + 'barras transversales de repartición que sostienen la parrilla superior. Todas terminan en ganchos de 90° hacia abajo.',
+      [sm.tramos.length ? eq('Longitudinal mínima', 'A_{s,min}', '0.0018\,B\,h', '0.0018\cdot' + v(R.B, 'corto') + '\cdot' + v(R.h, 'corto'), v(sm.As, 'acero'), U('acero')) : null,
+        sm.tramos.length ? nota('ok', sm.tramos.map((t) => t.marca).join(' y ') + ': ' + sm.sel.resumen + ', empalme de ' + sm.emp.toFixed(2) + ' m con L1.') : null,
+        eq('Repartición', 'A_{s,min}', '0.0018\,L\,h', '0.0018\cdot' + v(R.L, 'corto') + '\cdot' + v(R.h, 'corto'), v(sm.trans.As, 'acero'), U('acero')),
+        nota('ok', 'T4: ' + sm.trans.sel.resumen + '.')],
+      { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
 
     // 9. Aplastamiento y desarrollo
     const k9 = capitulo('ap', 'Aplastamiento y desarrollo', 'NSR-10 C.10.14 y C.12', chk('ap').ok && chk('ld').ok);
     diapo(k9, 'Aplastamiento',
       'La carga de cada columna se apoya sobre la zapata; el área de apoyo A₂ crece con una pendiente 1:2 hasta los bordes.',
       R.ap.map((a, i) => ver('Columna ' + nombre[i], 'P_u = ' + v(R.cols[i].Pu, 'fuerza') + U('fuerza') + '\\;' + le(a.ok) + '\\;\\phi P_{nb} = ' + v(Math.max(a.phiPnb1, a.phiPnb2), 'fuerza') + U('fuerza'), a.ok)),
-      D.corteLongitudinal(R));
+      { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
     diapo(k9, 'Longitudes de desarrollo',
       'Las dovelas deben desarrollarse a compresión dentro de la altura útil; las barras transversales a tracción dentro del voladizo.',
       [...R.ld.dovelas.map((x, i) => ver('Dovelas, columna ' + nombre[i], 'l_{dc} = ' + n(ldV(x.ldc), 0) + ldU + '\\;' + le(x.ok) + '\\;d = ' + n(ldV(x.disponible), 0) + ldU, x.ok)),
@@ -158,14 +167,14 @@
       'Las barras superiores se cortan a una longitud de desarrollo de los puntos de inflexión; las demás corren de lado a lado con ganchos.',
       R.despiece.marcas.map((x) => nota('ok', '<b>' + x.marca + '</b> · ' + x.desc + ': ' + x.n + ' #' + x.barra + ' de ' + x.largo.toFixed(2) + ' m (' + x.kg.toFixed(1) + ' kg)'))
         .concat([nota('ok', '<b>Total: ' + R.despiece.total.toFixed(1) + ' kg</b>')]),
-      D.corteLongitudinal(R));
+      { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
 
     // 11. Conclusiones
     const k11 = capitulo('fin', 'Conclusiones', '', R.todoOk);
     diapo(k11, R.todoOk ? 'El diseño cumple' : 'El diseño no cumple',
       R.resumen + ' ' + (R.todoOk ? 'Todos los chequeos cumplen con las cargas consideradas.' : 'Revise las dimensiones o el refuerzo hasta que todos los chequeos cumplan.'),
       R.chequeos.map((c) => ver(c.titulo, '\\text{Utilización} = ' + n(c.util * 100, 0) + '\\,\\%', c.ok)).concat(R.avisos.map((a) => nota('mal', a))),
-      D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)));
+      { svg: D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)), m3d: { tipo: 'comb-planta', capa: 'acero' } });
     caps.forEach((cap) => {
       cap.items = [];
       cap.diapos.forEach((d) => {

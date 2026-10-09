@@ -328,5 +328,148 @@
     },
   });
 
+  // ---------------------------------------------------------------- plantas y cortes con el acero (js/nucleo/armado3d.js)
+  // Cada marca del armador en su color; devuelve { marca: malla } para etiquetarlas o ligarlas
+  function acero(THREE, g, marcas) {
+    const out = {};
+    marcas.filter(Boolean).forEach((mk) => {
+      const im = global.Armado.malla(THREE, mk, { lados: 8, material: (color) => new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.4 }) });
+      im.userData.mat0 = im.material;
+      g.add(im); out[mk.marca] = im;
+    });
+    return out;
+  }
+  // Borde azul de la cara cortada, en el plano x = c o z = c
+  function caraCorte(THREE, g, eje, c, a0, a1, y0, y1) {
+    const geo = new THREE.PlaneGeometry(a1 - a0, y1 - y0), p = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x2a5db0 }));
+    if (eje === 'x') { p.rotation.y = Math.PI / 2; p.position.set(c, (y0 + y1) / 2, (a0 + a1) / 2); } else p.position.set((a0 + a1) / 2, (y0 + y1) / 2, c);
+    g.add(p);
+  }
+
+  Object.assign(ESC, {
+    // Planta de la aislada: capa de presiones (mapa de color bajo la base), de punzonamiento (b_o) o de acero (parrilla con ganchos)
+    planta(THREE, R, f, m) {
+      const capa = f.capa, z = aislada(THREE, R, m, { colH: 0.16, zapataVidrio: true, columnaVidrio: capa === 'acero' }), { A, e, g, h, c } = z, sv = R.serv;
+      const esq = [[1, R.Lx / 2, R.Ly / 2], [2, R.Lx / 2, -R.Ly / 2], [3, -R.Lx / 2, -R.Ly / 2], [4, -R.Lx / 2, R.Ly / 2]];
+      if (capa === 'presion') {
+        // vértices del plano rotado: (−x, −z), (+x, −z), (−x, +z), (+x, +z); −z de three = +y del plano
+        const geo = new THREE.PlaneGeometry(R.Lx, R.Ly); geo.rotateX(-Math.PI / 2);
+        const bajo = new THREE.Color(0xdfe8f3), alto = new THREE.Color(0x2a5db0), rango = Math.max(sv.smax - sv.smin, 1e-9);
+        const cs = [sv.s4, sv.s1, sv.s3, sv.s2].map((s) => bajo.clone().lerp(alto, 0.25 + 0.75 * (s - sv.smin) / rango));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(cs.flatMap((k) => [k.r, k.g, k.b]), 3));
+        const mapa = A.pieza(g, geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }), false);
+        mapa.position.y = -0.01;
+        A.ligar(e, 'zapata', mapa);
+        esq.forEach(([i, x, y]) => {
+          const bola = A.pieza(g, new THREE.SphereGeometry(Math.max(R.Lx, R.Ly) * 0.018, 14, 10), m.tinta(), false);
+          bola.position.set(x, 0, -y);
+          A.ligar(e, 'esquina', bola);
+          A.etiqueta(e, A.V(x, 0, -y), sub('σ', String(i), ' = ' + UN().num(sv['s' + i], 'presion')), y < 0 ? 'abajo' : '');
+        });
+        e.dir = A.V(0.35, 1.5, 1.1);
+      } else if (capa === 'punz') {
+        // perímetro crítico a d/2 de la columna (paredes de altura d) y el área que empuja por fuera de él
+        const hx = (c.Cx + R.d) / 2, hz = (c.Cy + R.d) / 2, y0 = h - R.d, mat = m.cielo(0.6);
+        const paredes = [A.caja(g, -hx, hx, y0, h, -hz - 0.01, -hz + 0.01, mat, false), A.caja(g, -hx, hx, y0, h, hz - 0.01, hz + 0.01, mat, false),
+          A.caja(g, -hx - 0.01, -hx + 0.01, y0, h, -hz, hz, mat, false), A.caja(g, hx - 0.01, hx + 0.01, y0, h, -hz, hz, mat, false)];
+        A.ligar(e, 'perimetro', ...paredes);
+        const s = new THREE.Shape([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => new THREE.Vector2(a * R.Lx / 2, b * R.Ly / 2)));
+        s.holes.push(new THREE.Path([[-1, -1], [-1, 1], [1, 1], [1, -1]].map(([a, b]) => new THREE.Vector2(a * hx, b * hz))));
+        const area = A.pieza(g, new THREE.ShapeGeometry(s), m.cielo(0.35), false);
+        area.rotation.x = -Math.PI / 2; area.position.y = h + 0.004;
+        A.ligar(e, 'area', area);
+        A.etiqueta(e, A.V(0, h, hz), sub('b', 'o', ' = ' + fmt(R.pz.bo, 'longitud')));
+        A.etiqueta(e, A.V(R.Lx / 2 - 0.15, h, R.Ly / 2 - 0.15), 'Área por fuera de b<sub>o</sub>', 'abajo');
+        e.dir = A.V(0.45, 1.4, 1.1);
+      } else {
+        const rd = global.Dibujo.refuerzoDibujo(R), mallas = acero(THREE, g, global.Armado.aislada(R));
+        A.ligar(e, 'acero', ...Object.values(mallas));
+        A.etiqueta(e, A.V(0, h, R.Ly / 2), 'X: ' + rd.X.etq, 'abajo');
+        A.etiqueta(e, A.V(R.Lx / 2, h, 0), 'Y: ' + rd.Y.etq);
+        e.dir = A.V(0.7, 1.25, 1.2);
+      }
+      return e;
+    },
+    // Corte de la aislada: media zapata en vidrio con el acero cortado por el plano del corte
+    corte(THREE, R, f, m) {
+      const enX = f.dir !== 'Y', A = ayudas(THREE, m), e = nueva(THREE), g = e.grupo, h = R.h, c = R.inp.columna, colH = Math.max(R.Lx, R.Ly) * 0.3;
+      // dir X: se corta por z = 0 y se mira desde +z; dir Y: por x = 0 y el grupo gira para que la cara mire a la cámara
+      const eje = enX ? 'z' : 'x';
+      const zap = enX ? A.caja(g, -R.Lx / 2, R.Lx / 2, 0, h, -R.Ly / 2, 0, m.vidrio()) : A.caja(g, -R.Lx / 2, 0, 0, h, -R.Ly / 2, R.Ly / 2, m.vidrio());
+      const col = enX ? A.caja(g, -c.Cx / 2, c.Cx / 2, h, h + colH, -c.Cy / 2, 0, m.vidrio()) : A.caja(g, -c.Cx / 2, 0, h, h + colH, -c.Cy / 2, c.Cy / 2, m.vidrio());
+      A.ligar(e, 'zapata', zap); A.ligar(e, 'columna', col);
+      if (enX) caraCorte(THREE, g, 'z', 0, -R.Lx / 2, R.Lx / 2, 0, h); else caraCorte(THREE, g, 'x', 0, -R.Ly / 2, R.Ly / 2, 0, h);
+      acero(THREE, g, global.Armado.aislada(R).map((mk) => global.Armado.cortar(mk, eje, 0, -1)));
+      const L = enX ? R.Lx : R.Ly, w = (x, y) => (enX ? A.V(x, y, 0) : A.V(0, y, x));
+      A.etiqueta(e, w(0, -0.02), (enX ? 'L<sub>x</sub>' : 'L<sub>y</sub>') + ' = ' + fmt(L, 'longitud'), 'abajo');
+      A.etiqueta(e, w(enX ? L / 2 : -L / 2, h), 'h = ' + fmt(h, 'longitud') + ', d = ' + fmt(R.d, 'longitud'));
+      if (!enX) g.rotation.y = -Math.PI / 2;
+      e.dir = A.V(0.35, 0.3, 1.4);
+      return e;
+    },
+
+    // Planta de la combinada: dimensiones (franjas y x̄) o todo el armado
+    'comb-planta'(THREE, R, f, m) {
+      const z = combinada(THREE, R, m), { A, e, g, h } = z, X = (x) => x - R.L / 2;
+      if (f.capa === 'acero') {
+        e.ligas.zapata.concat(e.ligas.columna).forEach((p) => { p.material = p.userData.mat0 = m.vidrio(); });
+        const mallas = acero(THREE, g, global.Armado.combinada(R));
+        A.ligar(e, 'franja', ...['T1', 'T2', 'T3'].map((k) => mallas[k]).filter(Boolean));
+        ['T1', 'T2'].forEach((k, i) => { if (mallas[k]) A.etiqueta(e, A.V(X(R.cols[i].x), 0, R.B / 2), k, 'abajo'); });
+        if (mallas.L1) A.etiqueta(e, A.V(X((R.supMin.xa + R.supMin.xb) / 2), h, -R.B / 2), 'L1');
+        R.supMin.tramos.forEach((t) => A.etiqueta(e, A.V(X((t.x0 + t.x1) / 2), h, -R.B / 2), t.marca));
+        e.dir = A.V(0.35, 1.0, 1.3);
+        return e;
+      }
+      // franjas bajo cada columna sobre la cara superior y la marca de x̄
+      R.tr.forEach((t, i) => {
+        const fr = A.caja(g, X(t.x0), X(t.x1), h, h + 0.012, -R.B / 2, R.B / 2, m.cielo(0.6), false);
+        A.ligar(e, 'franja', fr);
+        A.etiqueta(e, A.V(X((t.x0 + t.x1) / 2), h, R.B / 2), 'Franja ' + (i ? 'int.' : 'ext.') + ' b = ' + fmt(t.b, 'longitud'), 'abajo');
+      });
+      const marca = A.pieza(g, new THREE.ConeGeometry(0.12, 0.25, 16), m.tinta(), false);
+      marca.rotation.x = Math.PI; marca.position.set(X(R.xbar), h + 0.14, 0);
+      A.ligar(e, 'xbar', marca);
+      A.etiqueta(e, A.V(X(R.xbar), h + 0.28, 0), 'x̄ = ' + fmt(R.xbar, 'longitud'));
+      A.etiqueta(e, A.V(0, 0, R.B / 2), 'L = ' + fmt(R.L, 'longitud'), 'abajo');
+      A.etiqueta(e, A.V(R.L / 2, 0, 0), 'B = ' + fmt(R.B, 'longitud'), 'abajo');
+      e.dir = A.V(0.3, 1.3, 1.2);
+      return e;
+    },
+    // Corte longitudinal: media zapata (z ≤ 0) en vidrio con L1, L2, L3/L4 y las transversales vistas de punta
+    'comb-corte-l'(THREE, R, f, m) {
+      const A = ayudas(THREE, m), e = nueva(THREE), g = e.grupo, h = R.h, colH = R.B * 0.35, X = (x) => x - R.L / 2;
+      A.ligar(e, 'zapata', A.caja(g, -R.L / 2, R.L / 2, 0, h, -R.B / 2, 0, m.vidrio()));
+      R.cols.forEach((c) => A.ligar(e, 'columna', A.caja(g, X(c.x) - c.c1 / 2, X(c.x) + c.c1 / 2, h, h + colH, -c.c2 / 2, 0, m.vidrio())));
+      caraCorte(THREE, g, 'z', 0, -R.L / 2, R.L / 2, 0, h);
+      const mallas = acero(THREE, g, global.Armado.combinada(R).map((mk) => global.Armado.cortar(mk, 'z', 0, -1)));
+      A.ligar(e, 'ldc', ...['L1', 'L3', 'L4'].map((k) => mallas[k]).filter(Boolean));
+      if (mallas.L1) A.etiqueta(e, A.V(X((R.supMin.xa + R.supMin.xb) / 2), h, 0), 'L1 · ' + R.fl.sup.sel.resumen);
+      R.supMin.tramos.forEach((t) => A.etiqueta(e, A.V(X((t.x0 + t.x1) / 2), h, 0), t.marca));
+      A.etiqueta(e, A.V(0, 0, 0), 'L2 · ' + R.fl.inf.sel.resumen, 'abajo');
+      R.lon.puntos.PI.forEach((x) => A.etiqueta(e, A.V(X(x), h + 0.12, 0), 'PI'));
+      e.dir = A.V(0.3, 0.6, 1.4);
+      e.zoom = 0.85;
+      return e;
+    },
+    // Corte transversal bajo la columna i: la parte de la zapata hacia el centro, vista desde la cara cortada
+    'comb-corte-t'(THREE, R, f, m) {
+      const A = ayudas(THREE, m), e = nueva(THREE), g = e.grupo, h = R.h, i = f.i || 0, c = R.cols[i], X = (x) => x - R.L / 2, xc = X(c.x);
+      // una rebanada de 1 m desde el corte hacia el centro de la zapata; se mira desde la cara cortada
+      const lado = i ? -1 : 1, xf = xc + lado * Math.min(1, R.L / 3), x0 = Math.min(xc, xf), x1 = Math.max(xc, xf);
+      A.ligar(e, 'zapata', A.caja(g, x0, x1, 0, h, -R.B / 2, R.B / 2, m.vidrio()));
+      const cx0 = lado > 0 ? xc : xc - c.c1 / 2, cx1 = lado > 0 ? xc + c.c1 / 2 : xc;
+      A.ligar(e, 'columna', A.caja(g, cx0, cx1, h, h + R.B * 0.35, -c.c2 / 2, c.c2 / 2, m.vidrio()));
+      caraCorte(THREE, g, 'x', xc, -R.B / 2, R.B / 2, 0, h);
+      const mallas = acero(THREE, g, global.Armado.combinada(R).map((mk) => mk && global.Armado.cortar(mk, 'x', xc, lado)).map((mk) => mk && global.Armado.cortar(mk, 'x', xf, -lado)));
+      if (mallas['T' + (i + 1)]) A.ligar(e, 'franja', mallas['T' + (i + 1)]);
+      A.etiqueta(e, A.V(xc, 0, 0), 'T' + (i + 1) + ' · ' + R.tr[i].sel.resumen, 'abajo');
+      A.etiqueta(e, A.V(xc, h, R.B / 2), 'B = ' + fmt(R.B, 'longitud'));
+      e.mira = A.V((x0 + x1) / 2, h * 0.6, 0);
+      e.dir = A.V(-lado * 1.4, 0.55, 0.75);
+      return e;
+    },
+  });
+
   global.Mini3D.ESCENAS = ESC;
 })(window);

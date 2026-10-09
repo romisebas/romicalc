@@ -297,6 +297,22 @@
     return { dovelas, sup, inf, trans, ok: dovelas.every((x) => x.ok) && trans.every((x) => x.ok), util };
   }
 
+  // ---------------------------------------------------------------- acero superior mínimo
+  // L1 se corta a ld de los puntos de inflexión; la cara superior se completa a cuantía mínima (0.0018·b·h, NSR-10 C.7.12):
+  // L3 y L4 en los extremos sin L1, empalmadas con ella 1.3·ld (clase B, C.12.15), y T4 de repartición a lo ancho.
+  function superiorMinimo(inp, R) {
+    const z = inp.zapata, a = inp.acero, m = inp.materiales, h = R.h, L = R.L, PI = R.lon.puntos.PI, ldS = R.ld.sup / 1000;
+    const xa = PI.length === 2 ? Math.max(z.r, PI[0] - ldS) : z.r;
+    const xb = PI.length === 2 ? Math.min(L - z.r, PI[1] + ldS) : L - z.r;
+    const As = 0.0018 * R.B * 100 * h * 100, sel = elegirBarras(As, R.B, h, z.r, a.barSup);
+    const emp = 1.3 * global.Concreto.ldTraccion(sel.barra, m.fc, m.fy, m.lambda, true, inp.unid) / 1000;
+    const tramos = [];
+    if (xa > z.r + 0.05) tramos.push({ marca: 'L3', lado: 'exterior', x0: z.r, x1: Math.min(xb, xa + emp) });
+    if (xb < L - z.r - 0.05) tramos.push({ marca: 'L4', lado: 'interior', x0: Math.max(xa, xb - emp), x1: L - z.r });
+    const AsT = 0.0018 * L * 100 * h * 100;
+    return { xa, xb, As, sel, emp, tramos, trans: { As: AsT, b: L, sel: elegirBarras(AsT, L, h, z.r, a.barTrans) } };
+  }
+
   // ---------------------------------------------------------------- despiece
   function despiece(inp, R) {
     const RF = global.Refuerzo, z = inp.zapata, h = z.d + z.r, L = R.L, B = R.B;
@@ -308,14 +324,14 @@
         kg: RF.BARS[barra].A * 0.785 * largo * n });
     };
     // Superior: del punto de inflexión menos ld al punto de inflexión más ld (o hasta los extremos)
-    const PI = R.lon.puntos.PI, ldS = R.ld.sup / 1000;
-    const xa = PI.length === 2 ? Math.max(z.r, PI[0] - ldS) : z.r;
-    const xb = PI.length === 2 ? Math.min(L - z.r, PI[1] + ldS) : L - z.r;
+    const { xa, xb } = R.supMin;
     add('L1', 'Longitudinal superior', R.fl.sup.sel.n, R.fl.sup.sel.barra, xb - xa, (xa <= z.r + 1e-9 ? 1 : 0) + (xb >= L - z.r - 1e-9 ? 1 : 0));
+    R.supMin.tramos.forEach((t) => add(t.marca, 'Superior mínima, extremo ' + t.lado, R.supMin.sel.n, R.supMin.sel.barra, t.x1 - t.x0, 1));
     add('L2', 'Longitudinal inferior', R.fl.inf.sel.n, R.fl.inf.sel.barra, L - 2 * z.r, 2);
     add('T1', 'Transversal, franja exterior', R.tr[0].sel.n, R.tr[0].sel.barra, B - 2 * z.r, 2);
     add('T2', 'Transversal, franja interior', R.tr[1].sel.n, R.tr[1].sel.barra, B - 2 * z.r, 2);
     if (R.entre.sel) add('T3', 'Transversal entre franjas', R.entre.sel.n, R.entre.sel.barra, B - 2 * z.r, 2);
+    add('T4', 'Transversal superior de repartición', R.supMin.trans.sel.n, R.supMin.trans.sel.barra, B - 2 * z.r, 2);
     inp.columnas.forEach((col, i) => {
       const db = RF.BARS[col.barra].db, emp = Math.max(0.071 * inp.materiales.fy * global.Concreto.KGFCM2_A_MPA * db, 300) / 1000; // empalme a compresión C.12.16.1
       add('D' + (i + 1), 'Dovelas, columna ' + (i ? 'interior' : 'exterior'), col.nBarras, col.barra, (h - z.r) + emp, 1);
@@ -360,6 +376,7 @@
     R.pz = punzonamiento(inp, R);
     R.ap = aplastamientos(inp, R);
     R.ld = desarrollo(inp, R);
+    R.supMin = superiorMinimo(inp, R);
     R.despiece = despiece(inp, R);
     R.chequeos = chequeos(R);
     R.todoOk = R.chequeos.every((c) => c.ok);

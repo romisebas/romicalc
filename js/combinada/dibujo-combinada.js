@@ -181,8 +181,7 @@
   function corteLongitudinal(R) {
     const U = global.Unidades, W = 760, k = (W - 150) / R.L, x0 = 50, yS = 90, h = R.h, r = R.inp.zapata.r;
     const X = (x) => x0 + x * k, Y = (y) => yS + (h - y) * k, H = Y(0) + 110, sv = servicioLineal(R);
-    const L1 = R.despiece.marcas.find((m) => m.marca === 'L1'), PI = R.lon.puntos.PI, ld = R.ld.sup / 1000;
-    const xa = PI.length === 2 ? Math.max(r, PI[0] - ld) : r, xb = PI.length === 2 ? Math.min(R.L - r, PI[1] + ld) : R.L - r;
+    const L1 = R.despiece.marcas.find((m) => m.marca === 'L1'), PI = R.lon.puntos.PI, { xa, xb } = R.supMin;
     const gancho = 0.25 * h * k;
     const p = [];
     p.push('<rect class="zap-corte" x="' + f2(X(0)) + '" y="' + f2(Y(h)) + '" width="' + f2(R.L * k) + '" height="' + f2(h * k) + '"/>');
@@ -192,6 +191,12 @@
     });
     const ySup = Y(h - r), yInf = Y(r);
     p.push('<path class="acero-sup" d="M' + f2(X(xa)) + ' ' + f2(ySup + (L1.ganchos && xa <= r + 1e-9 ? gancho : 0)) + 'V' + f2(ySup) + 'H' + f2(X(xb)) + (xb >= R.L - r - 1e-9 ? 'v' + f2(gancho) : '') + '"/>');
+    // L3 y L4: cuantía mínima en los extremos, un poco más abajo para que se vea el empalme con L1
+    R.supMin.tramos.forEach((t) => {
+      const y = ySup + 5, ext = t.x0 <= r + 1e-9;
+      p.push('<path class="acero-min" d="M' + f2(X(ext ? t.x0 : t.x1)) + ' ' + f2(y + gancho) + 'V' + f2(y) + 'H' + f2(X(ext ? t.x1 : t.x0)) + '"/>' +
+        '<text class="halo etq-acero" x="' + f2(X((t.x0 + t.x1) / 2)) + '" y="' + f2(y + 18) + '" text-anchor="middle">' + t.marca + '</text>');
+    });
     p.push('<path class="acero-inf" d="M' + f2(X(r)) + ' ' + f2(yInf - gancho) + 'V' + f2(yInf) + 'H' + f2(X(R.L - r)) + 'v' + f2(-gancho) + '"/>');
     p.push('<text class="halo etq-acero" x="' + f2(X((xa + xb) / 2)) + '" y="' + f2(ySup - 8) + '" text-anchor="middle">L1 · ' + R.fl.sup.sel.resumen + '</text>');
     p.push('<text class="halo etq-acero" x="' + f2(X(R.L / 2)) + '" y="' + f2(Y(0) + 18) + '" text-anchor="middle">L2 · ' + R.fl.inf.sel.resumen + '</text>');
@@ -212,6 +217,7 @@
     p.push('<rect class="zap-corte" x="' + f2(X(0)) + '" y="' + f2(Y(h)) + '" width="' + f2(R.B * k) + '" height="' + f2(h * k) + '"/>');
     p.push('<rect class="col-corte" x="' + f2(X((R.B - c.c2) / 2)) + '" y="' + f2(Y(h) - 70) + '" width="' + f2(c.c2 * k) + '" height="70"/>');
     p.push('<path class="acero-trans" d="M' + f2(X(r)) + ' ' + f2(Y(r) - gancho) + 'V' + f2(Y(r)) + 'H' + f2(X(R.B - r)) + 'v' + f2(-gancho) + '"/>');
+    p.push('<path class="acero-min" d="M' + f2(X(r)) + ' ' + f2(Y(h - r) + 5 + gancho) + 'V' + f2(Y(h - r) + 5) + 'H' + f2(X(R.B - r)) + 'v' + f2(gancho) + '"/>');
     const puntos = (n, y, cls) => { let s = ''; for (let j = 0; j < n; j++) s += '<circle class="' + cls + '" cx="' + f2(X(r + (R.B - 2 * r) * (n > 1 ? j / (n - 1) : 0.5))) + '" cy="' + f2(y) + '" r="2.6"/>'; return s; };
     p.push(puntos(nSup, Y(h - r), 'acero-sup-punto') + puntos(nInf, Y(r) - 5, 'acero-inf-punto'));
     p.push('<text class="halo etq-acero" x="' + f2(X(R.B / 2)) + '" y="' + f2(Y(0) + 18) + '" text-anchor="middle">T' + (i + 1) + ' · ' + t.sel.resumen + '</text>');

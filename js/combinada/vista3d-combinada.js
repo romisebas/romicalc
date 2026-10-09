@@ -1,7 +1,8 @@
 /* Vista 3D de la zapata combinada (beta 1.2, mejorada con las skills de three.js).
  * - Concreto translúcido con sombra suave sobre el terreno y luz de entorno.
- * - Acero por grupos (superior, inferior, franjas, entre franjas, dovelas) en mallas instanciadas;
- *   al pasar el mouse una barra resalta su grupo y aparece su marca (raycasting).
+ * - Acero del armador compartido (js/nucleo/armado3d.js): una malla instanciada por marca, con sus ganchos;
+ *   grupos superior, superior mínima, inferior, transversal y dovelas. Al pasar el mouse una barra resalta su grupo
+ *   y aparece su marca (raycasting).
  * - Botones para mostrar u ocultar cada grupo, la presión del suelo y los diagramas V y M como cintas.
  * - "Separar": despiece animado que levanta parrillas y dovelas (como la portada).
  * - La cámara conserva el giro del usuario al editar; solo se reencuadra si cambia mucho la zapata.
@@ -11,11 +12,11 @@
 
   let cont = null, barra = null, renderer = null, scene = null, camera = null, controls = null, q = null;
   let raiz = null, grupos = {}, tip = null, clave = '', sep = 0, sepObjetivo = 0, sucio = true, Rult = null, resaltado = null;
-  const visibles = { concreto: true, sup: true, inf: true, trans: true, dovelas: true, presion: true, diagramas: false };
-  const COLOR = { sup: 0x4f7cb3, inf: 0x8a9099, trans: 0xb08a4a, dovelas: 0x6c8a5a };
-  const BOTONES = [['concreto', 'Concreto'], ['sup', 'Superior'], ['inf', 'Inferior'], ['trans', 'Transversal'], ['dovelas', 'Dovelas'], ['presion', 'Presión'], ['diagramas', 'Diagramas V y M']];
+  const visibles = { concreto: true, sup: true, min: true, inf: true, trans: true, dovelas: true, presion: true, diagramas: false };
+  const COLOR = { sup: 0x4f7cb3, min: 0x8db8f2, inf: 0x8a9099, trans: 0xb08a4a, dovelas: 0x6c8a5a };
+  const BOTONES = [['concreto', 'Concreto'], ['sup', 'Superior'], ['min', 'Mínima'], ['inf', 'Inferior'], ['trans', 'Transversal'], ['dovelas', 'Dovelas'], ['presion', 'Presión'], ['diagramas', 'Diagramas V y M']];
   // Altura a la que sube cada grupo con "Separar"
-  const SUBE = { concreto: 0, inf: 0.25, trans: 0.55, sup: 1.0, dovelas: 1.5, presion: -0.4, diagramas: 0 };
+  const SUBE = { concreto: 0, inf: 0.25, trans: 0.55, min: 0.8, sup: 1.0, dovelas: 1.5, presion: -0.4, diagramas: 0 };
 
   function montar(el, barraEl) {
     const THREE = global.THREE;
@@ -123,30 +124,9 @@
 
   function liberar(o) { o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); }
 
-  // Barras de un grupo en una sola malla instanciada: cada barra va de a hasta b
-  function barras(THREE, lista, radio, color, grupo, etq) {
-    const geo = new THREE.CylinderGeometry(1, 1, 1, q && q.alta ? 10 : 6);
-    const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.7, roughness: 0.38 });
-    const malla = new THREE.InstancedMesh(geo, mat, Math.max(1, lista.length));
-    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
-    lista.forEach(([a, b], i) => {
-      const v = new THREE.Vector3().subVectors(b, a), largo = v.length();
-      Q.setFromUnitVectors(Y, v.clone().normalize());
-      S.set(radio, largo, radio);
-      P.copy(a).addScaledVector(v, 0.5);
-      M.compose(P, Q, S);
-      malla.setMatrixAt(i, M);
-    });
-    malla.count = lista.length;
-    malla.castShadow = !!(q && q.sombras);
-    malla.userData = { grupo, etq };
-    return malla;
-  }
-
   function construir(R) {
-    const THREE = global.THREE, RF = global.Refuerzo, L = R.L, B = R.B, h = R.h, r = R.inp.zapata.r;
-    const X = (x) => x - L / 2, Z = (z) => z - B / 2, V3 = (x, y, z) => new THREE.Vector3(x, y, z);
-    const rad = (n) => RF.BARS[n].db / 2000 * 1.6; // un poco más gruesas para que se lean
+    const THREE = global.THREE, L = R.L, B = R.B, h = R.h;
+    const X = (x) => x - L / 2;
     const nuevo = (k) => { const g = new THREE.Group(); g.name = k; grupos[k] = g; raiz.add(g); return g; };
 
     // Concreto y columnas
@@ -162,42 +142,11 @@
       m.position.set(X(c.x), h + 0.55, 0); m.castShadow = !!q.sombras; gc.add(m);
     });
 
-    // Longitudinales (superior cortada como en el despiece)
-    const fila = (sel, y, x0, x1) => {
-      const l = [];
-      for (let j = 0; j < sel.n; j++) { const z = r + (B - 2 * r) * (sel.n > 1 ? j / (sel.n - 1) : 0.5); l.push([V3(X(x0), y, Z(z)), V3(X(x1), y, Z(z))]); }
-      return l;
-    };
-    const PI = R.lon.puntos.PI, ld = R.ld.sup / 1000;
-    const xa = PI.length === 2 ? Math.max(r, PI[0] - ld) : r, xb = PI.length === 2 ? Math.min(L - r, PI[1] + ld) : L - r;
-    if (R.fl.sup.sel.n) nuevo('sup').add(barras(THREE, fila(R.fl.sup.sel, h - r, xa, xb), rad(R.fl.sup.sel.barra), COLOR.sup, 'sup', 'L1 · Superior: ' + R.fl.sup.sel.resumen));
-    if (R.fl.inf.sel.n) nuevo('inf').add(barras(THREE, fila(R.fl.inf.sel, r, r, L - r), rad(R.fl.inf.sel.barra), COLOR.inf, 'inf', 'L2 · Inferior: ' + R.fl.inf.sel.resumen));
-
-    // Transversales: franjas y acero entre ellas, repartido en todos los tramos fuera de las franjas
-    const gt = nuevo('trans'), yT = r + 0.035;
-    const transv = (x0, x1, sel, n, etq) => {
-      if (!sel || !n || x1 - x0 <= 0) return;
-      const l = [];
-      for (let j = 0; j < n; j++) { const x = x0 + (x1 - x0) * (n > 1 ? j / (n - 1) : 0.5); l.push([V3(X(x), yT, Z(r)), V3(X(x), yT, Z(B - r))]); }
-      gt.add(barras(THREE, l, rad(sel.barra), COLOR.trans, 'trans', etq));
-    };
-    R.tr.forEach((t, i) => transv(Math.max(r, t.x0), Math.min(L - r, t.x1), t.sel, t.sel.n, 'T' + (i + 1) + ' · Franja ' + (i ? 'interior' : 'exterior') + ': ' + t.sel.resumen));
-    if (R.entre.sel) {
-      const tramos = [[r, R.tr[0].x0], [R.tr[0].x1, R.tr[1].x0], [R.tr[1].x1, L - r]].filter(([a, b]) => b - a > 0.05);
-      const total = tramos.reduce((s, [a, b]) => s + b - a, 0);
-      tramos.forEach(([a, b]) => transv(a, b, R.entre.sel, Math.max(1, Math.round(R.entre.sel.n * (b - a) / total)), 'T3 · Entre franjas: ' + R.entre.sel.resumen));
-    }
-
-    // Dovelas con su gancho sobre la parrilla inferior
-    const gd = nuevo('dovelas');
-    R.cols.forEach((c, i) => {
-      const col = R.inp.columnas[i], n = col.nBarras, l = [], rr = 0.05;
-      for (let j = 0; j < n; j++) {
-        const t = j / n * Math.PI * 2, x = X(c.x) + Math.cos(t) * (c.c1 / 2 - rr), z = Math.sin(t) * (c.c2 / 2 - rr);
-        l.push([V3(x, r + 0.06, z), V3(x, h + 0.9, z)]);
-        l.push([V3(x, r + 0.06, z), V3(x + Math.cos(t) * 0.25, r + 0.06, z + Math.sin(t) * 0.25)]);
-      }
-      gd.add(barras(THREE, l, rad(col.barra), COLOR.dovelas, 'dovelas', 'D' + (i + 1) + ' · Dovelas: ' + n + ' #' + col.barra));
+    // Acero: una malla por marca, en el grupo de su botón (un poco más gruesas para que se lean)
+    global.Armado.combinada(R).forEach((m) => {
+      const im = global.Armado.malla(THREE, m, { grosor: 1.6, lados: q && q.alta ? 10 : 6 });
+      im.castShadow = !!q.sombras;
+      (grupos[m.grupo] || nuevo(m.grupo)).add(im);
     });
 
     // Presión de servicio bajo la zapata, con la escala de color de la planta
@@ -251,7 +200,7 @@
     // Todo lo que cambia el dibujo: dimensiones, barras elegidas, cortes (ld), presiones y su límite
     const sel = (s) => (s ? [s.barra, s.n] : null);
     const firma = JSON.stringify([R.L, R.B, R.h, R.inp.zapata.r, R.inp.geometria, R.inp.columnas, sel(R.fl.sup.sel), sel(R.fl.inf.sel),
-      R.tr.map((t) => [t.x0, t.x1, sel(t.sel)]), sel(R.entre.sel), R.ld.sup, R.lon.puntos.PI, R.q.q1, R.q.q2, global.DibujoCombinada.servicioLineal(R).lim]);
+      R.tr.map((t) => [t.x0, t.x1, sel(t.sel)]), sel(R.entre.sel), R.ld.sup, R.lon.puntos.PI, sel(R.supMin.sel), sel(R.supMin.trans.sel), R.q.q1, R.q.q2, global.DibujoCombinada.servicioLineal(R).lim]);
     if (firma === clave) return;
     const anterior = clave ? JSON.parse(clave) : null;
     clave = firma;

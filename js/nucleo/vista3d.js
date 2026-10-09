@@ -95,15 +95,6 @@
     return m;
   }
 
-  function barra(THREE, a, b, radio, mat, lados) {
-    const va = new THREE.Vector3(a[0], a[1], a[2]);
-    const vb = new THREE.Vector3(b[0], b[1], b[2]);
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(radio, radio, va.distanceTo(vb), lados || 10), mat);
-    m.position.copy(va.clone().add(vb).multiplyScalar(0.5));
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize());
-    return m;
-  }
-
   function bucleLinea(THREE, pts, color, y) {
     const g = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p[0], y, -p[1])));
     return new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color }));
@@ -159,39 +150,10 @@
     nombre(presion, 'Presiones de servicio: ' + U.num(sv.smin, 'presion') + ' a ' + U.fmt(sv.smax, 'presion'));
     grupo.add(presion);
 
-    // Refuerzo inferior: capa X abajo, capa Y encima (barras o malla)
-    const rd = global.Dibujo.refuerzoDibujo(R);
-    const mat = (mal) => new THREE.MeshStandardMaterial({ color: mal ? COLOR.mal : 0x8a929c, roughness: 0.35, metalness: 0.85 });
-    const matX = mat(rd.X.mal), matY = mat(rd.Y.mal);
-    const rx = rd.X.db / 2000, ry = rd.Y.db / 2000;
-    const lados = rd.malla ? 6 : 10;
-    for (let capa = 0; capa < rd.capas; capa++) {
-      const base = r + capa * 2 * (rx + ry);
-      const yX = base + rx, yY = base + 2 * rx + ry;
-      const gh = (rad) => (rd.malla ? 0 : Math.min(h - r - 0.03, 24 * rad));
-      global.Dibujo.posicionesParrilla(Ly, r, rd.X).forEach((py) => {
-        const z = -py, x1 = -Lx / 2 + r, x2 = Lx / 2 - r;
-        grupo.add(nombre(barra(THREE, [x1, yX, z], [x2, yX, z], rx, matX, lados), (rd.malla ? 'Malla ' : 'Barras ') + rd.X.etq + ', paralelas a X', matX));
-        if (gh(rx)) { grupo.add(barra(THREE, [x1, yX, z], [x1, yX + gh(rx), z], rx, matX)); grupo.add(barra(THREE, [x2, yX, z], [x2, yX + gh(rx), z], rx, matX)); }
-      });
-      global.Dibujo.posicionesParrilla(Lx, r, rd.Y).forEach((px) => {
-        const z1 = Ly / 2 - r, z2 = -(Ly / 2 - r);
-        grupo.add(nombre(barra(THREE, [px, yY, z1], [px, yY, z2], ry, matY, lados), (rd.malla ? 'Malla ' : 'Barras ') + rd.Y.etq + ', paralelas a Y', matY));
-        if (gh(ry)) { grupo.add(barra(THREE, [px, yY, z1], [px, yY + gh(ry), z1], ry, matY)); grupo.add(barra(THREE, [px, yY, z2], [px, yY + gh(ry), z2], ry, matY)); }
-      });
-    }
-
-    // Dovelas con gancho de 90° hacia el centro de la columna
-    const rc = R.ld.db / 2000;
-    const matD = new THREE.MeshStandardMaterial({ color: R.ld.ok ? 0x6f7782 : COLOR.mal, roughness: 0.35, metalness: 0.85 });
-    const nomD = 'Dovelas ' + R.inp.columna.nBarras + ' #' + R.ld.barra + ', ldc ' + U.fmt(R.ld.ldc, 'ldmm');
-    const yApoyo = r + rd.capas * 2 * (rx + ry) + rc;
-    const lg = 24 * rc;
-    global.Dibujo.barrasColumna(Cx, Cy, R.inp.columna.nBarras, 0.05).forEach((p) => {
-      const x = p[0], z = -p[1];
-      grupo.add(nombre(barra(THREE, [x, yApoyo, z], [x, h + altoCol - 0.02, z], rc, matD), nomD, matD));
-      const nrm = Math.hypot(x, z) || 1;
-      grupo.add(barra(THREE, [x, yApoyo, z], [x - x / nrm * lg, yApoyo, z - z / nrm * lg], rc, matD));
+    // Acero del armador compartido (parrilla con ganchos y dovelas); en rojo si no cumple
+    global.Armado.aislada(R).forEach((m) => {
+      grupo.add(global.Armado.malla(THREE, m, { colorMal: COLOR.mal, lados: 10,
+        material: (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.85 }) }));
     });
     const ex = Cx / 2 - 0.035, ez = Cy / 2 - 0.035;
     for (let i = 0; i < 4; i++) grupo.add(bucleLinea(THREE, [[ex, ez], [-ex, ez], [-ex, -ez], [ex, -ez]], COLOR.dovela, h + 0.1 + i * (altoCol - 0.2) / 3));

@@ -64,6 +64,7 @@
         ['Altura total', U.fmt(R.h, 'longitud', null, 3) + ' (d = ' + U.fmt(R.d, 'longitud', null, 3) + ')'],
         ['Acero longitudinal', 'Superior ' + R.fl.sup.sel.resumen + '; inferior ' + R.fl.inf.sel.resumen],
         ['Acero transversal', 'Franjas ' + R.tr[0].sel.resumen + ' y ' + R.tr[1].sel.resumen + (R.entre.sel ? '; entre franjas ' + R.entre.sel.resumen : '')],
+        ['Acero superior mínimo', (R.supMin.tramos.length ? R.supMin.tramos.map((t) => t.marca).join(' y ') + ' ' + R.supMin.sel.resumen + '; ' : '') + 'repartición ' + R.supMin.trans.sel.resumen],
         ['Peso del acero', R.despiece.total.toFixed(1) + ' kg'],
       ],
     };

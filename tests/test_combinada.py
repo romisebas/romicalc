@@ -104,7 +104,13 @@ def test_combinada_chequeos_y_validacion(navegador, url):
     assert abs(C["pz"][0]["bo"] - 2.86) < 1e-6 and abs(C["pz"][1]["bo"] - 4.72) < 1e-6
     assert {c["id"] for c in C["chequeos"]} == {"suelo", "pz-ext", "pz-int", "cl", "ct", "fl", "ap", "ld"}
     assert C["todoOk"] and C["despiece"]["total"] > 0
-    assert {m["marca"] for m in C["despiece"]["marcas"]} == {"L1", "L2", "T1", "T2", "T3", "D1", "D2"}
+    S = C["supMin"]
+    marcas = {m["marca"] for m in C["despiece"]["marcas"]}
+    assert marcas == {"L1", "L2", "T1", "T2", "T3", "T4", "D1", "D2"} | {t["marca"] for t in S["tramos"]}
+    # cara superior a cuantía mínima: 0.0018·b·h, y L3/L4 empalman con L1
+    assert abs(S["As"] - 0.0018 * C["B"] * C["h"] * 1e4) < 1e-6 and abs(S["trans"]["As"] - 0.0018 * C["L"] * C["h"] * 1e4) < 1e-6
+    for t in S["tramos"]:
+        assert (t["x1"] > S["xa"]) if t["marca"] == "L3" else (t["x0"] < S["xb"])
     res = pagina.evaluate("Tipos['combinada'].validarContraPdf().map(r => ({lbl: r.lbl, ok: r.ok}))")
     assert len(res) == 18 and all(r["ok"] for r in res), res
     assert not errores
@@ -299,7 +305,7 @@ def test_refuerzo_por_vinetas(navegador, url):
     assert pagina.locator("#c-grupo .acero-dir").count() == 2
     pagina.click('#c-grupos [data-grupo="despiece"]')
     marcas = [m.strip() for m in pagina.locator("#mesa-despiece tbody tr td:first-child").all_text_contents()]
-    assert marcas == ["L1", "L2", "T1", "T2", "T3", "D1", "D2"]
+    assert marcas == ["L1", "L4", "L2", "T1", "T2", "T3", "T4", "D1", "D2"]  # L4 y T4: cara superior a cuantía mínima
     assert pagina.is_hidden("#c-elegido")
     assert not errores, errores
 
@@ -390,8 +396,13 @@ def test_vista_3d_con_capas_y_separar(navegador, url):
     pagina.click("#c-tab-planos")
     pagina.click('#c-vistas [data-vista="3d"]')
     pagina.wait_for_selector("#c-3d canvas")
-    assert pagina.locator("#c-3d-barra [data-capa3d]").count() == 7
-    assert set(pagina.evaluate("Vista3DCombinada.grupos()")) >= {"concreto", "sup", "inf", "trans", "dovelas", "presion", "diagramas"}
+    assert pagina.locator("#c-3d-barra [data-capa3d]").count() == 8
+    assert set(pagina.evaluate("Vista3DCombinada.grupos()")) >= {"concreto", "sup", "min", "inf", "trans", "dovelas", "presion", "diagramas"}
+    # el 3D lleva las mismas marcas que el despiece, y las barras con ganchos tienen el doblez
+    etq = pagina.evaluate("Vista3DCombinada.etiquetas()")
+    assert all(any(e.startswith(m + " ") for e in etq) for m in ["L1", "L2", "T1", "T2", "T4", "D1", "D2"]), etq
+    forma = pagina.evaluate("Armado.redondear(Armado.recta(2, 0.016, true, true, 1), 0.056)")
+    assert len(forma) == 4 + 2 * 7 - 2 and forma[0][1] > 0.2  # 2 esquinas en arco; gancho de 15.5 db hacia arriba
     pagina.click('#c-3d-barra [data-capa3d="concreto"]')
     assert pagina.get_attribute('#c-3d-barra [data-capa3d="concreto"]', "aria-pressed") == "false"
     pagina.click("#c-3d-barra [data-separar]")

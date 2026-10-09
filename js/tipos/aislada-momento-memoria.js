@@ -178,6 +178,7 @@
       }
       // Avisos que importan para construir (antes iban en una diapositiva aparte)
       if (Math.abs(R.Lx - R.Ly) > 1e-6 && R.banda.corta === dir) items.push(nota('info', 'Zapata rectangular: la NSR-10 C.15.4.4.2 pide concentrar en una banda central, de ancho igual al lado corto, la fracción γ<sub>s</sub> = 2/(β + 1) = ' + R.banda.gamma.toFixed(3) + ' de este acero. El método del curso lo reparte de forma uniforme.'));
+      if (dir === 'Y' && R.serv.smin >= 0) items.push(nota('info', 'La cara superior no lleva parrilla: el suelo empuja toda la base hacia arriba, no hay momento negativo y la NSR-10 C.15 no la exige. Las barras inferiores terminan en ganchos de 90° (12 d<sub>b</sub>).'));
       if (rf.tipo === 'malla' && dir === 'X') {
         if (rf.sel.traslapo) items.push(nota('aviso', 'La zapata excede el panel Diaco de 6.00 × 2.35 m: se requieren traslapos entre paneles (NSR-10 C.12.18).'));
         items.push(nota('aviso', 'El uso de malla electrosoldada en zapatas debe aprobarlo el diseñador estructural.'));

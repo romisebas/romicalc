@@ -859,6 +859,7 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .corte-comb .acero-sup { fill: none; stroke: #4f7cb3; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .corte-comb .acero-inf, .corte-comb .acero-trans { fill: none; stroke: var(--tinta); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .corte-comb .dovela { fill: none; stroke: var(--tinta-2); stroke-width: 2; stroke-linecap: round; }
+.corte-comb .acero-min { fill: none; stroke: #8db8f2; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .corte-comb .acero-sup-punto { fill: #4f7cb3; }
 .corte-comb .acero-inf-punto { fill: var(--tinta); }
 .corte-comb .pi-corte { stroke: var(--acento-10); stroke-dasharray: 4 4; }

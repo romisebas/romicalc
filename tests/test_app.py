@@ -358,7 +358,9 @@ def test_memoria_con_mini_3d(navegador, url):
     pagina.wait_for_selector(".diapo-fig.con-3d canvas")
     # la ecuación ligada ilumina su pieza sin errores
     pagina.locator("#app .dp-escena .diapo:last-child .ec[data-liga]").first.hover()
-    assert recorrer_memoria(pagina, "#diapo-sig", "#app") >= 9
+    # todas las diapositivas llevan 3D, también las plantas y el corte con su acero
+    assert recorrer_memoria(pagina, "#diapo-sig", "#app") >= 20
+    assert {"planta", "corte", "comb-planta", "comb-corte-l", "comb-corte-t"} <= set(pagina.evaluate("Object.keys(Mini3D.ESCENAS)"))
     assert not errores, errores
     pagina.click("#btn-inicio")
     pagina.click('#elementos [data-elemento="zapatas"]')
@@ -368,7 +370,7 @@ def test_memoria_con_mini_3d(navegador, url):
     pagina.click("#c-tab-memoria")
     pagina.wait_for_selector("#mesa .diapo-fig.con-3d canvas")
     sig = "#" + pagina.locator("#mesa .dp-control .btn-acento").get_attribute("id")
-    assert recorrer_memoria(pagina, sig, "#mesa") >= 4
+    assert recorrer_memoria(pagina, sig, "#mesa") >= 17
     assert not errores, errores
 
 

@@ -38,9 +38,18 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] F · Mini-3D de la combinada
 - [x] G · Cierre (PDF en blanco y negro, pruebas, capturas)
 
+## En curso: acero real en todos los 3D ([plan](docs/superpowers/plans/2026-10-09-romicalc-acero-3d.md))
+- [x] A · Motor de la combinada: cara superior a cuantía mínima (L3/L4 en los extremos, empalme 1.3·ld con L1; T4 de repartición) en el despiece, la memoria y el PDF
+- [x] B · Armador 3D compartido (js/nucleo/armado3d.js): ganchos de 90° con doblez curvo, una malla por marca, corte por un plano
+- [x] C · 3D de Planos de la combinada (grupo "Mínima") y de la aislada con el armador
+- [x] D · Mini-3D de las plantas (presión, punzonamiento, acero) y del corte de la aislada
+- [x] E · Mini-3D de la planta, el corte longitudinal y los cortes transversales de la combinada
+- [x] F · Pruebas, capturas y cierre
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
+| 2026-10-09 | Acero A–F: la combinada lleva la cara superior completa a cuantía mínima (L3/L4 y T4, en despiece, memoria y PDF); un solo armador 3D con ganchos curvos para Planos (aislada y combinada) y la memoria; las 41 diapositivas en mini-3D, también plantas y cortes con su acero; nota en la aislada sobre la cara superior | (este) | 61 ✓ |
 | 2026-10-09 | Figuras D–G: mini-3D quieto en las diapositivas (un solo renderizador, se arrastra y vuelve, etiquetas HTML, ligas en los dos sentidos) para las 13 figuras de la aislada y las 9 de la combinada; SVG técnico como respaldo y en el PDF (patrones con id propio para que el achurado salga impreso) | (este) | 61 ✓ |
 | 2026-10-09 | Figuras A–C: dibujo técnico en SVG (achurados, cotas, momentos con signo, subíndices, acero real en el corte, a escala) para las 9 figuras de la aislada y las 4 de la combinada | 85417ab | 60 ✓ (parcial) |
 | 2026-10-09 | README interactivo (insignias, diagramas, galería, hoja de ruta, preguntas) con capturas nuevas y el sitio romicalc.netlify.app; subida a GitHub | bf00cf1 | 60 ✓ |
