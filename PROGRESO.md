@@ -3,8 +3,8 @@
 Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit del cambio.
 
 ## Estado actual
-- **Versión:** beta 1.2, publicada en GitHub (github.com/romisebas/romicalc, pre-release beta-1.2) y en Netlify (zapatapp.netlify.app).
-- **Nombre:** RomiCalc (antes ZapatAPP). El sitio sigue en zapatapp.netlify.app hasta renombrarlo.
+- **Versión:** beta 1.2 en GitHub (github.com/romisebas/romicalc) y en línea en https://romicalc.netlify.app/ (la dirección vieja zapatapp.netlify.app ya no responde).
+- **Nombre:** RomiCalc (antes ZapatAPP).
 - **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 60 pruebas.
 
 ## En curso: RomiCalc ([plan](docs/superpowers/plans/2026-10-08-romicalc.md))
@@ -32,7 +32,8 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
-| 2026-10-09 | Maqueta C–E: portada con la maqueta en despiece (zapatas en azul) e intro "una obra en 8 segundos" (terreno, edificio piso a piso, puente, box culvert, carga y logo); luces compartidas | (este) | 60 ✓ |
+| 2026-10-09 | README interactivo (insignias, diagramas, galería, hoja de ruta, preguntas) con capturas nuevas y el sitio romicalc.netlify.app; subida a GitHub | (este) | 60 ✓ |
+| 2026-10-09 | Maqueta C–E: portada con la maqueta en despiece (zapatas en azul) e intro "una obra en 8 segundos" (terreno, edificio piso a piso, puente, box culvert, carga y logo); luces compartidas | b60e96d | 60 ✓ |
 | 2026-10-09 | Maqueta A–B: un solo modelo 3D realista (edificio de 3 pisos en obra gris, puente de losa + vigas I con pila, box culvert de doble celda, río y quebrada) en "¿Qué quieres calcular?", con cámara que viaja al elemento y rayos X para zapatas y box culvert | 4934118 | 60 ✓ (parcial) |
 | 2026-10-09 | D y E · Intro "del pórtico al logo" (zapatas, columnas, vigas, losa, carga y el isotipo que se arma) y portada con maqueta de vidrio de pórtico y puente de losa; cinta con los elementos | 5507166 | 59 ✓ |
 | 2026-10-09 | F · Azul de la marca (Cielo #8DB8F2 en oscuro, Cálculo #2A5DB0 en claro) en títulos, pestaña activa, progreso, foco, selección, riel, presiones 3D y capítulo de la memoria; el 3D de elementos solo redibuja si algo cambia | b2a669b | 59 ✓ |
@@ -54,4 +55,3 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - Auditoría 11: el arrastre en Planos repinta todo el tablero.
 - Auditoría 12: bucle 3D repetido en cuatro módulos.
 - 3D de la combinada: se rehace detrás del asistente al arrastrar en el paso de ubicación.
-- Renombrar el sitio de Netlify a romicalc.netlify.app (lo hace el usuario en su panel de Netlify). El repositorio ya se llama romicalc.
