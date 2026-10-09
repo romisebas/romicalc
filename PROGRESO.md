@@ -17,15 +17,16 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] A · Maqueta de "¿Qué quieres calcular?" en Claude Design
 - [x] B · Página de elementos (camino de las cargas + tarjetas)
 - [x] C · Zapatas: empezar y solo 2 tipos
-- [ ] D · Intro 3D: pórtico que termina en la R
-- [ ] E · Portada: 3D nuevo (falta) · sin "beta", logo que respira y botón de tema (hechos)
+- [x] D · Intro 3D: pórtico que termina en la R
+- [x] E · Portada: maqueta de vidrio (pórtico + puente de losa, zapatas en azul), sin "beta", logo que respira, botón de tema, cinta con los elementos
 - [x] F · Azul de la marca en toda la app
-- [ ] G · Pruebas y cierre
+- [x] G · Pruebas y cierre
 
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
-| 2026-10-09 | F · Azul de la marca (Cielo #8DB8F2 en oscuro, Cálculo #2A5DB0 en claro) en títulos, pestaña activa, progreso, foco, selección, riel, presiones 3D y capítulo de la memoria; el 3D de elementos solo redibuja si algo cambia | (este) | 59 ✓ |
+| 2026-10-09 | D y E · Intro "del pórtico al logo" (zapatas, columnas, vigas, losa, carga y el isotipo que se arma) y portada con maqueta de vidrio de pórtico y puente de losa; cinta con los elementos | (este) | 59 ✓ |
+| 2026-10-09 | F · Azul de la marca (Cielo #8DB8F2 en oscuro, Cálculo #2A5DB0 en claro) en títulos, pestaña activa, progreso, foco, selección, riel, presiones 3D y capítulo de la memoria; el 3D de elementos solo redibuja si algo cambia | b2a669b | 59 ✓ |
 | 2026-10-09 | Inicio didáctico A–C y parte de E: maqueta en Claude Design; "¿Qué quieres calcular?" con 3D Three.js del camino de las cargas (edificio y puente) y 7 elementos (solo Zapatas disponible); pantalla Zapatas y solo 2 tipos; portada sin "beta", botón de tema y logo que respira | fab68f2 | 58 ✓ |
 | 2026-10-08 | Publicación: repositorio renombrado a romisebas/romicalc, push de main, etiqueta y pre-release beta-1.2 | (este) | 57 ✓ |
 | 2026-10-08 | D · Auditoría 1 y 2: al importar un .json, "2.5" cuenta como número y una barra que no existe queda como dato faltante (aislada y combinada); 10: prueba de importación con datos raros; 3: 73 líneas de CSS `mesa-*` muerto fuera | 6cb977b | 57 ✓ |

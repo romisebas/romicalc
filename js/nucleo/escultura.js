@@ -1,9 +1,8 @@
-/* Portada (v1.1): "despiece flotante" de una zapata.
- * Las piezas flotan separadas: bloque de concreto, parrilla de acero, canasto de la columna
- * (dovelas con gancho y estribos) y columna. Al acercar el cursor a "Diseñar" se juntan y forman
- * la zapata armada (Escultura.armar(true)); al alejarlo se vuelven a separar. En pantallas táctiles
- * se arman y se separan solas cada pocos segundos. Quieta (armada a medias) sin animaciones.
- * Solo dibuja mientras la portada está visible.
+/* Portada (RomiCalc): maqueta de vidrio de una estructura, un pórtico con losa sobre zapatas y un puente de losa.
+ * Las piezas flotan separadas por capas (zapatas, columnas, vigas, losa; estribos y tablero) y al acercar el cursor a
+ * "Diseñar" se juntan (Escultura.armar(true)); al alejarlo se vuelven a separar. Las zapatas brillan en el azul de la
+ * marca porque son lo que ya se calcula. En pantallas táctiles se arma y se separa sola cada pocos segundos.
+ * Quieta (armada a medias) sin animaciones. Solo dibuja mientras la portada está visible.
  */
 (function (global) {
   'use strict';
@@ -12,10 +11,10 @@
   function montar(cont) {
     const THREE = global.THREE;
     if (!THREE || !global.Escena3D || !cont || cont.firstChild) return;
-    const { renderer, scene } = global.Escena3D.crear(cont, { sombras: true, exposicion: 1.05 });
+    const { renderer, scene, calidad } = global.Escena3D.crear(cont, { sombras: true, exposicion: 1.05 });
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
-    camera.position.set(5.4, 4.2, 6.2);
-    camera.lookAt(0, 1.1, 0);
+    camera.position.set(4.4, 3.3, 5.6);
+    camera.lookAt(0.3, 0.75, 0);
 
     const llave = new THREE.DirectionalLight(0xffffff, 2.6); llave.position.set(4, 8, 5);
     llave.castShadow = renderer.shadowMap.enabled;
@@ -24,46 +23,40 @@
     scene.add(llave);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x404650, 0.8));
 
-    const Lx = 2.4, Ly = 2.0, h = 0.5, Cx = 0.5, Cy = 0.4, altoCol = 1.4, r = 0.08;
-    const matConcreto = new THREE.MeshStandardMaterial({ color: 0xb9bcc0, roughness: 0.85, metalness: 0 });
-    const matCol = new THREE.MeshStandardMaterial({ color: 0xa9adb2, roughness: 0.8, metalness: 0 });
-    const matAcero = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.9, roughness: 0.3 });
-    const matArista = new THREE.LineBasicMaterial({ color: 0x2b2f35, transparent: true, opacity: 0.5 });
-    const conAristas = (m) => { m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), matArista)); m.castShadow = true; m.receiveShadow = true; return m; };
+    // Vidrio: con tarjeta gráfica, transmisión real; en equipos lentos, un translúcido simple
+    const vidrio = calidad.alta
+      ? new THREE.MeshPhysicalMaterial({ color: 0xe8eef6, roughness: 0.12, metalness: 0, transmission: 0.85, thickness: 0.4, ior: 1.4, transparent: true })
+      : new THREE.MeshStandardMaterial({ color: 0xdfe6ee, roughness: 0.25, metalness: 0, transparent: true, opacity: 0.6 });
+    const azul = new THREE.MeshStandardMaterial({ color: 0x2a5db0, emissive: 0x2a5db0, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.1 });
+    const arista = new THREE.LineBasicMaterial({ color: 0x8c96a3, transparent: true, opacity: 0.7 });
+    const aristaAzul = new THREE.LineBasicMaterial({ color: 0x8db8f2 });
 
-    // Piezas: cada una con su altura armada (y0) y su separación en el despiece (dy)
+    // Piezas: cada grupo con su altura armada (y0), su separación en el despiece (dy) y un giro propio
     const piezas = [];
-    const pieza = (obj, y0, dy, giro) => { obj.position.y = y0; scene.add(obj); piezas.push({ obj, y0, dy, giro: giro || 0 }); return obj; };
-
-    pieza(conAristas(new THREE.Mesh(new THREE.BoxGeometry(Lx, h, Ly), matConcreto)), h / 2, 0);
-
-    const parrilla = new THREE.Group();
-    const rb = 0.016, s = 0.2;
-    const gX = new THREE.CylinderGeometry(rb, rb, Lx - 2 * r, 8); gX.rotateZ(Math.PI / 2);
-    const gY = new THREE.CylinderGeometry(rb, rb, Ly - 2 * r, 8); gY.rotateX(Math.PI / 2);
-    for (let z = -Ly / 2 + r; z <= Ly / 2 - r + 1e-6; z += s) { const m = new THREE.Mesh(gX, matAcero); m.position.z = z; m.castShadow = true; parrilla.add(m); }
-    for (let x = -Lx / 2 + r; x <= Lx / 2 - r + 1e-6; x += s) { const m = new THREE.Mesh(gY, matAcero); m.position.set(x, 2 * rb, 0); m.castShadow = true; parrilla.add(m); }
-    pieza(parrilla, r, 0.75, 0.15);
-
-    const canasto = new THREE.Group();
-    const alto = altoCol + h - 0.15;
-    [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => {
-      const x = sx * (Cx / 2 - 0.06), z = sz * (Cy / 2 - 0.06);
-      const v = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, alto, 8), matAcero); v.position.set(x, alto / 2, z); canasto.add(v);
-      const g = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.28, 8), matAcero);
-      g.rotation.z = -sx * Math.PI / 2; g.position.set(x + sx * 0.14, 0, z); canasto.add(g);
-    });
-    for (let i = 0; i < 7; i++) {
-      const ex = Cx / 2 - 0.04, ez = Cy / 2 - 0.04, y = h + 0.1 + i * (altoCol - 0.2) / 6;
-      const camino = new THREE.CurvePath();
-      const P = [[ex, ez], [-ex, ez], [-ex, -ez], [ex, -ez], [ex, ez]].map((p) => new THREE.Vector3(p[0], 0, p[1]));
-      for (let k = 0; k < 4; k++) camino.add(new THREE.LineCurve3(P[k], P[k + 1]));
-      const e = new THREE.Mesh(new THREE.TubeGeometry(camino, 24, 0.009, 6, true), matAcero); e.position.y = y; canasto.add(e);
+    function capa(dy, giro) { const g = new THREE.Group(); scene.add(g); piezas.push({ obj: g, y0: 0, dy, giro: giro || 0 }); return g; }
+    function caja(g, w, h, d, x, y, z, mat) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || vidrio);
+      m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), mat === azul ? aristaAzul : arista));
+      g.add(m);
     }
-    canasto.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-    pieza(canasto, r + 0.04, 1.45, -0.2);
 
-    pieza(conAristas(new THREE.Mesh(new THREE.BoxGeometry(Cx, altoCol, Cy), matCol)), h + altoCol / 2, 2.25, 0.25);
+    // Pórtico de dos vanos: 6 zapatas y columnas, vigas en los dos sentidos y la losa
+    const xs = [-1.9, -1.0, -0.1], zs = [-0.5, 0.5], hz = 0.15, alto = 1.25, hv = 0.14;
+    const zap = capa(0), col = capa(0.45, 0.12), vig = capa(0.9, -0.1), los = capa(1.35, 0.15);
+    xs.forEach((x) => zs.forEach((z) => {
+      caja(zap, 0.46, hz, 0.46, x, hz / 2, z, azul);
+      caja(col, 0.13, alto, 0.13, x, hz + alto / 2, z);
+    }));
+    const yv = hz + alto - hv / 2;
+    zs.forEach((z) => caja(vig, 1.94, hv, 0.12, -1.0, yv, z));
+    xs.forEach((x) => caja(vig, 0.12, hv, 1.12, x, yv, 0));
+    caja(los, 2.2, 0.07, 1.4, -1.0, hz + alto + 0.035, 0);
+
+    // Puente de losa: dos estribos y el tablero
+    const est = capa(0, 0), tab = capa(0.8, -0.12);
+    [0.75, 2.45].forEach((x) => caja(est, 0.24, 0.62, 0.95, x, 0.31, 0));
+    caja(tab, 2.05, 0.1, 0.95, 1.6, 0.67, 0);
 
     if (renderer.shadowMap.enabled) {
       const piso = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: 0.32 }));
@@ -83,7 +76,7 @@
     const tactil = global.matchMedia && global.matchMedia('(hover: none)').matches;
     if (tactil) setInterval(() => { objetivo = objetivo ? 0 : 1; }, 3500);
 
-    let t0 = performance.now(), giro = -0.5;
+    let t0 = performance.now(), giro = -0.35;
     function cuadro(ahora) {
       requestAnimationFrame(cuadro);
       if (document.hidden || !cont.offsetParent) { t0 = ahora; return; }
@@ -95,12 +88,13 @@
       if (quieto) armado = 0.5;
       else {
         armado += (objetivo - armado) * Math.min(1, dt * 5);
-        giro += dt * 0.16;
+        giro += dt * 0.12;
       }
       const flota = quieto ? 0 : Math.sin(ahora / 900);
       const sep = 1 - armado;
+      const c = Math.cos(giro), s = Math.sin(giro); // gira alrededor del centro de la maqueta (x = 0.3)
       piezas.forEach((p, i) => {
-        p.obj.position.y = p.y0 + p.dy * sep + (i ? flota * 0.05 * sep * (1 + i * 0.3) : 0);
+        p.obj.position.set(0.3 - 0.3 * c, p.y0 + p.dy * sep + (p.dy ? flota * 0.04 * sep * (1 + i * 0.25) : 0), 0.3 * s);
         p.obj.rotation.y = giro + p.giro * sep;
       });
       renderer.render(scene, camera);

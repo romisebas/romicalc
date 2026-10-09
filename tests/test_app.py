@@ -414,7 +414,7 @@ def test_three_moderno_y_escena_compartida(navegador, url):
     assert not errores, errores
 
 
-def test_intro_de_la_tierra_al_logo(navegador, url):
+def test_intro_del_portico_al_logo(navegador, url):
     pagina, errores = abrir(navegador, url, intro=True, anim="activadas")
     pagina.wait_for_selector("#intro:not([hidden]) canvas")
     pagina.evaluate("""() => { window.__fases = []; new MutationObserver(() => { const f = document.querySelector('#intro').dataset.fase;
@@ -422,7 +422,7 @@ def test_intro_de_la_tierra_al_logo(navegador, url):
     t0 = pagina.evaluate("performance.now()")
     pagina.wait_for_selector("#bv-portada:not([hidden])", timeout=90000)  # el WebGL por software de las pruebas es lento
     fases = pagina.evaluate("window.__fases")
-    for f in ["excavacion", "parrilla", "columna", "vaciado", "carga", "logo", "fin"]:
+    for f in ["zapatas", "columnas", "vigas", "losa", "carga", "logo", "fin"]:
         assert f in fases, fases
     assert pagina.locator("#intro canvas").count() == 0
     assert not errores, errores
