@@ -58,6 +58,8 @@
     const num = (k) => { const v = get(e, k); if (vacio(v) || v < 0) f.push(k); };
     [0, 1].forEach((i) => {
       ['c1', 'c2', 'D', 'barra', 'nBarras'].forEach((k) => pos('columnas.' + i + '.' + k));
+      const b = 'columnas.' + i + '.barra';
+      if (!f.includes(b) && !global.Refuerzo.BARS[get(e, b)]) f.push(b); // barra que no existe (#11 en un .json importado)
       num('columnas.' + i + '.L');
     });
     pos('geometria.s'); num('geometria.a');

@@ -441,3 +441,42 @@ def test_revision_asistente_reabre_y_enteros(navegador, url):
     pagina.fill('#cw-asistente [data-k="columnas.0.nBarras"]', "8.6")
     assert pagina.evaluate("Mesa.estado().columnas[0].nBarras") == 9
     assert not errores, errores
+
+
+# ---------------------------------------------------------------- auditoría 1, 2 y 10: archivos importados con datos raros
+def a_texto(o):
+    """Convierte cada número del proyecto en texto, como lo dejaría una hoja de cálculo."""
+    if isinstance(o, dict):
+        return {k: a_texto(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [a_texto(v) for v in o]
+    return str(o) if isinstance(o, (int, float)) and not isinstance(o, bool) else o
+
+
+def importar(pagina, tmp_path, datos, nombre):
+    archivo = tmp_path / nombre
+    archivo.write_text(json.dumps(datos), encoding="utf-8")
+    pagina.set_input_files("#archivo-importar", str(archivo))
+
+
+def test_importar_numeros_como_texto_y_barra_desconocida(navegador, url, tmp_path):
+    pagina, errores = abrir(navegador, url)
+    abrir_ejemplo_combinada(pagina)
+    comb = json.loads(pagina.evaluate("JSON.stringify(Tipos['combinada'].EJEMPLO)"))
+    ais = json.loads(pagina.evaluate("JSON.stringify(Tipos['aislada-momento'].EJEMPLO)"))
+    # Combinada con números como texto: se calcula igual que el ejemplo
+    importar(pagina, tmp_path, a_texto(comb), "comb-texto.json")
+    pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
+    assert pagina.evaluate("typeof Mesa.estado().columnas[0].D") == "number"
+    # Combinada con una barra que no existe: queda como dato faltante, sin romper la página
+    comb["columnas"][0]["barra"] = 11
+    importar(pagina, tmp_path, comb, "comb-barra.json")
+    pagina.wait_for_function("Mesa.visible() && Mesa.estado().columnas[0].barra === 11")
+    assert "columnas.0.barra" in pagina.evaluate("Tipos['combinada'].faltantes(Mesa.estado())")
+    # Aislada con números como texto y barra desconocida
+    ais = a_texto(ais)
+    ais["columna"]["barra"] = "11"
+    importar(pagina, tmp_path, ais, "ais.json")
+    pagina.wait_for_function("!Mesa.visible()")
+    pagina.wait_for_selector('#categorias .cat[data-cat="columna"] .cat-punto.falta', state="attached")
+    assert not errores, errores

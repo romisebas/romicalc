@@ -51,7 +51,7 @@
       Object.keys(b).forEach((k) => {
         if (o == null || !(k in o)) return;
         if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) mezclar(b[k], o[k]);
-        else b[k] = o[k];
+        else b[k] = (b[k] === null || typeof b[k] === 'number') && typeof o[k] === 'string' && o[k].trim() !== '' && isFinite(o[k]) ? Number(o[k]) : o[k]; // "2.5" de un .json hecho a mano cuenta como 2.5
       });
     })(base, obj);
     return base;

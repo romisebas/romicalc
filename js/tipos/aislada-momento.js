@@ -58,7 +58,7 @@
     Object.keys(REQUERIDOS).forEach((cat) => {
       const req = REQUERIDOS[cat].slice();
       if (cat === 'suelo' && e.suelo.pesoPropio) req.push('suelo.gs', 'suelo.gc');
-      const f = req.filter((k) => vacio(get(e, k)));
+      const f = req.filter((k) => vacio(get(e, k)) || (k === 'columna.barra' && !RF.BARS[get(e, k)])); // barra que no existe
       if (f.length) out[cat] = f;
     });
     return out;
