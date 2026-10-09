@@ -265,5 +265,26 @@
       limites: { centro: V(0, 0.4, 0), radio: 11 } };
   }
 
-  global.Maqueta3D = { crear };
+  function luces(THREE, scene, renderer) {
+    // Luz de día: cielo y tierra, y un sol con sombras suaves ajustadas a la maqueta
+    scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x5a5048, 0.8));
+    const sol = new THREE.DirectionalLight(0xfff6ea, 1.6);
+    sol.position.set(8, 14, 10);
+    if (renderer.shadowMap.enabled) {
+      sol.castShadow = true;
+      sol.shadow.mapSize.set(2048, 2048);
+      Object.assign(sol.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 2, far: 40 });
+      sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02;
+    }
+    scene.add(sol);
+    // Sombra de contacto falsa bajo el bloque (un degradado), para que no flote
+    const lienzo = document.createElement('canvas'); lienzo.width = lienzo.height = 128;
+    const cx = lienzo.getContext('2d'), gr = cx.createRadialGradient(64, 64, 10, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(0,0,0,0.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    cx.fillStyle = gr; cx.fillRect(0, 0, 128, 128);
+    const sombra = new THREE.Mesh(new THREE.PlaneGeometry(30, 22), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(lienzo), transparent: true, depthWrite: false }));
+    sombra.rotation.x = -Math.PI / 2; sombra.position.y = -3.05; scene.add(sombra);
+  }
+
+  global.Maqueta3D = { crear, luces };
 })(window);

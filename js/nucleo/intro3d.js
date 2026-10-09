@@ -1,18 +1,19 @@
-/* Intro 3D (RomiCalc): "Del pórtico al logo".
- * 1 suelo: aparece la retícula del plano con sus ejes.
- * 2 zapatas: caen sobre el terreno y se iluminan en azul al llegar.
- * 3 columnas: crecen desde las zapatas.
- * 4 vigas: se extienden de columna a columna.
- * 5 losa: baja y se apoya sobre las vigas.
- * 6 carga: puntos de luz bajan por el camino de la carga hasta el suelo, que responde con ondas bajo las zapatas.
- * 7 logo: el pórtico se pierde en la niebla y las piezas de la R (barra, bola y pata) se arman sobre su bloque azul.
+/* Intro 3D (RomiCalc): "Una obra en 8 segundos", sobre la maqueta compartida (js/nucleo/maqueta3d.js).
+ * suelo: el bloque de terreno sube con sus estratos, el río y la quebrada.
+ * zapatas: caen las zapatas con sus vigas de amarre.
+ * columnas, vigas, losa: el edificio se construye piso a piso (columnas que crecen, vigas y losa que bajan, escalera
+ *   y ladrillo); cada pieza se ilumina en azul al llegar.
+ * puente: estribos, pila y box culvert; después el tablero con sus vigas I y la vía con bordillos y barandas.
+ * carga: puntos de luz bajan por el camino de la carga de cada estructura hasta el suelo.
+ * logo: la obra se pierde en la niebla y las piezas de la R (barra, bola y pata) se arman sobre su bloque azul.
  * Con { suave: true } la cámara queda quieta (sin vuelos). La calidad se ajusta al equipo (Escena3D).
  */
 (function (global) {
   'use strict';
 
-  const DUR = 7.2;
-  const FASES = [['suelo', 0], ['zapatas', 0.7], ['columnas', 1.8], ['vigas', 2.8], ['losa', 3.7], ['carga', 4.6], ['logo', 6.0]];
+  const DUR = 8.0;
+  const T = (etapa) => 0.3 + etapa * 0.5; // momento en que llega cada etapa de obra de la maqueta
+  const FASES = [['suelo', 0], ['zapatas', T(1)], ['columnas', T(2)], ['vigas', T(3)], ['losa', T(3) + 0.25], ['puente', T(8)], ['carga', 5.7], ['logo', 6.8]];
   const AZUL = 0x2a5db0, CIELO = 0x8db8f2;
   const clamp = (x) => Math.max(0, Math.min(1, x));
   const fase = (t, a, b) => clamp((t - a) / (b - a));
@@ -25,14 +26,15 @@
 
   function reproducir(cont, opciones) {
     const THREE = global.THREE;
-    if (!THREE || !global.Escena3D) return Promise.resolve();
+    if (!THREE || !global.Escena3D || !global.Maqueta3D) return Promise.resolve();
     const suave = !!(opciones && opciones.suave);
-    const { renderer, scene, calidad } = global.Escena3D.crear(cont, { exposicion: 1.05, entorno: 0.9 });
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 80);
+    const { renderer, scene, calidad } = global.Escena3D.crear(cont, { sombras: true, exposicion: 1.0, entorno: 0.6 });
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 120);
     scene.add(camera);
-    scene.fog = new THREE.Fog(0x000000, 8, 34);
-    const sol = new THREE.DirectionalLight(0xffffff, 2.2); sol.position.set(4, 8, 5); scene.add(sol);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x303640, 0.6));
+    scene.fog = new THREE.Fog(0x000000, 26, 60);
+    const maqueta = global.Maqueta3D.crear(THREE, { simple: !calidad.alta });
+    scene.add(maqueta.raiz);
+    global.Maqueta3D.luces(THREE, scene, renderer);
 
     const tam = () => {
       const w = cont.clientWidth || innerWidth, h = cont.clientHeight || innerHeight;
@@ -43,83 +45,51 @@
     tam();
     addEventListener('resize', tam);
 
-    // ---------------------------------------------------------------- 1. suelo: retícula y ejes
-    const reticula = new THREE.GridHelper(12, 24, CIELO, 0x2a3442);
-    reticula.material.transparent = true; reticula.material.opacity = 0; reticula.material.depthWrite = false;
-    scene.add(reticula);
-    const ejes = [];
-    const xs = [-1.6, 0, 1.6], zs = [-1, 1];
-    const linea = (a, b) => {
-      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]),
-        new THREE.LineDashedMaterial({ color: CIELO, dashSize: 0.14, gapSize: 0.08, transparent: true, opacity: 0 }));
-      l.computeLineDistances(); scene.add(l); ejes.push(l);
-    };
-    xs.forEach((x) => linea(new THREE.Vector3(x, 0.005, -2.2), new THREE.Vector3(x, 0.005, 2.2)));
-    zs.forEach((z) => linea(new THREE.Vector3(-2.8, 0.005, z), new THREE.Vector3(2.8, 0.005, z)));
-
-    // ---------------------------------------------------------------- 2–5. piezas del pórtico (vidrio con aristas)
-    const vidrio = () => (calidad.alta
-      ? new THREE.MeshPhysicalMaterial({ color: 0xc9d6e6, metalness: 0, roughness: 0.12, transmission: 0.8, thickness: 0.4, ior: 1.4, transparent: true, emissive: AZUL, emissiveIntensity: 0 })
-      : new THREE.MeshStandardMaterial({ color: 0xb6c3d3, metalness: 0, roughness: 0.3, transparent: true, opacity: 0.55, emissive: AZUL, emissiveIntensity: 0 }));
-    const piezas = [];
-    function pieza(grupo, w, h, d, x, y, z, t0) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), vidrio());
-      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0xdfe6ef, transparent: true, opacity: 0.8 })));
-      m.position.set(x, y, z); m.visible = false; scene.add(m);
-      piezas.push({ m, grupo, x, y, z, t0 });
-      return m;
-    }
-    const hz = 0.3, alto = 2.3, yv = hz + alto - 0.15;
-    xs.forEach((x, i) => zs.forEach((z, j) => {
-      pieza('zapatas', 0.9, hz, 0.9, x, hz / 2, z, 0.7 + (i * 2 + j) * 0.12);
-      pieza('columnas', 0.26, alto, 0.26, x, hz + alto / 2, z, 1.8 + (i * 2 + j) * 0.1);
-    }));
-    zs.forEach((z, j) => [-0.8, 0.8].forEach((x, i) => pieza('vigas', 1.6, 0.3, 0.24, x, yv, z, 2.8 + (j * 2 + i) * 0.1)));
-    xs.forEach((x, i) => pieza('vigas', 0.24, 0.3, 2, x, yv, 0, 3.2 + i * 0.1));
-    pieza('losa', 3.9, 0.14, 2.7, 0, yv + 0.22, 0, 3.7);
-
-    function moverPieza(p, t) {
-      const k = fase(t, p.t0, p.t0 + 0.55);
-      p.m.visible = k > 0;
+    // ---------------------------------------------------------------- cómo llega cada pieza, según su etapa de obra
+    const piezas = maqueta.todas.map((m, i) => {
+      const u = m.userData, p = m.geometry.parameters || {};
+      const modo = u.parte === 'terreno' || u.parte === 'agua' ? 'sube' : u.parte === 'columna' ? 'crece' : u.parte === 'zapata' ? 'cae' : 'baja';
+      return { m, u, y0: m.position.y, alto: p.height || 0, modo, t0: T(u.etapa) + (i % 7) * 0.025 };
+    });
+    function mover(p, t) {
+      const k = fase(t, p.t0, p.t0 + 0.5), m = p.m;
+      m.visible = k > 0;
       if (!k) return;
-      const e = eOut(k);
-      if (p.grupo === 'zapatas') p.m.position.y = p.y + (suave ? 0 : 2.4 * (1 - rebote(k)));
-      else if (p.grupo === 'columnas') { p.m.scale.y = Math.max(0.001, e); p.m.position.y = hz + alto * e / 2; }
-      else if (p.grupo === 'vigas') { if (p.m.geometry.parameters.width > 1) p.m.scale.x = Math.max(0.001, e); else p.m.scale.z = Math.max(0.001, e); }
-      else p.m.position.y = p.y + (suave ? 0 : 1.6 * (1 - e));
-      // Cada pieza se ilumina en azul al llegar y se apaga despacio
-      p.m.material.emissiveIntensity = 0.9 * (1 - fase(t, p.t0 + 0.4, p.t0 + 1.2));
+      if (suave) { m.position.y = p.y0; m.scale.y = 1; }
+      else if (p.modo === 'sube') m.position.y = p.y0 - 3 * (1 - eOut(k));
+      else if (p.modo === 'crece') { const e = Math.max(0.001, eOut(k)); m.scale.y = e; m.position.y = p.y0 - p.alto * (1 - e) / 2; }
+      else if (p.modo === 'cae') m.position.y = p.y0 + 2.5 * (1 - rebote(k));
+      else m.position.y = p.y0 + 1.6 * (1 - eOut(k));
+      // cada pieza de la obra llega iluminada en azul y vuelve a su material
+      if (p.u.etapa > 0) m.material = t < p.t0 + 0.75 ? maqueta.materiales.azul : p.u.mat0;
     }
 
-    // ---------------------------------------------------------------- 6. carga: puntos que bajan hasta el suelo y ondas
-    const V = (x, y, z) => new THREE.Vector3(x, y, z);
-    const caminos = [];
-    xs.forEach((x) => zs.forEach((z) => caminos.push([V(x * 0.5, yv + 0.3, 0), V(x, yv, z), V(x, hz, z), V(x, -0.6, z)])));
-    const POR = 10;
+    // ---------------------------------------------------------------- carga: puntos que bajan por todas las estructuras
+    const caminos = Object.values(maqueta.caminos).flat();
+    const POR = 6;
     const posP = new Float32Array(caminos.length * POR * 3);
     const gP = new THREE.BufferGeometry(); gP.setAttribute('position', new THREE.BufferAttribute(posP, 3));
-    const matP = new THREE.PointsMaterial({ color: CIELO, size: 0.13, transparent: true, opacity: 0, depthTest: false, blending: THREE.AdditiveBlending });
-    scene.add(new THREE.Points(gP, matP));
-    const tramos = caminos.map((pts) => { const l = pts.slice(1).map((p, i) => p.distanceTo(pts[i])); return { pts, l, total: l.reduce((a, b) => a + b, 0) }; });
+    const matP = new THREE.PointsMaterial({ color: CIELO, size: 0.18, transparent: true, opacity: 0, depthTest: false, blending: THREE.AdditiveBlending });
+    const puntosCarga = new THREE.Points(gP, matP); puntosCarga.renderOrder = 2; scene.add(puntosCarga);
+    const tramos = caminos.map((todos) => {
+      const pts = todos.filter((q, i) => !i || q.distanceToSquared(todos[i - 1]) > 1e-6);
+      const l = pts.slice(1).map((q, i) => q.distanceTo(pts[i]));
+      return { pts, l, total: l.reduce((a, b) => a + b, 0) };
+    });
     function moverCarga(t) {
       let n = 0;
       tramos.forEach((c) => {
         for (let k = 0; k < POR; k++) {
-          let d = ((t * 0.7 + k / POR) % 1) * c.total, i = 0;
+          let d = ((t * 0.6 + k / POR) % 1) * c.total, i = 0;
           while (i < c.l.length - 1 && d > c.l[i]) { d -= c.l[i]; i++; }
-          const p = c.pts[i].clone().lerp(c.pts[i + 1], Math.min(1, d / c.l[i]));
-          posP.set([p.x, p.y, p.z], n++ * 3);
+          const q = c.pts[i].clone().lerp(c.pts[i + 1], Math.min(1, d / c.l[i]));
+          posP.set([q.x, q.y, q.z], n++ * 3);
         }
       });
       gP.attributes.position.needsUpdate = true;
     }
-    const ondas = [];
-    xs.forEach((x) => zs.forEach((z) => {
-      const m = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.6, 48), new THREE.MeshBasicMaterial({ color: CIELO, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
-      m.rotation.x = -Math.PI / 2; m.position.set(x, 0.01, z); scene.add(m); ondas.push(m);
-    }));
 
-    // ---------------------------------------------------------------- 7. el isotipo: bloque, barra, bola y pata
+    // ---------------------------------------------------------------- el isotipo: bloque, barra, bola y pata
     const k = 0.0036; // 256 unidades del logo → ~0.92 m, a 2.9 m de la cámara
     const L = (x, y) => [(x - 128) * k, -(y - 128) * k];
     const plano = (pts, prof) => { const s = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y))); return new THREE.ExtrudeGeometry(s, { depth: prof, bevelEnabled: false }); };
@@ -138,17 +108,17 @@
     const [bx, by] = L(144, 104); logo.add(bola);
     [barra, pata].forEach((m) => { m.position.z = 0.05; });
 
-    // ---------------------------------------------------------------- cámara
-    const foco = new THREE.Vector3(0, 1.2, 0);
+    // ---------------------------------------------------------------- cámara: del edificio en obra a la maqueta completa
+    const EDIF = new THREE.Vector3(-2.5, 1.2, 3.5), TODO = maqueta.limites.centro.clone(), foco = new THREE.Vector3();
     function camara(t) {
-      const ajuste = Math.max(1, 1.25 / camera.aspect);
-      if (suave) { camera.position.set(6.2 * ajuste, 4.6 * ajuste, 7 * ajuste); camera.lookAt(foco); return; }
-      const kk = eInOut(fase(t, 0, 6.0));
-      const ang = 0.35 + kk * 1.1;
-      const radio = (8.4 - 1.2 * Math.sin(kk * Math.PI) + eIn(fase(t, 5.9, DUR)) * 5) * ajuste;
-      const altura = 7.5 - 3.6 * eOut(fase(t, 0, 2.0)) + 0.8 * kk + eIn(fase(t, 5.9, DUR)) * 3;
-      camera.position.set(Math.cos(ang) * radio, altura, Math.sin(ang) * radio);
-      foco.y = 0.6 + 0.9 * fase(t, 1.8, 4.2);
+      const ajuste = Math.max(1, 1.5 / camera.aspect);
+      if (suave) { foco.copy(TODO); camera.position.set(11 * ajuste, 13 * ajuste, 16 * ajuste); camera.lookAt(foco); return; }
+      const kk = eInOut(fase(t, 0.3, 5.8));
+      foco.lerpVectors(EDIF, TODO, kk);
+      const ang = 0.95 - 0.5 * kk;
+      const radio = (12 + 9 * kk + eIn(fase(t, 6.6, DUR)) * 8) * ajuste;
+      const altura = (9 - 2.5 * eOut(fase(t, 0, 1.6)) + 3 * kk) * ajuste;
+      camera.position.set(foco.x + Math.sin(ang) * radio, foco.y + altura, foco.z + Math.cos(ang) * radio);
       camera.lookAt(foco);
     }
 
@@ -156,33 +126,25 @@
     function estado(t) {
       const f = FASES.filter((x) => t >= x[1]).pop()[0];
       if (f !== faseActual) { faseActual = f; cont.dataset.fase = f; }
+      piezas.forEach((p) => mover(p, t));
+      maqueta.actualizar(t);
 
-      const kSuelo = eOut(fase(t, 0, 0.8));
-      reticula.material.opacity = 0.55 * kSuelo;
-      ejes.forEach((l) => { l.material.opacity = 0.8 * kSuelo * (1 - fase(t, 4.4, 5.2)); });
-      piezas.forEach((p) => moverPieza(p, t));
-
-      const kCarga = fase(t, 4.6, 4.9) * (1 - fase(t, 5.9, 6.3));
+      const kCarga = fase(t, 5.7, 6.0) * (1 - fase(t, 6.7, 7.0));
       matP.opacity = kCarga;
-      if (kCarga > 0) moverCarga(t - 4.6);
-      ondas.forEach((o, i) => {
-        const ko = fase(t, 5.0 + i * 0.05, 5.9 + i * 0.05);
-        o.scale.setScalar(0.6 + ko * 1.6);
-        o.material.opacity = Math.sin(Math.PI * ko) * 0.8;
-      });
+      if (kCarga > 0) moverCarga(t - 5.7);
 
-      // 7. la obra se pierde en la niebla y se arma el isotipo
-      const kNiebla = eIn(fase(t, 5.9, 6.7));
-      scene.fog.near = 8 - 7.5 * kNiebla; scene.fog.far = 34 - 31 * kNiebla;
-      const kl = fase(t, 6.0, DUR);
+      // la obra se pierde en la niebla y se arma el isotipo
+      const kNiebla = eIn(fase(t, 6.6, 7.4));
+      scene.fog.near = 26 - 25.5 * kNiebla; scene.fog.far = 60 - 57 * kNiebla;
+      const kl = fase(t, 6.8, DUR);
       logo.visible = kl > 0;
       if (kl > 0) {
-        bloque.scale.setScalar(Math.max(0.001, rebote(fase(t, 6.0, 6.4))));
-        const kb = eOut(fase(t, 6.2, 6.6)), kp = eOut(fase(t, 6.5, 6.9)), kc = rebote(fase(t, 6.35, 6.8));
+        bloque.scale.setScalar(Math.max(0.001, rebote(fase(t, 6.8, 7.2))));
+        const kb = eOut(fase(t, 7.0, 7.4)), kp = eOut(fase(t, 7.3, 7.7)), kc = rebote(fase(t, 7.15, 7.6));
         barra.position.y = -0.5 * (1 - kb);
         pata.position.set(-0.3 * (1 - kp), 0.15 * (1 - kp), 0.05);
         bola.position.set(bx, by + 0.6 * (1 - kc), 0.06);
-        [barra, pata, bola].forEach((m, i) => { m.visible = [kb, kp, fase(t, 6.35, 6.8)][i] > 0; });
+        [barra, pata, bola].forEach((m, i) => { m.visible = [kb, kp, fase(t, 7.15, 7.6)][i] > 0; });
         logo.rotation.y = -0.35 * (1 - eOut(kl));
       }
       camara(t);
