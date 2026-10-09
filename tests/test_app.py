@@ -345,6 +345,18 @@ def test_que_quieres_calcular(navegador, url):
     assert not errores, errores
 
 
+def test_azul_de_la_marca(navegador, url):
+    """El 10 % de acento (títulos, pestaña activa, progreso, foco) es el azul del logo en los dos temas."""
+    pagina, errores = abrir(navegador, url, tema="dark")
+    var = lambda n: pagina.evaluate(f"getComputedStyle(document.documentElement).getPropertyValue('{n}').trim().toLowerCase()")
+    for tema, azul in [("dark", "#8db8f2"), ("light", "#2a5db0")]:
+        pagina.evaluate(f"document.documentElement.dataset.theme = '{tema}'")
+        assert var("--acento-10") == azul and var("--titular") == azul and var("--marca-acento") == azul, tema
+    entrar_ejemplo(pagina)
+    assert pagina.evaluate("getComputedStyle(document.querySelector('#categorias .cat-punto.ok')).backgroundColor") == "rgb(42, 93, 176)"
+    assert not errores, errores
+
+
 def test_subindices_en_textos_y_dibujos(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)

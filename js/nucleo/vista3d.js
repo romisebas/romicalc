@@ -148,7 +148,7 @@
     // Mapa de presiones de servicio bajo la zapata (varía linealmente entre las esquinas)
     const sv = R.serv, qadm = R.inp.suelo.qadm;
     const gP = new THREE.PlaneGeometry(Lx, Ly, 1, 1); gP.rotateX(-Math.PI / 2);
-    const bajo = new THREE.Color(0xdfe8f3), alto = new THREE.Color(0x426188), exceso = new THREE.Color(COLOR.mal);
+    const bajo = new THREE.Color(0xdfe8f3), alto = new THREE.Color(0x2a5db0), exceso = new THREE.Color(COLOR.mal);
     const tono = (s) => (s > qadm ? exceso.clone() : bajo.clone().lerp(alto, Math.max(0, Math.min(1, s / qadm))));
     // Vértices del plano rotado: (−x, −z), (+x, −z), (−x, +z), (+x, +z); −z de three = +y del plano
     const cols = [sv.s4, sv.s1, sv.s3, sv.s2].map(tono);

@@ -114,6 +114,7 @@
       }));
       armarCamino(sel);
       moverPuntos(0);
+      sucio = true;
     }
     function elegir(id) {
       if (!id || id === sel && api) return;
@@ -139,7 +140,10 @@
     renderer.domElement.addEventListener('click', (ev) => { const id = tocado(ev); if (id) elegir(id); });
 
     // ------------------------------------------------------------ tamaño y cuadro
+    let sucio = true; // sin animaciones solo se dibuja cuando algo cambia
+    ctl.addEventListener('change', () => { sucio = true; });
     const tam = () => {
+      sucio = true;
       const w = cont.clientWidth, h = cont.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h, false);
@@ -160,8 +164,10 @@
       if (renderer.domElement.width !== Math.round(cont.clientWidth * renderer.getPixelRatio())) tam();
       const quieto = global.Mov && global.Mov.reducido();
       ctl.autoRotate = !quieto;
-      if (!quieto) { t += dt; moverPuntos(t); }
+      if (!quieto) { t += dt; moverPuntos(t); sucio = true; }
       ctl.update();
+      if (!sucio) return;
+      sucio = false;
       renderer.render(scene, camera);
     }
     requestAnimationFrame(cuadro);

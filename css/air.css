@@ -13,11 +13,11 @@ a { color: var(--enlace); text-decoration: underline; text-decoration-thickness:
 .vista, .acero-dir, .paso, .dims, .falta-item, .dialogo, .opcion-principal, .tipo-tarjeta:not(.pronto), .popover {
   --fondo: #f5f5f5; --superficie: #f5f5f5; --superficie-2: #e8e8e8;
   --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b; --linea: #e0e0e0; --linea-fuerte: #b3b3b3;
-  --acento: #1b1b1b; --acento-hover: #000; --acento-tinta: #fff; --acento-suave: #e0e0e0; --foco: #1b1b1b;
+  --acento: #1b1b1b; --acento-hover: #000; --acento-tinta: #fff; --acento-suave: #e0e0e0; --foco: #2A5DB0;
   --acero: #1b1b1b; --dovela: #3d3d3d; --concreto: #dcdcdc; --concreto-borde: #3d3d3d; --columna: #a6a6a6;
   --presion-lo: #fafafa; --presion-hi: #8c8c8c; --azul: #3d3d3d;
   --ok: #3d6b47; --ok-fondo: #dde8dc; --mal: #a3392c; --mal-fondo: #f1dcd7; --aviso: #6e5520; --aviso-fondo: #efe6cf;
-  --titular: #426188;
+  --titular: #2A5DB0;
   color-scheme: light; color: var(--tinta);
 }
 
@@ -300,7 +300,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
   grid-area: 1 / 1; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 28px; align-items: start;
   --fondo: #f5f5f5; --superficie: #f5f5f5; --superficie-2: #e8e8e8; --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b;
   --linea: #e0e0e0; --linea-fuerte: #b3b3b3; --acero: #1b1b1b; --dovela: #3d3d3d; --concreto: #dcdcdc; --concreto-borde: #3d3d3d; --columna: #a6a6a6;
-  --presion-lo: #fafafa; --presion-hi: #8c8c8c; --azul: #426188; --ok: #3d6b47; --ok-fondo: #dde8dc; --mal: #a3392c; --mal-fondo: #f1dcd7; --aviso: #6e5520; --aviso-fondo: #efe6cf;
+  --presion-lo: #fafafa; --presion-hi: #8c8c8c; --azul: #2A5DB0; --ok: #3d6b47; --ok-fondo: #dde8dc; --mal: #a3392c; --mal-fondo: #f1dcd7; --aviso: #6e5520; --aviso-fondo: #efe6cf;
   background: var(--superficie); color: var(--tinta); border-radius: var(--r-cont); padding: 28px 32px 32px;
 }
 .diapo.saliendo { pointer-events: none; }
@@ -424,7 +424,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 
 /* ===================================================================== v3.3 refuerzo elegido */
 .elegido {
-  --fondo: #f5f5f5; --superficie: #f5f5f5; --superficie-2: #e8e8e8; --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b; --linea: #e0e0e0; --linea-fuerte: #b3b3b3; --azul: #426188; --acento-tinta: #fff;
+  --fondo: #f5f5f5; --superficie: #f5f5f5; --superficie-2: #e8e8e8; --tinta: #1b1b1b; --tinta-2: #3d3d3d; --tinta-3: #6b6b6b; --linea: #e0e0e0; --linea-fuerte: #b3b3b3; --azul: #2A5DB0; --acento-tinta: #fff;
   background: var(--superficie); color: var(--tinta); border-radius: var(--r-cont); padding: 20px 22px 22px; display: grid; gap: 16px; margin-bottom: 22px;
 }
 .elegido-cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -998,3 +998,5 @@ body.en-portada .bv-ctl, body:not(.en-bienvenida) .bv-ctl { display: none; }
 #bv-marca .lg-bola { animation: piezaCae .7s var(--ease-out) .35s both, bolaRespira 6s ease-in-out 2.5s infinite; }
 @keyframes bolaRespira { 0%, 84%, 100% { transform: none; } 90% { transform: scale(1.14); } 95% { transform: scale(.96); } }
 html.mov-reducido #bv-marca .lg-bola { animation: none; }
+/* Memoria: el capítulo abierto lleva su número en el azul de la marca */
+.dp-cap[aria-current="true"] .dp-cap-n { background: var(--marca-bloque); color: #fff; }

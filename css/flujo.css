@@ -106,7 +106,7 @@ button.marca { border: 0; background: transparent; padding: 4px 6px 4px 0; curso
 @media (hover: hover) and (pointer: fine) { .cat:hover { color: var(--tinta); border-color: var(--linea-fuerte); } }
 .cat:active { transform: scale(0.97); }
 .cat-punto { width: 7px; height: 7px; border-radius: 50%; }
-.cat-punto.ok { background: var(--ok); }
+.cat-punto.ok { background: var(--marca-acento); } /* dato completo en azul de la marca */
 .cat-punto.falta { background: var(--aviso); box-shadow: 0 0 0 3px color-mix(in srgb, var(--aviso) 22%, transparent); }
 
 .principal { max-width: 1360px; margin: 0 auto; padding: 28px 32px 48px; width: 100%; }
