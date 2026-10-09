@@ -140,11 +140,14 @@
       { svg: D.planta(R, 'mm' + Math.random().toString(36).slice(2, 6)), m3d: { tipo: 'comb-planta', capa: 'acero' } });
 
     const sm = R.supMin;
-    diapo(k8, 'Cara superior a cuantía mínima', 'Donde el cálculo no pide acero arriba se coloca la cuantía mínima de retracción y temperatura: ' +
-      (sm.tramos.length ? 'barras longitudinales en los extremos sin L1, empalmadas con ella 1.3·l<sub>d</sub>, y ' : '') + 'barras transversales de repartición que sostienen la parrilla superior. Todas terminan en ganchos de 90° hacia abajo.',
-      [sm.tramos.length ? eq('Longitudinal mínima', 'A_{s,min}', '0.0018\,B\,h', '0.0018\cdot' + v(R.B, 'corto') + '\cdot' + v(R.h, 'corto'), v(sm.As, 'acero'), U('acero')) : null,
-        sm.tramos.length ? nota('ok', sm.tramos.map((t) => t.marca).join(' y ') + ': ' + sm.sel.resumen + ', empalme de ' + sm.emp.toFixed(2) + ' m con L1.') : null,
-        eq('Repartición', 'A_{s,min}', '0.0018\,L\,h', '0.0018\cdot' + v(R.L, 'corto') + '\cdot' + v(R.h, 'corto'), v(sm.trans.As, 'acero'), U('acero')),
+    const db1 = global.Refuerzo.BARS[R.fl.sup.sel.barra].db / 1000;
+    diapo(k8, 'Cara superior: corte de L1 y cuantía mínima', 'L1 cubre el momento negativo y pasa cada punto de inflexión una longitud e (NSR-10 C.12.12.3). La cuantía mínima de retracción y temperatura (C.7.12.2.1 y C.15.10.4) va solo en las partes sin acero calculado: ' +
+      (sm.tramos.length ? 'barras longitudinales del borde hasta el punto de inflexión, así el traslapo clase B (C.12.15.1) empieza donde el momento es cero, y ' : '') + 'barras transversales de repartición que sostienen la parrilla superior. Todas terminan en ganchos de 90° hacia abajo (C.7.1.2).',
+      [eq('Traslapo clase B', 'l_s', '1.3\\,l_d \\geq 300\\,\\text{mm}', null, v(sm.ls, 'longitud'), U('longitud'), 'ldc'),
+        eq('Prolongación de L1', 'e', '\\max\\left(d,\\;12\\,d_b,\\;\\dfrac{l_n}{16},\\;l_s\\right)', '\\max\\left(' + v(R.d, 'longitud') + ',\\;' + v(12 * db1, 'longitud') + ',\\;' + v(sm.ln / 16, 'longitud') + ',\\;' + v(sm.ls, 'longitud') + '\\right)', v(sm.e, 'longitud'), U('longitud'), 'ldc'),
+        sm.tramos.length ? eq('Longitudinal mínima', 'A_{s,min}', '0.0018\\,B\\,h', '0.0018\\cdot' + v(R.B, 'corto') + '\\cdot' + v(R.h, 'corto'), v(sm.As, 'acero'), U('acero')) : null,
+        sm.tramos.length ? nota('ok', sm.tramos.map((t) => t.marca + ' (extremo ' + t.lado + ')').join(' y ') + ': ' + sm.sel.resumen + ', del borde al punto de inflexión.') : nota('ok', 'L1 llega a los dos bordes con gancho: no quedan partes vacías arriba a lo largo.'),
+        eq('Repartición', 'A_{s,min}', '0.0018\\,L\\,h', '0.0018\\cdot' + v(R.L, 'corto') + '\\cdot' + v(R.h, 'corto'), v(sm.trans.As, 'acero'), U('acero')),
         nota('ok', 'T4: ' + sm.trans.sel.resumen + '.')],
       { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });
 
@@ -164,7 +167,7 @@
     // 10. Despiece
     const k10 = capitulo('despiece', 'Despiece', 'Ganchos de 12 db', true);
     diapo(k10, 'Lista de barras',
-      'Las barras superiores se cortan a una longitud de desarrollo de los puntos de inflexión; las demás corren de lado a lado con ganchos.',
+      'L1 pasa los puntos de inflexión una longitud e y la mínima superior (L3, L4) va del borde al punto de inflexión; las demás corren de lado a lado con ganchos de 90°.',
       R.despiece.marcas.map((x) => nota('ok', '<b>' + x.marca + '</b> · ' + x.desc + ': ' + x.n + ' #' + x.barra + ' de ' + x.largo.toFixed(2) + ' m (' + x.kg.toFixed(1) + ' kg)'))
         .concat([nota('ok', '<b>Total: ' + R.despiece.total.toFixed(1) + ' kg</b>')]),
       { svg: D.corteLongitudinal(R), m3d: { tipo: 'comb-corte-l' } });

@@ -106,7 +106,7 @@
       etqV(pp.ext.x, pp.ext.Vizq, -6) + etqV(pp.ext.x, pp.ext.Vder, 14) + etqV(pp.int.x, pp.int.Vizq, -6) + etqV(pp.int.x, pp.int.Vder, 14) +
       (pp.V0 !== null ? '<g class="mesa-v0"><circle cx="' + X(pp.V0) + '" cy="' + yV + '" r="4"/><text x="' + X(pp.V0) + '" y="' + (yV + 18) + '" text-anchor="middle">V = 0</text></g>' : '') +
       zona(X(0), yV - hD - 6, R.L * k, 2 * hD + 12) + '</g>');
-    const ld = R.ld.sup / 1000;
+    const ld = R.supMin.e; // prolongación de L1 más allá del punto de inflexión (NSR-10 C.12.12.3)
     p.push('<g class="mesa-diag diag-M"><text class="mesa-tit-diag" x="' + ML + '" y="' + (yM - hD - 18) + '">Momento M (' + U.u('momento') + ')</text>' +
       '<line class="mesa-eje" x1="' + X(0) + '" y1="' + yM + '" x2="' + X(R.L) + '" y2="' + yM + '"/>' +
       '<polygon class="mesa-area diagrama-m" points="' + X(0) + ',' + yM + ' ' + pts(R.lon.M.map((m) => -m), yM, kM) + ' ' + X(R.L) + ',' + yM + '"/>' +
@@ -118,7 +118,7 @@
         return '<g class="mesa-pi"><line x1="' + X(x) + '" y1="' + (yM - hD) + '" x2="' + X(x) + '" y2="' + (yM + hD) + '"/>' +
           '<text x="' + X(x) + '" y="' + (yM + hD + 14) + '" text-anchor="middle">PI</text>' +
           '<path class="mesa-ld" d="M' + X(x) + ' ' + (yM + hD + 24) + 'H' + X(x2) + '"/>' +
-          '<text x="' + f2(ML + (x + x2) / 2 * k) + '" y="' + (yM + hD + 40) + '" text-anchor="middle">ld</text></g>';
+          '<text x="' + f2(ML + (x + x2) / 2 * k) + '" y="' + (yM + hD + 40) + '" text-anchor="middle">e</text></g>';
       }).join('') +
       zona(X(0), yM - hD - 6, R.L * k, 2 * hD + 12) + '</g>');
     p.push('<line class="mesa-lector" x1="0" y1="' + (yCol - 30) + '" x2="0" y2="' + (H - 10) + '" visibility="hidden"/>');
@@ -177,7 +177,7 @@
       ' data-p="' + sv.p + '" data-gx="' + sv.g + '" data-gy="0" data-qadm="' + sv.lim + '">' + p.join('') + '</svg>';
   }
 
-  // Corte longitudinal: armado superior (cortado en PI ± ld) e inferior, columnas con dovelas
+  // Corte longitudinal: armado superior (L1 pasa los PI en e; L3/L4 llegan al PI, traslapo desde ahí) e inferior, columnas con dovelas
   function corteLongitudinal(R) {
     const U = global.Unidades, W = 760, k = (W - 150) / R.L, x0 = 50, yS = 90, h = R.h, r = R.inp.zapata.r;
     const X = (x) => x0 + x * k, Y = (y) => yS + (h - y) * k, H = Y(0) + 110, sv = servicioLineal(R);
@@ -196,6 +196,9 @@
       const y = ySup + 5, ext = t.x0 <= r + 1e-9;
       p.push('<path class="acero-min" d="M' + f2(X(ext ? t.x0 : t.x1)) + ' ' + f2(y + gancho) + 'V' + f2(y) + 'H' + f2(X(ext ? t.x1 : t.x0)) + '"/>' +
         '<text class="halo etq-acero" x="' + f2(X((t.x0 + t.x1) / 2)) + '" y="' + f2(y + 18) + '" text-anchor="middle">' + t.marca + '</text>');
+      // zona de traslapo: del punto de inflexión al final de L1
+      const pi = ext ? t.x1 : t.x0, fin = ext ? xa : xb;
+      p.push('<text class="pi-txt" x="' + f2(X((pi + fin) / 2)) + '" y="' + f2(y + 30) + '" text-anchor="middle">traslapo ' + U.fmt(Math.abs(fin - pi), 'longitud') + '</text>');
     });
     p.push('<path class="acero-inf" d="M' + f2(X(r)) + ' ' + f2(yInf - gancho) + 'V' + f2(yInf) + 'H' + f2(X(R.L - r)) + 'v' + f2(-gancho) + '"/>');
     p.push('<text class="halo etq-acero" x="' + f2(X((xa + xb) / 2)) + '" y="' + f2(ySup - 8) + '" text-anchor="middle">L1 · ' + R.fl.sup.sel.resumen + '</text>');
@@ -274,12 +277,12 @@
     return t.svg(FW, H, s, 'Viga invertida con la presión última');
   }
 
-  // Diagramas de cortante y momento con los puntos de inflexión y ld
+  // Diagramas de cortante y momento con los puntos de inflexión y la prolongación e de L1
   function figVM(R) {
     const t = T(), U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, yV = 116, yM = 270, h = 52;
     const Vmax = Math.max.apply(null, R.lon.V.map(Math.abs)) || 1, Mmax = Math.max.apply(null, R.lon.M.map(Math.abs)) || 1;
     const pts = (vals, y0, e) => R.lon.xs.map((x, j) => f2(X(x)) + ',' + f2(y0 - vals[j] * e)).join(' ');
-    const pp = R.lon.puntos, ld = R.ld.sup / 1000, H = yM + h + 44;
+    const pp = R.lon.puntos, ld = R.supMin.e, H = yM + h + 44;
     // la zapata arriba, como referencia de dónde están las columnas
     let s = t.concreto(X(0), 22, R.L * k, 10);
     R.cols.forEach((c) => { s += '<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="10" width="' + f2(Math.max(c.c1 * k, 6)) + '" height="12" fill="url(#st-columna)" stroke="' + t.TINTA + '" stroke-width="1"/>'; });
@@ -299,7 +302,7 @@
       s += '<line class="fig-pi" x1="' + f2(X(x)) + '" y1="' + (yM - h) + '" x2="' + f2(X(x)) + '" y2="' + (yM + h) + '" stroke="' + t.TINTA + '" stroke-width="1" stroke-dasharray="10 3 2 3"/>' +
         t.txt(X(x), yM + h + 14, 'PI', { anc: 'middle', tam: 10.5, peso: 600 }) +
         '<g class="cota ld"><line class="fig-ld" x1="' + f2(X(x)) + '" y1="' + (yM + h + 24) + '" x2="' + f2(X(x2)) + '" y2="' + (yM + h + 24) + '" stroke="' + t.TINTA + '" stroke-width="3" stroke-linecap="round"/>' +
-        t.txt((X(x) + X(x2)) / 2, yM + h + 38, ['l', 'd', ''], { anc: 'middle', tam: 10.5 }) + '</g>';
+        t.txt((X(x) + X(x2)) / 2, yM + h + 38, 'e', { anc: 'middle', tam: 10.5 }) + '</g>';
     });
     return t.svg(FW, H, s, 'Diagramas de cortante y momento');
   }

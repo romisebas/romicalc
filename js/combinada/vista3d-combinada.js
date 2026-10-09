@@ -72,7 +72,9 @@
   function pintarBarra() {
     barra.innerHTML = '<div class="seg seg-sm v3d-capas" role="group" aria-label="Capas del 3D">' +
       BOTONES.map(([k, t]) => '<button type="button" data-capa3d="' + k + '" aria-pressed="' + String(visibles[k]) + '"><span class="v3d-muestra" style="--c:' + (COLOR[k] ? '#' + COLOR[k].toString(16).padStart(6, '0') : 'var(--tinta-3)') + '"></span>' + t + '</button>').join('') +
-      '</div><div class="v3d-acciones"><button type="button" class="btn btn-mini" data-separar aria-pressed="false">Separar</button><button type="button" class="btn btn-mini" data-encuadrar3d>Encuadrar</button></div>';
+      '</div><div class="v3d-barras" aria-label="Barras de cada grupo"></div><div class="v3d-acciones"><button type="button" class="btn btn-mini" data-separar aria-pressed="false">Separar</button><button type="button" class="btn btn-mini" data-encuadrar3d>Encuadrar</button></div>';
+    // La barra elegida aquí es la misma de la pestaña Refuerzo: se recalcula y el 3D se rehace sin mover la cámara
+    barra.addEventListener('change', (e) => { if (e.target.dataset.ruta) global.Mesa.ajustar(e.target.dataset.ruta, Number(e.target.value)); });
     barra.addEventListener('click', (e) => {
       const c = e.target.closest('[data-capa3d]'), s = e.target.closest('[data-separar]');
       if (c) { const k = c.dataset.capa3d; visibles[k] = !visibles[k]; c.setAttribute('aria-pressed', String(visibles[k])); aplicarVisibles(); }
@@ -194,9 +196,23 @@
     sucio = true;
   }
 
+  // Una lista por grupo; las franjas y el acero entre ellas comparten la barra, y cada opción toma el peor estado de los tres
+  function pintarBarras(R) {
+    const caja = barra && barra.querySelector('.v3d-barras');
+    if (!caja) return;
+    const A = global.Armado, PEOR = { ok: 0, aviso: 1, mal: 2 };
+    const trans = [R.tr[0].sel, R.tr[1].sel, R.entre.sel].filter(Boolean);
+    const opsT = trans[0].ops.map((o) => Object.assign({}, o, { estado: trans.map((t) => (t.ops.find((x) => x.barra === o.barra) || o).estado).sort((a, b) => PEOR[b] - PEOR[a])[0] }));
+    caja.innerHTML = A.selector('Superior', COLOR.sup, 'data-ruta="acero.barSup"', R.fl.sup.sel.ops, R.fl.sup.sel.barra) +
+      A.selector('Mínima', COLOR.min, 'data-ruta="acero.barMin"', R.supMin.sel.ops, R.supMin.sel.barra) +
+      A.selector('Inferior', COLOR.inf, 'data-ruta="acero.barInf"', R.fl.inf.sel.ops, R.fl.inf.sel.barra) +
+      A.selector('Transversal', COLOR.trans, 'data-ruta="acero.barTrans"', opsT, R.tr[0].sel.barra);
+  }
+
   function mostrar(R) {
     const THREE = global.THREE;
     if (!cont || !THREE || !R) return;
+    if (R.supMin) pintarBarras(R);
     // Todo lo que cambia el dibujo: dimensiones, barras elegidas, cortes (ld), presiones y su límite
     const sel = (s) => (s ? [s.barra, s.n] : null);
     const firma = JSON.stringify([R.L, R.B, R.h, R.inp.zapata.r, R.inp.geometria, R.inp.columnas, sel(R.fl.sup.sel), sel(R.fl.inf.sel),

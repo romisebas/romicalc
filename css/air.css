@@ -925,6 +925,15 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .v3d-muestra { width: 10px; height: 10px; border-radius: 3px; background: var(--c); opacity: .35; transition: opacity .2s ease; }
 .v3d-capas button[aria-pressed="true"] .v3d-muestra { opacity: 1; }
 .v3d-acciones { display: inline-flex; gap: 6px; }
+/* Barras de cada grupo junto al visor 3D */
+.v3d-barras { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; width: 100%; }
+.v3d-barras:empty, .v3d-barras[hidden] { display: none; }
+#ais-barras { padding: 10px 16px; }
+.v3d-bar { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 500 12px/1 var(--sans); color: var(--tinta-2); }
+.v3d-bar .v3d-muestra { opacity: 1; }
+.v3d-bar select { font: 500 12px/1 var(--sans); color: var(--tinta); background: var(--fondo); border: 1px solid var(--linea); border-radius: var(--r-ctl); padding: 6px 8px; max-width: 100%; }
+.v3d-bar select.est-aviso { border-color: var(--aviso, #c98a1b); }
+.v3d-bar select.est-mal { border-color: var(--mal); }
 .v3d-acciones [aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
 .app-comb .mesa-3d { position: relative; height: min(520px, 62vh); }
 .tip-3d { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; }

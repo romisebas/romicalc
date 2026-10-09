@@ -22,7 +22,7 @@
 
   function datosGrupo(R, id) {
     return {
-      sup: { tit: 'Longitudinal superior', ruta: 'acero.barSup', As: R.fl.sup.As, sel: R.fl.sup.sel, b: R.B, dir: 'a lo largo (arriba)', nota: 'Momento negativo entre columnas. Las barras se cortan a l<sub>d</sub> de los puntos de inflexión.' },
+      sup: { tit: 'Longitudinal superior', ruta: 'acero.barSup', As: R.fl.sup.As, sel: R.fl.sup.sel, b: R.B, dir: 'a lo largo (arriba)', nota: 'Momento negativo entre columnas. Las barras pasan cada punto de inflexión una longitud e = máx(d, 12 d<sub>b</sub>, l<sub>n</sub>/16, l<sub>s</sub>) (NSR-10 C.12.12.3); desde ahí traslapan con la mínima.' },
       inf: { tit: 'Longitudinal inferior', ruta: 'acero.barInf', As: R.fl.inf.As, sel: R.fl.inf.sel, b: R.B, dir: 'a lo largo (abajo)', nota: 'Momento positivo bajo las columnas; suele gobernar el acero mínimo.' },
       tr0: { tit: 'Franja exterior', ruta: 'acero.barTrans', As: R.tr[0].fl.As, sel: R.tr[0].sel, b: R.tr[0].b, dir: 'a lo ancho', nota: 'Voladizo transversal bajo la columna exterior. Las tres franjas comparten la barra.' },
       tr1: { tit: 'Franja interior', ruta: 'acero.barTrans', As: R.tr[1].fl.As, sel: R.tr[1].sel, b: R.tr[1].b, dir: 'a lo ancho', nota: 'Voladizo transversal bajo la columna interior. Las tres franjas comparten la barra.' },
@@ -49,7 +49,7 @@
     return '<div class="mesa-tabla-marco"><table class="mesa-tabla" id="mesa-despiece"><thead><tr><th>Marca</th><th>Descripción</th><th>Barra</th><th class="num">Cant.</th><th>Forma</th><th class="num">Largo (m)</th><th class="num">Peso (kg)</th></tr></thead><tbody>' +
       D.marcas.map((m) => '<tr><td><b>' + m.marca + '</b></td><td>' + m.desc + '</td><td>#' + m.barra + '</td><td class="num">' + m.n + '</td><td>' + forma(m) + '</td><td class="num">' + f2(m.largo) + '</td><td class="num">' + m.kg.toFixed(1) + '</td></tr>').join('') +
       '</tbody><tfoot><tr><td colspan="6">Total</td><td class="num">' + D.total.toFixed(1) + ' kg</td></tr></tfoot></table></div>' +
-      '<p class="ayuda">Ganchos de 12 d<sub>b</sub>. Las barras superiores se cortan a l<sub>d</sub> de los puntos de inflexión; las dovelas incluyen el empalme a compresión con la columna.</p>' +
+      '<p class="ayuda">Ganchos de 12 d<sub>b</sub>. L1 pasa los puntos de inflexión una longitud e y la mínima superior llega hasta ellos (traslapo clase B, C.12.15.1); las dovelas incluyen el empalme a compresión con la columna.</p>' +
       '<div class="fila-btn"><button type="button" class="btn btn-quieto" id="mesa-copiar">Copiar tabla</button></div>';
   }
 

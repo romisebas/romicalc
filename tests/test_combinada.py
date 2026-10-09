@@ -107,10 +107,16 @@ def test_combinada_chequeos_y_validacion(navegador, url):
     S = C["supMin"]
     marcas = {m["marca"] for m in C["despiece"]["marcas"]}
     assert marcas == {"L1", "L2", "T1", "T2", "T3", "T4", "D1", "D2"} | {t["marca"] for t in S["tramos"]}
-    # cara superior a cuantía mínima: 0.0018·b·h, y L3/L4 empalman con L1
+    # cara superior: mínima 0.0018·b·h solo en las partes vacías; L3/L4 llegan al punto de inflexión y L1 lo pasa
+    # e = max(d, 12 db, ln/16, ls) (NSR-10 C.12.12.3): el traslapo empieza en el PI y mide e ≥ ls = 1.3·ld (C.12.15.1)
     assert abs(S["As"] - 0.0018 * C["B"] * C["h"] * 1e4) < 1e-6 and abs(S["trans"]["As"] - 0.0018 * C["L"] * C["h"] * 1e4) < 1e-6
+    PI = C["lon"]["puntos"]["PI"]
+    assert S["e"] >= S["ls"] >= 0.3 and S["e"] >= C["d"] and S["e"] >= S["ln"] / 16
     for t in S["tramos"]:
-        assert (t["x1"] > S["xa"]) if t["marca"] == "L3" else (t["x0"] < S["xb"])
+        if t["marca"] == "L3":
+            assert abs(t["x1"] - PI[0]) < 1e-9 and abs(S["xa"] - (PI[0] - S["e"])) < 1e-9
+        else:
+            assert abs(t["x0"] - PI[1]) < 1e-9 and abs(S["xb"] - (PI[1] + S["e"])) < 1e-9
     res = pagina.evaluate("Tipos['combinada'].validarContraPdf().map(r => ({lbl: r.lbl, ok: r.ok}))")
     assert len(res) == 18 and all(r["ok"] for r in res), res
     assert not errores
@@ -411,6 +417,13 @@ def test_vista_3d_con_capas_y_separar(navegador, url):
     pagina.evaluate("Vista3DCombinada.fijarCamara([1, 2, 3])")
     pagina.evaluate("Mesa.ajustar('zapata.d', 0.70)")
     assert pagina.evaluate("Vista3DCombinada.camara()") == [1, 2, 3]
+    # Las barras se eligen junto al 3D: cambia el acero y la cámara no se mueve
+    assert pagina.locator("#c-3d-barra .v3d-barras select").count() == 4
+    pagina.select_option('#c-3d-barra select[data-ruta="acero.barSup"]', "6")
+    pagina.wait_for_function("Vista3DCombinada.etiquetas().some(e => e.startsWith('L1 ') && e.includes('#6'))")
+    assert pagina.evaluate("Vista3DCombinada.camara()") == [1, 2, 3]
+    pagina.select_option('#c-3d-barra select[data-ruta="acero.barMin"]', "4")
+    pagina.wait_for_function("Vista3DCombinada.etiquetas().some(e => e.startsWith('L4 ') && e.includes('#4'))")
     assert not errores, errores
 
 

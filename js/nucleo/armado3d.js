@@ -174,5 +174,15 @@
     return im;
   }
 
-  global.Armado = { COLOR, aislada, combinada, malla, cortar, recta, redondear };
+  // Lista de barras de un grupo para elegirla junto al visor 3D. ops: opciones de Refuerzo.opcionesBarras (con su estado);
+  // atributos: lo que identifica el cambio (name="barX" en la aislada, data-ruta="acero.barSup" en la combinada)
+  function selector(etq, color, atributos, ops, barra) {
+    const NOTA = { ok: '', aviso: ' · aviso', mal: ' · no cumple' }, sel = ops.find((o) => o.barra === barra) || {};
+    return '<label class="v3d-bar"><span class="v3d-muestra" style="--c:#' + color.toString(16).padStart(6, '0') + '"></span>' + etq +
+      '<select ' + atributos + ' class="est-' + (sel.estado || 'ok') + '">' + ops.map((o) =>
+        '<option value="' + o.barra + '"' + (o.barra === barra ? ' selected' : '') + '>#' + o.barra + ' · ' + o.n + ' @ ' + o.s.toFixed(2) + ' m' + NOTA[o.estado] + '</option>').join('') +
+      '</select></label>';
+  }
+
+  global.Armado = { COLOR, aislada, combinada, malla, cortar, recta, redondear, selector };
 })(window);

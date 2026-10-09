@@ -831,3 +831,15 @@ def test_capturas_y_sin_scroll_horizontal(navegador, url):
         pagina.wait_for_timeout(250)
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-asistente-planta.png"))
         assert not errores, errores
+
+
+def test_barras_junto_al_3d(navegador, url):
+    """En Planos de la aislada las barras en X y en Y se eligen junto al 3D (las mismas de la pestaña Refuerzo)."""
+    pagina, errores = abrir(navegador, url)
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-planos")
+    assert pagina.locator("#ais-barras select").count() == 2
+    pagina.select_option('#ais-barras select[name="barX"]', "5")
+    pagina.wait_for_function("document.querySelector('#ais-barras select[name=barX]').value === '5'")
+    assert pagina.evaluate("document.querySelector('#acero-x input[name=barX]:checked').value") == "5"
+    assert not errores, errores

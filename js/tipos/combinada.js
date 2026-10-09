@@ -22,7 +22,7 @@
     suelo: { qadm: 12, factorSismo: 1.33 },
     materiales: { fc: 280, fy: 4200, lambda: 1, phiV: 0.75, phiF: 0.90, phiB: 0.65 },
     zapata: { d: 0.68, r: 0.07 },
-    acero: { barSup: null, barInf: null, barTrans: null },
+    acero: { barSup: null, barInf: null, barTrans: null, barMin: null },
     informe: { titulo: '', elaboro: '', responsables: '', fecha: '' },
   };
 
@@ -36,7 +36,7 @@
     suelo: { qadm: null, factorSismo: null },
     materiales: { fc: null, fy: null, lambda: null, phiV: null, phiF: null, phiB: null },
     zapata: { d: null, r: null },
-    acero: { barSup: null, barInf: null, barTrans: null },
+    acero: { barSup: null, barInf: null, barTrans: null, barMin: null },
     informe: { titulo: '', elaboro: '', responsables: '', fecha: '' },
   };
 
@@ -298,19 +298,25 @@
   }
 
   // ---------------------------------------------------------------- acero superior mínimo
-  // L1 se corta a ld de los puntos de inflexión; la cara superior se completa a cuantía mínima (0.0018·b·h, NSR-10 C.7.12):
-  // L3 y L4 en los extremos sin L1, empalmadas con ella 1.3·ld (clase B, C.12.15), y T4 de repartición a lo ancho.
+  // L1 (momento negativo) pasa cada punto de inflexión e = max(d, 12 db, ln/16, ls) (NSR-10 C.12.12.3), con ls = 1.3·ld
+  // el traslapo clase B (C.12.15.1). La cuantía mínima (0.0018·b·h, C.7.12.2.1 y C.15.10.4) va solo en las partes vacías:
+  // L3 y L4 del borde hasta el punto de inflexión, así el traslapo empieza en él, donde el momento es cero; y T4 a lo ancho.
+  // Si al punto de inflexión le falta e para llegar al borde, L1 sigue hasta el borde con gancho.
   function superiorMinimo(inp, R) {
-    const z = inp.zapata, a = inp.acero, m = inp.materiales, h = R.h, L = R.L, PI = R.lon.puntos.PI, ldS = R.ld.sup / 1000;
-    const xa = PI.length === 2 ? Math.max(z.r, PI[0] - ldS) : z.r;
-    const xb = PI.length === 2 ? Math.min(L - z.r, PI[1] + ldS) : L - z.r;
-    const As = 0.0018 * R.B * 100 * h * 100, sel = elegirBarras(As, R.B, h, z.r, a.barSup);
-    const emp = 1.3 * global.Concreto.ldTraccion(sel.barra, m.fc, m.fy, m.lambda, true, inp.unid) / 1000;
+    const z = inp.zapata, a = inp.acero, m = inp.materiales, h = R.h, L = R.L, r = z.r, PI = R.lon.puntos.PI, RF = global.Refuerzo;
+    const As = 0.0018 * R.B * 100 * h * 100, sel = elegirBarras(As, R.B, h, r, a.barMin || R.fl.sup.sel.barra);
+    const ld = (n) => global.Concreto.ldTraccion(n, m.fc, m.fy, m.lambda, true, inp.unid) / 1000;
+    const ls = Math.max(1.3 * Math.max(ld(R.fl.sup.sel.barra), ld(sel.barra)), 0.3);
+    const [c0, c1] = R.cols, ln = (c1.x - c1.c1 / 2) - (c0.x + c0.c1 / 2);
+    const e = Math.max(R.d, 12 * RF.BARS[R.fl.sup.sel.barra].db / 1000, ln / 16, ls);
+    let xa = r, xb = L - r;
     const tramos = [];
-    if (xa > z.r + 0.05) tramos.push({ marca: 'L3', lado: 'exterior', x0: z.r, x1: Math.min(xb, xa + emp) });
-    if (xb < L - z.r - 0.05) tramos.push({ marca: 'L4', lado: 'interior', x0: Math.max(xa, xb - emp), x1: L - z.r });
+    if (PI.length === 2) {
+      if (PI[0] - e > r + 0.05) { xa = PI[0] - e; tramos.push({ marca: 'L3', lado: 'exterior', x0: r, x1: PI[0] }); }
+      if (PI[1] + e < L - r - 0.05) { xb = PI[1] + e; tramos.push({ marca: 'L4', lado: 'interior', x0: PI[1], x1: L - r }); }
+    }
     const AsT = 0.0018 * L * 100 * h * 100;
-    return { xa, xb, As, sel, emp, tramos, trans: { As: AsT, b: L, sel: elegirBarras(AsT, L, h, z.r, a.barTrans) } };
+    return { xa, xb, e, ln, ls, As, sel, tramos, trans: { As: AsT, b: L, sel: elegirBarras(AsT, L, h, r, a.barTrans) } };
   }
 
   // ---------------------------------------------------------------- despiece

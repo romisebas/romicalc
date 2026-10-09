@@ -5,7 +5,7 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 ## Estado actual
 - **Versión:** beta 1.2 en GitHub (github.com/romisebas/romicalc) y en línea en https://romicalc.netlify.app/ (la dirección vieja zapatapp.netlify.app ya no responde).
 - **Nombre:** RomiCalc (antes ZapatAPP).
-- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 61 pruebas.
+- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 62 pruebas.
 
 ## En curso: RomiCalc ([plan](docs/superpowers/plans/2026-10-08-romicalc.md))
 - [x] A · Skills y plugins: quitar karpathy-guidelines y redesign-existing-projects; Chrome DevTools MCP; skills de rendimiento y seguridad
@@ -46,9 +46,17 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] E · Mini-3D de la planta, el corte longitudinal y los cortes transversales de la combinada
 - [x] F · Pruebas, capturas y cierre
 
+## En curso: armado según la NSR-10 y barras junto al 3D ([plan](docs/superpowers/plans/2026-10-09-romicalc-armado-nsr10.md))
+- [x] A · Motor: L1 pasa cada punto de inflexión e = max(d, 12 db, ln/16, ls) (C.12.12.3); la mínima superior (L3/L4) va del borde al punto de inflexión y el traslapo clase B (C.12.15.1) empieza ahí; barra de la mínima aparte (acero.barMin)
+- [x] B · Dibujos: cota e en los diagramas de momento y zona de traslapo en el corte longitudinal; memoria con los artículos (y arreglo de las fórmulas de la cara superior)
+- [x] C · Barras junto al 3D de Planos (aislada: X e Y; combinada: superior, mínima, inferior y transversal)
+- [x] D · Pruebas, capturas y cierre
+- [ ] Q6: revisar los DWG que descargue el usuario
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
+| 2026-10-09 | Armado NSR-10 A–D: traslapo superior desde el punto de inflexión (L1 lo pasa e; L3/L4 del borde al PI), mínima solo en partes vacías, barras elegibles junto al 3D en las dos zapatas; corrige las fórmulas con una sola barra invertida de la diapositiva de la cara superior | (este) | 62 ✓ |
 | 2026-10-09 | Acero A–F: la combinada lleva la cara superior completa a cuantía mínima (L3/L4 y T4, en despiece, memoria y PDF); un solo armador 3D con ganchos curvos para Planos (aislada y combinada) y la memoria; las 41 diapositivas en mini-3D, también plantas y cortes con su acero; nota en la aislada sobre la cara superior | (este) | 61 ✓ |
 | 2026-10-09 | Figuras D–G: mini-3D quieto en las diapositivas (un solo renderizador, se arrastra y vuelve, etiquetas HTML, ligas en los dos sentidos) para las 13 figuras de la aislada y las 9 de la combinada; SVG técnico como respaldo y en el PDF (patrones con id propio para que el achurado salga impreso) | (este) | 61 ✓ |
 | 2026-10-09 | Figuras A–C: dibujo técnico en SVG (achurados, cotas, momentos con signo, subíndices, acero real en el corte, a escala) para las 9 figuras de la aislada y las 4 de la combinada | 85417ab | 60 ✓ (parcial) |

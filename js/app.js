@@ -286,6 +286,10 @@
     $('#titulo-vista2').textContent = vista2 === '3d' ? 'Vista 3D' : 'Corte ' + vista2;
     if (vista2 !== '3d') { $('#corte').innerHTML = Dibujo.corte(R, vista2); PlantaInteractiva.aplicar($('#corte')); }
     if (hay3d && vista2 === '3d') Vista3D.update(R);
+    // Barras de la parrilla junto al 3D (las mismas de la pestaña Refuerzo); con malla se eligen allá
+    const rf = R.ref, caja = $('#ais-barras');
+    caja.hidden = rf.tipo !== 'barras';
+    if (!caja.hidden) caja.innerHTML = Armado.selector('Barras en X', Armado.COLOR.X, 'name="barX"', rf.opsX, rf.barX) + Armado.selector('Barras en Y', Armado.COLOR.Y, 'name="barY"', rf.opsY, rf.barY);
   }
 
   // ---------------------------------------------------------------- refuerzo
@@ -983,6 +987,9 @@
       recalcular('programa');
     });
     $('#fy-malla').addEventListener('change', (e) => { estado.acero.fyMalla = parseInt(e.target.value, 10); recalcular('programa'); });
+    $('#ais-barras').addEventListener('change', (e) => {
+      if (e.target.name === 'barX' || e.target.name === 'barY') { estado.acero[e.target.name] = parseInt(e.target.value, 10); recalcular('programa'); }
+    });
     $('#bloque-refuerzo').addEventListener('change', (e) => {
       if (e.target.name === 'barX') estado.acero.barX = parseInt(e.target.value, 10);
       else if (e.target.name === 'barY') estado.acero.barY = parseInt(e.target.value, 10);
