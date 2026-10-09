@@ -8,27 +8,30 @@
   const TINTA = '#1d1d1d', GRIS = '#6b6b6b', GRIS_CLARO = '#9a9a9a';
   const f1 = (x) => Number(x).toFixed(1);
 
-  // Patrones: concreto (puntos y triángulos pequeños) y suelo (rayado diagonal); ids fijos, iguales en todas las figuras
-  function defs() {
+  // Patrones: concreto (puntos y triángulos pequeños) y suelo (rayado diagonal). Cada figura lleva los suyos con un id
+  // propio: si dos figuras compartieran id, el PDF tomaría el de una figura oculta de la app y saldría sin achurado.
+  let serie = 0;
+  function defs(pre) {
     return '<defs>' +
-      '<pattern id="st-concreto" width="22" height="22" patternUnits="userSpaceOnUse">' +
+      '<pattern id="' + pre + '-concreto" width="22" height="22" patternUnits="userSpaceOnUse">' +
         '<rect width="22" height="22" fill="#f4f3f0"/>' +
         '<circle cx="4" cy="5" r="0.9" fill="' + GRIS + '"/><circle cx="15" cy="3" r="0.6" fill="' + GRIS + '"/>' +
         '<circle cx="11" cy="14" r="0.8" fill="' + GRIS + '"/><circle cx="19" cy="18" r="0.6" fill="' + GRIS + '"/>' +
         '<path d="M5 15 l2.6 -1.2 l-0.4 2.6 z M16 9 l2.2 1.4 l-2.4 0.8 z" fill="none" stroke="' + GRIS + '" stroke-width="0.6"/>' +
       '</pattern>' +
-      '<pattern id="st-columna" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+      '<pattern id="' + pre + '-columna" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
         '<rect width="8" height="8" fill="#e6e4df"/><line x1="0" y1="0" x2="0" y2="8" stroke="' + GRIS_CLARO + '" stroke-width="0.8"/>' +
       '</pattern>' +
-      '<pattern id="st-suelo" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+      '<pattern id="' + pre + '-suelo" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
         '<line x1="0" y1="0" x2="0" y2="10" stroke="' + GRIS + '" stroke-width="0.8"/>' +
       '</pattern>' +
     '</defs>';
   }
 
   function svg(w, h, cont, titulo) {
+    const pre = 'st' + (++serie);
     return '<svg class="fig-tec" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + titulo + '" font-family="Inter, system-ui, sans-serif">' +
-      defs() + '<rect class="fig-papel" width="' + w + '" height="' + h + '" fill="#ffffff"/>' + cont + '</svg>';
+      defs(pre) + '<rect class="fig-papel" width="' + w + '" height="' + h + '" fill="#ffffff"/>' + cont.replace(/url\(#st-/g, 'url(#' + pre + '-') + '</svg>';
   }
 
   // Texto con subíndice: txt(x, y, ['M', 'x', ' = 0.23 tonf·m'])  ó  txt(x, y, 'texto')

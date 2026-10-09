@@ -334,6 +334,44 @@ def test_maqueta_3d_compartida(navegador, url):
     assert not errores, errores
 
 
+def recorrer_memoria(pagina, sig, raiz):
+    """Pasa por todas las diapositivas; devuelve cuántas figuras salieron en mini-3D (con etiquetas)."""
+    con3d = 0
+    total = int(pagina.text_content(f"{sig.replace('-sig', '-contador')}").split(" de ")[1])
+    for _ in range(total):
+        fig = pagina.locator(f"{raiz} .dp-escena .diapo:last-child .diapo-fig")
+        if fig.evaluate("f => f.classList.contains('con-3d')"):
+            assert fig.locator("canvas").count() == 1 and fig.locator(".m3d-etq").count() >= 1
+            con3d += 1
+        if not pagina.is_disabled(sig):
+            pagina.click(sig)
+            pagina.wait_for_timeout(120)
+    return con3d
+
+
+def test_memoria_con_mini_3d(navegador, url):
+    """Las figuras de la memoria se ven en mini-3D quieto (aislada y combinada); el PDF sigue con el SVG técnico."""
+    pagina, errores = abrir(navegador, url)
+    pagina.evaluate("window.__m3dForzar = true")
+    entrar_ejemplo(pagina)
+    pagina.click("#tab-memoria")
+    pagina.wait_for_selector(".diapo-fig.con-3d canvas")
+    # la ecuación ligada ilumina su pieza sin errores
+    pagina.locator("#app .dp-escena .diapo:last-child .ec[data-liga]").first.hover()
+    assert recorrer_memoria(pagina, "#diapo-sig", "#app") >= 9
+    assert not errores, errores
+    pagina.click("#btn-inicio")
+    pagina.click('#elementos [data-elemento="zapatas"]')
+    pagina.click("#op-ejemplo")
+    pagina.click('.tipo-tarjeta[data-tipo="combinada"]')
+    pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
+    pagina.click("#c-tab-memoria")
+    pagina.wait_for_selector("#mesa .diapo-fig.con-3d canvas")
+    sig = "#" + pagina.locator("#mesa .dp-control .btn-acento").get_attribute("id")
+    assert recorrer_memoria(pagina, sig, "#mesa") >= 4
+    assert not errores, errores
+
+
 def test_que_quieres_calcular(navegador, url):
     """Página de elementos: camino de las cargas en 3D, 7 elementos en dos grupos y solo Zapatas disponible."""
     pagina, errores = abrir(navegador, url, anim="activadas")

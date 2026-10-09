@@ -33,7 +33,7 @@
 
     const caps = [];
     const capitulo = (id, titulo, ref, ok) => { const cap = { id, titulo, ref, ok, diapos: [] }; caps.push(cap); return cap; };
-    const diapo = (cap, titulo, texto, items, svg) => cap.diapos.push({ titulo, texto, items: items.filter(Boolean), fig: svg ? { svg } : null });
+    const diapo = (cap, titulo, texto, items, svg) => cap.diapos.push({ titulo, texto, items: items.filter(Boolean), fig: svg ? (typeof svg === 'string' ? { svg } : svg) : null }); // { svg, m3d }: el SVG va al PDF y el m3d a la app
     const chk = (id) => R.chequeos.find((c) => c.id === id);
 
     // 1. Cargas y combinaciones
@@ -44,12 +44,12 @@
         ...R.cols.map((c, i) => eq('Servicio sin sismo, columna ' + nombre[i], 'P_{s' + (i + 1) + '}', 'D + L', v(c.D, 'fuerza') + ' + ' + v(c.L, 'fuerza'), v(c.Ps, 'fuerza'), U('fuerza'), 'carga')),
         ...R.cols.map((c, i) => eq('Servicio con sismo (B.2.3-8), columna ' + nombre[i], 'P_{sE' + (i + 1) + '}', 'D + 0.75\\cdot0.7\\dfrac{E}{R} + 0.75L',
           v(c.D, 'fuerza') + ' + 0.525\\dfrac{' + v(c.E, 'fuerza') + '}{' + n(R.R, 2) + '} + 0.75\\cdot' + v(c.L, 'fuerza'), v(c.PsE, 'fuerza'), U('fuerza')))],
-      D.figCargas(R, false));
+      { svg: D.figCargas(R, false), m3d: { tipo: 'comb-cargas', ult: false } });
     diapo(k1, 'Cargas mayoradas',
       'Se evalúan las combinaciones de resistencia y gobierna la que da la mayor carga total sobre la zapata; con ella se diseña todo el elemento.',
       R.ult.lista.map((cb) => ({ t: 'eq', etq: cb.id + (cb.id === R.ult.combo ? ' · gobierna' : ''), liga: 'carga',
         tex: '\\begin{aligned}P_{u1} &= ' + v(cb.P[0], 'fuerza') + U('fuerza') + ' \\\\ P_{u2} &= ' + v(cb.P[1], 'fuerza') + U('fuerza') + ' \\\\ \\Sigma P_u &= ' + (cb.id === R.ult.combo ? '\\boxed{' + v(cb.suma, 'fuerza') + U('fuerza') + '}' : v(cb.suma, 'fuerza') + U('fuerza')) + '\\end{aligned}' })),
-      D.figCargas(R, true));
+      { svg: D.figCargas(R, true), m3d: { tipo: 'comb-cargas', ult: true } });
 
     // 2. Dimensiones en planta
     const k2 = capitulo('planta', 'Dimensiones en planta', 'NSR-10 C.15.2', chk('suelo').ok);
@@ -60,7 +60,7 @@
         I.geometria.modoL === 'fijo'
           ? eq('Largo fijado', 'L', null, null, v(R.L, 'longitud'), U('longitud'), 'zapata')
           : eq('Largo (redondeado a 0.05 m)', 'L', '2\\,\\bar{x}', '2\\cdot' + v(R.xbar, 'longitud'), v(R.L, 'longitud'), U('longitud'), 'zapata')],
-      D.figCargas(R, false));
+      { svg: D.figCargas(R, false), m3d: { tipo: 'comb-cargas', ult: false } });
     diapo(k2, 'Área y ancho',
       'El área sale de la carga de servicio y del esfuerzo admisible; con sismo el admisible se aumenta. Gobierna el caso que pide más área.',
       [eq('Área sin sismo', 'A_z', '\\dfrac{\\Sigma P_s}{\\sigma_{adm}}', '\\dfrac{' + v(R.Ps, 'fuerza') + '}{' + v(I.suelo.qadm, 'presion') + '}', v(R.serv.Asin, 'area'), U('area'), 'zapata'),
@@ -77,7 +77,7 @@
       [eq('Presión media', 'q_u', '\\dfrac{\\Sigma P_u}{L\\,B}', '\\dfrac{' + v(R.q.Pu, 'fuerza') + '}{' + v(R.L, 'longitud') + '\\cdot' + v(R.B, 'longitud') + '}', v(R.q.qm, 'presion'), U('presion'), 'presion'),
         eq('Carga lineal hacia arriba', 'w_u', 'q_u\\,B', v(R.q.qm, 'presion') + '\\cdot' + v(R.B, 'longitud'), vW(R.q.w0), uW, 'presion'),
         doc ? null : eq('Presión en los extremos', 'q_{1},\\;q_{2}', null, null, v(R.q.q1, 'presion') + U('presion') + ',\\;' + v(R.q.q2, 'presion'), U('presion'), 'presion')],
-      D.figPresion(R));
+      { svg: D.figPresion(R), m3d: { tipo: 'comb-presion' } });
 
     // 4. Análisis longitudinal
     const k4 = capitulo('lon', 'Análisis longitudinal', 'Viga invertida', true);
@@ -89,7 +89,7 @@
         p.V0 !== null ? eq('Cortante nulo desde la columna exterior', 'x_{V=0}', null, null, v(p.V0 - c0.x, 'longitud'), U('longitud'), 'diagrama') : null,
         eq('Momento negativo máximo', 'M_u^{-}', null, null, v(R.lon.Mneg.M, 'momento'), U('momento'), 'diagrama'),
         eq('Momento bajo las columnas', 'M_u^{+}', null, null, v(R.lon.Mpos[0].M, 'momento') + '\\;/\\;' + v(R.lon.Mpos[1].M, 'momento'), U('momento'), 'diagrama')],
-      D.figVM(R));
+      { svg: D.figVM(R), m3d: { tipo: 'comb-vm' } });
 
     // 5. Flexión longitudinal
     const k5 = capitulo('fl', 'Flexión longitudinal', 'NSR-10 C.10 y C.7.12', R.fl.sup.ok && R.fl.inf.ok);
@@ -112,7 +112,7 @@
       [eq('Cortante actuante', 'V_{ud}', null, null, v(R.cl.Vud, 'fuerza'), U('fuerza'), 'diagrama'),
         eq('Resistencia del concreto', '\\phi V_c', '\\phi\\,' + C.cu + '\\,\\lambda\\sqrt{f\'_c}\\,b\\,d', n(m.phiV, 2) + '\\cdot' + C.cu + '\\cdot' + n(m.lambda, 2) + '\\sqrt{' + v(m.fc, 'esfuerzo') + '}\\cdot' + v(R.B, 'corto') + '\\cdot' + v(R.d, 'corto'), v(R.cl.phiVc, 'fuerza'), U('fuerza')),
         ver('Cortante longitudinal', 'V_{ud} = ' + v(R.cl.Vud, 'fuerza') + U('fuerza') + '\\;' + le(R.cl.ok) + '\\;\\phi V_c', R.cl.ok)],
-      D.figVM(R));
+      { svg: D.figVM(R), m3d: { tipo: 'comb-vm' } });
 
     // 7. Punzonamiento
     const k7 = capitulo('pz', 'Punzonamiento', en ? 'ACI 318 22.6' : 'NSR-10 C.11.11', R.pz.every((x) => x.ok));
@@ -122,7 +122,7 @@
         eq('Cortante actuante', 'V_u', 'P_u - q_u\\,A_o', v(R.cols[i].Pu, 'fuerza') + ' - ' + v(z.Vu === undefined ? 0 : (R.cols[i].Pu - z.Vu) / z.A, 'presion') + '\\cdot' + v(z.A, 'area'), v(z.Vu, 'fuerza'), U('fuerza'), 'area'),
         eq('Resistencia', '\\phi V_c', '\\phi\\min(V_{c1}, V_{c2}, V_{c3})', n(m.phiV, 2) + '\\cdot\\min(' + v(z.Vc1, 'fuerza') + ',\\,' + v(z.Vc2, 'fuerza') + ',\\,' + v(z.Vc3, 'fuerza') + ')', v(z.phiVc, 'fuerza'), U('fuerza')),
         ver('Punzonamiento', 'V_u = ' + v(z.Vu, 'fuerza') + U('fuerza') + '\\;' + le(z.ok) + '\\;\\phi V_c', z.ok)],
-      D.figPunz(R, i)));
+      { svg: D.figPunz(R, i), m3d: { tipo: 'comb-punz', i } }));
 
     // 8. Sentido transversal
     const k8 = capitulo('tr', 'Sentido transversal', 'Franjas bajo las columnas', R.tr.every((t) => t.ok));
@@ -150,7 +150,7 @@
       [...R.ld.dovelas.map((x, i) => ver('Dovelas, columna ' + nombre[i], 'l_{dc} = ' + n(ldV(x.ldc), 0) + ldU + '\\;' + le(x.ok) + '\\;d = ' + n(ldV(x.disponible), 0) + ldU, x.ok)),
         ...R.ld.trans.map((x, i) => ver('Transversal, franja ' + nombre[i], 'l_d = ' + n(ldV(x.ld), 0) + ldU + '\\;' + le(x.ok) + '\\;L_v - r = ' + n(ldV(x.disponible), 0) + ldU, x.ok)),
         eq('Barras superiores (ψt = 1.3)', 'l_{d,sup}', null, null, n(ldV(R.ld.sup), 0), ldU, 'ldc')],
-      D.figVM(R));
+      { svg: D.figVM(R), m3d: { tipo: 'comb-vm' } });
 
     // 10. Despiece
     const k10 = capitulo('despiece', 'Despiece', 'Ganchos de 12 db', true);

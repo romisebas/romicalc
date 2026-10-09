@@ -1002,3 +1002,12 @@ body.en-portada .bv-ctl, body:not(.en-bienvenida) .bv-ctl { display: none; }
 html.mov-reducido #bv-marca .lg-bola { animation: none; }
 /* Memoria: el capítulo abierto lleva su número en el azul de la marca */
 .dp-cap[aria-current="true"] .dp-cap-n { background: var(--marca-bloque); color: #fff; }
+
+/* Mini-3D de la memoria: quieto, se arrastra para mirar y vuelve; el SVG técnico queda para el PDF y de respaldo */
+.diapo-fig.con-3d > svg { display: none; }
+.m3d { position: relative; width: 100%; align-self: stretch; }
+.m3d-lienzo { display: block; width: 100%; height: auto; cursor: grab; touch-action: pan-y; }
+.m3d-lienzo:active { cursor: grabbing; }
+.m3d-etq { position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; padding: 3px 7px; border-radius: 4px;
+  background: rgba(255, 255, 255, .88); color: #1d1d1d; font: 500 12px/1.2 var(--sans); box-shadow: 0 0 0 1px rgba(0, 0, 0, .08); }
+.m3d-etq sub { font-size: .72em; }

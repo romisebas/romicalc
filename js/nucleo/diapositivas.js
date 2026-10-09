@@ -80,10 +80,12 @@
       return global.Figuras[f.tipo] ? global.Figuras[f.tipo](R, f.dir !== undefined ? f.dir : f.ult) : '';
     }
 
-    function enlazar(diapo) {
+    function enlazar(diapo, f) {
       const fig = diapo.querySelector('.diapo-fig');
+      let m3 = null; // mini-3D de la figura (si el equipo lo permite); si no, queda el SVG técnico
       const marcar = (liga, si) => {
         if (!LIGAS[liga]) return;
+        if (m3) m3.resaltar(liga, si);
         fig.querySelectorAll(LIGAS[liga]).forEach((e) => e.classList.toggle('resaltado', si));
         diapo.querySelectorAll('.ec[data-liga="' + liga + '"]').forEach((e) => e.classList.toggle('resaltado', si));
       };
@@ -97,6 +99,7 @@
         el.addEventListener('pointerenter', () => marcar(liga, true));
         el.addEventListener('pointerleave', () => marcar(liga, false));
       }));
+      if (global.Mini3D) m3 = global.Mini3D.montar(fig, f, R, (liga, si) => { if (ligas.includes(liga)) marcar(liga, si); });
     }
 
     // La figura se dibuja al entrar: los trazos avanzan y los rellenos aparecen, en cascada
@@ -140,14 +143,14 @@
       const viejo = escena.firstElementChild;
       if (!dir || !viejo || reducido || !Element.prototype.animate) {
         escena.innerHTML = html(x);
-        enlazar(escena.lastElementChild);
+        enlazar(escena.lastElementChild, x.d.fig);
         if (dir) dibujar(escena.lastElementChild);
       } else {
         // Transición: la anterior sale hacia un lado y la nueva entra desde el otro
         viejo.classList.add('saliendo');
         escena.insertAdjacentHTML('beforeend', html(x));
         const nuevo = escena.lastElementChild;
-        enlazar(nuevo);
+        enlazar(nuevo, x.d.fig);
         dibujar(nuevo);
         const d = dir > 0 ? 1 : -1;
         const fuera = viejo.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (-40 * d) + 'px)' }], { duration: 220, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' });
