@@ -54,7 +54,7 @@
     el.innerHTML =
       '<header class="barra-sup" id="c-barra">' +
         '<div class="barra-fila">' +
-          '<button type="button" class="marca" id="c-inicio" aria-label="Volver al inicio"><span id="c-logo"></span><span class="marca-nombre">ZapatAPP</span></button>' +
+          '<button type="button" class="marca" id="c-inicio" aria-label="Volver al inicio"><span id="c-logo"></span><span class="marca-nombre">RomiCalc</span></button>' +
           '<span class="tipo-actual">Combinada</span>' +
           '<nav class="acciones" aria-label="Acciones">' +
             '<button type="button" class="btn btn-quieto" id="c-exportar">Exportar</button>' +

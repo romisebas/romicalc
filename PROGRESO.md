@@ -4,18 +4,20 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 
 ## Estado actual
 - **Versión:** beta 1.2 en `main`, solo local (sin subir). En línea sigue la beta 1.1 (zapatapp.netlify.app).
+- **Nombre:** RomiCalc (antes ZapatAPP). El sitio sigue en zapatapp.netlify.app hasta renombrarlo.
 - **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 56 pruebas.
 
 ## En curso: RomiCalc ([plan](docs/superpowers/plans/2026-10-08-romicalc.md))
 - [x] A · Skills y plugins: quitar karpathy-guidelines y redesign-existing-projects; Chrome DevTools MCP; skills de rendimiento y seguridad
 - [x] B · Logo de RomiCalc: isotipo K · R de piezas, íconos web y Design System en Claude Design ([plan](docs/superpowers/plans/2026-10-08-romicalc-marca-claude-design.md))
-- [ ] C · Renombrar la app a RomiCalc (lema: "Cálculo de elementos estructurales según la NSR-10")
+- [x] C · Renombrar la app a RomiCalc (lema: "Cálculo de elementos estructurales según la NSR-10")
 - [ ] D · Auditoría 1–3: números como texto y barra desconocida al importar; CSS muerto
 
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
-| 2026-10-08 | B · Isotipo K · R de piezas (tras 3 rondas en el lienzo de Claude Design) en `assets/logo/romicalc/` con íconos web; Design System "RomiCalc" (tokens reales de la app, libro de marca, 5 piezas) | (este) | — |
+| 2026-10-08 | C · App renombrada a RomiCalc: portada ROMICALC y lema nuevo, isotipo en barra, pie, carga y PDF (una tinta), favicon e íconos, intro 3D dobla la varilla en la R; logo viejo a `assets/logo/conceptos/zapatapp/`; claves de guardado sin tocar | (este) | 56 ✓ |
+| 2026-10-08 | B · Isotipo K · R de piezas (tras 3 rondas en el lienzo de Claude Design) en `assets/logo/romicalc/` con íconos web; Design System "RomiCalc" (tokens reales de la app, libro de marca, 5 piezas) | 1263c26 | — |
 | 2026-10-08 | A · karpathy-guidelines y redesign-existing-projects a `~/.claude/skills-respaldo`; skills performance-optimization y security-and-hardening; Chrome DevTools MCP (`--isolated`) en `~/.claude.json` (activo en la próxima sesión) | — | — |
 | 2026-10-08 | Se crean PROGRESO.md y CLAUDE.md | a2b5980 | 56 ✓ |
 

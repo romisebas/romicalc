@@ -1,4 +1,4 @@
-/* ZapatAPP v3.2: bienvenida con intro 3D, asistente paso a paso, dashboard por categorías,
+/* RomiCalc (antes ZapatAPP) v3.2: bienvenida con intro 3D, asistente paso a paso, dashboard por categorías,
  * proyectos recientes, informe PDF. El cálculo vive en el módulo del tipo de zapata (js/tipos/).
  */
 (function () {
@@ -1130,7 +1130,7 @@
     pintarUnidades();
     Notacion.observar(); // subíndices reales en todo lo que se pinte
     Proyectos.migrar();
-    $('#bv-marca').innerHTML = Logo.svg('logo dibujar', 'ZapatAPP');
+    $('#bv-marca').innerHTML = Logo.svg('logo dibujar', 'RomiCalc');
     $('#marca-logo').innerHTML = Logo.svg('logo');
     $('#pie-logo').innerHTML = Logo.svg('logo');
     // GitHub: el ícono gira con un aro que se expande y luego se abre el perfil

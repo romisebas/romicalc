@@ -1,4 +1,4 @@
-"""Pruebas automáticas de ZapatAPP (v3.2) con Playwright.
+"""Pruebas automáticas de RomiCalc (v3.2) con Playwright.
 
 Ejecutar desde la carpeta del proyecto:
     py -3.12 -m pytest tests -q
@@ -77,15 +77,18 @@ def test_intro_y_saltar(navegador, url):
     pagina.wait_for_timeout(600)
     pagina.click("#btn-saltar")
     pagina.wait_for_selector("#bv-portada:not([hidden])", timeout=4000)
-    assert "ZAPATAPP" in pagina.text_content("#titulo-app").upper()
+    assert "ROMICALC" in pagina.text_content("#titulo-app").upper()
     assert not errores, errores
 
 
-def test_identidad_zapatapp_oscura(navegador, url):
-    """v3.2: nombre ZapatAPP, tema oscuro por defecto (aunque el sistema pida claro), fuentes y escultura de vidrio."""
+def test_identidad_romicalc_oscura(navegador, url):
+    """Nombre RomiCalc con su lema y favicon, tema oscuro por defecto (aunque el sistema pida claro), fuentes y escultura de vidrio."""
     pagina, errores = abrir(navegador, url, tema="light")
-    assert pagina.title() == "ZapatAPP"
-    assert "ZAPATAPP" in pagina.text_content("#titulo-app").upper()
+    assert pagina.title() == "RomiCalc"
+    assert pagina.inner_text("#titulo-app") == "ROMICALC"
+    assert pagina.get_attribute("#titulo-app", "aria-label") == "RomiCalc"
+    assert "elementos estructurales" in pagina.text_content(".bv-lema")
+    assert pagina.get_attribute('link[rel="icon"][type="image/svg+xml"]', "href").endswith("romicalc/web/favicon.svg")
     assert pagina.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(0, 0, 0)"
     for f in ['500 16px "Inter"', '400 40px "Anton"', 'italic 400 20px "Instrument Serif"']:
         assert pagina.evaluate(f"document.fonts.check({json.dumps(f)})"), f
@@ -96,7 +99,7 @@ def test_identidad_zapatapp_oscura(navegador, url):
     pagina.click("#op-ejemplo")
     pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo")
-    assert pagina.text_content(".marca-nombre").strip() == "ZapatAPP"
+    assert pagina.text_content(".marca-nombre").strip() == "RomiCalc"
     pagina.click("#btn-tema")
     pagina.wait_for_function("getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)'")
     assert not errores, errores
@@ -105,7 +108,7 @@ def test_identidad_zapatapp_oscura(navegador, url):
 def test_pestanas_veredicto_y_logo(navegador, url):
     pagina, errores = abrir(navegador, url)
     entrar_ejemplo(pagina)
-    assert pagina.locator("#marca-logo path.lg-varilla").count() == 1
+    assert pagina.locator("#marca-logo .lg-bloque").count() == 1 and pagina.locator("#marca-logo .lg-bola").count() == 1
     assert pagina.is_visible("#panel-veredicto") and not pagina.is_visible("#panel-planos")
     assert pagina.get_attribute("#veredicto", "class").split() == ["veredicto", "ok", "anima"]
     pagina.click("#tab-planos")
@@ -273,7 +276,7 @@ def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
     entrar_ejemplo(pagina)
     anim = lambda sel: pagina.eval_on_selector(sel, "e => getComputedStyle(e).animationName")
     pagina.hover("#btn-inicio")
-    assert anim("#marca-logo path") == "varillaDobla"
+    assert anim("#marca-logo .lg-bola") == "piezaCae"
     pagina.hover("#barra-sup .btn-icono[data-abrir-ajustes]")
     assert anim("#barra-sup .btn-icono[data-abrir-ajustes] circle") == "ajusteDesliza"
     pagina.hover("#btn-tema")
@@ -281,7 +284,7 @@ def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
     pagina.hover(".pie-github")
     assert anim(".pie-github .gh-icono") == "ghSaluda"
     pagina.hover("#pie-logo")
-    assert anim("#pie-logo path") == "varillaDobla"
+    assert anim("#pie-logo .lg-barra") == "piezaSube"
     # Al cambiar de pestaña, la anterior se cierra con su propia animación antes de mostrar la nueva
     # Se comprueba en el mismo instante del clic (un clic lento podría llegar después de los 200 ms)
     estado = pagina.evaluate("""() => { document.querySelector('#tab-planos').click();
@@ -697,6 +700,8 @@ def test_informe_paginado_y_documento_listo(navegador, url):
     assert pagina.locator("#informe .inf-toc li").count() == 8
     hojas = pagina.locator("#informe .hoja").count()
     assert pagina.text_content("#informe .hoja:nth-child(2) .hoja-pie").strip().endswith(f"Página 2 de {hojas}")
+    assert pagina.text_content("#informe .hoja:nth-child(2) .hoja-pie").strip().startswith("RomiCalc")
+    assert pagina.locator("#informe .inf-logo .lg-bola").count() == 1
     assert pagina.locator("#informe .katex-error").count() == 0
     assert pagina.locator("#informe .inf-fig-cap svg").count() == 6
     pagina.evaluate("window.dispatchEvent(new Event('afterprint'))")

@@ -4,14 +4,21 @@
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* ---------- Logo (v3.2): varilla en Z, un trazo en currentColor ---------- */
-.logo-dz { display: block; overflow: visible; color: var(--tinta); }
-.logo-dz path { fill: none; stroke: currentColor; stroke-width: 28; stroke-linecap: round; stroke-linejoin: round; }
+/* ---------- Isotipo RomiCalc: bloque azul con la R de piezas ---------- */
+.logo-dz { display: block; overflow: visible; }
+.logo-dz .lg-bloque { fill: var(--marca-bloque); }
+.logo-dz .lg-barra, .logo-dz .lg-pata { fill: #ffffff; }
+.logo-dz .lg-bola { fill: var(--marca-bola); }
+.logo-dz .lg-pieza { transform-box: fill-box; transform-origin: center; }
 .logo-dz.logo { width: 30px; height: 30px; }
-/* La varilla se dobla: el trazo se dibuja de un gancho al otro */
-.logo-dz.dibujar path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: varillaDobla 1.1s var(--ease-io) .15s forwards; }
-@keyframes varillaDobla { to { stroke-dashoffset: 0; } }
-html.mov-reducido .logo-dz.dibujar path { stroke-dashoffset: 0; animation: none; }
+/* La R se arma: la barra sube, la bola cae en su sitio y la pata entra */
+.logo-dz.dibujar .lg-barra { animation: piezaSube .6s var(--ease-out) .15s both; }
+.logo-dz.dibujar .lg-bola { animation: piezaCae .7s var(--ease-out) .35s both; }
+.logo-dz.dibujar .lg-pata { animation: piezaEntra .6s var(--ease-out) .5s both; }
+@keyframes piezaSube { from { opacity: 0; transform: translateY(40%); } }
+@keyframes piezaCae { from { opacity: 0; transform: translateY(-60%) scale(.6); } }
+@keyframes piezaEntra { from { opacity: 0; transform: translate(-40%, -20%); } }
+html.mov-reducido .logo-dz.dibujar .lg-pieza { animation: none; }
 
 /* ---------- Bienvenida ---------- */
 /* Solo la portada (y la intro) bloquean el scroll; opciones y tipos pueden crecer */

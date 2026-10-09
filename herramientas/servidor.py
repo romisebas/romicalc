@@ -1,4 +1,4 @@
-"""Servidor local de desarrollo para ZapatAPP, sin caché del navegador.
+"""Servidor local de desarrollo para RomiCalc, sin caché del navegador.
 
 Uso (desde la carpeta del proyecto):
     python herramientas/servidor.py [puerto]
@@ -24,5 +24,5 @@ if __name__ == "__main__":
     puerto = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     manejador = functools.partial(SinCache, directory=str(RAIZ))
     with http.server.ThreadingHTTPServer(("127.0.0.1", puerto), manejador) as srv:
-        print(f"ZapatAPP en http://localhost:{puerto}")
+        print(f"RomiCalc en http://localhost:{puerto}")
         srv.serve_forever()

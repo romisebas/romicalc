@@ -1,12 +1,14 @@
-# ZapatAPP
+<img src="assets/logo/romicalc/romicalc-isotipo.svg" alt="" width="72">
 
-Diseño de zapatas de concreto reforzado según la **NSR-10** (Reglamento Colombiano de Construcción Sismo Resistente, Título C), con memoria de cálculo paso a paso, planos y vista 3D.
+# RomiCalc
+
+Cálculo de elementos estructurales según la **NSR-10**. Hoy diseña zapatas de concreto reforzado (Reglamento Colombiano de Construcción Sismo Resistente, Título C), con memoria de cálculo paso a paso, planos y vista 3D.
 
 **Úsala en línea: [zapatapp.netlify.app](https://zapatapp.netlify.app/)**
 
-![Portada de ZapatAPP](docs/capturas/portada.png)
+![Portada de RomiCalc](docs/capturas/portada.png)
 
-ZapatAPP es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La beta 1.2 diseña **zapatas aisladas con carga axial y momento en dos direcciones** y **zapatas combinadas de dos columnas**; los demás tipos (concéntrica, medianera, esquinera y corrida) llegarán en próximas versiones.
+RomiCalc (antes ZapatAPP) es una aplicación web estática: no necesita servidor ni instalación y guarda los proyectos en el navegador. La beta 1.2 diseña **zapatas aisladas con carga axial y momento en dos direcciones** y **zapatas combinadas de dos columnas**; los demás tipos (concéntrica, medianera, esquinera y corrida) llegarán en próximas versiones.
 
 ## Qué hace
 

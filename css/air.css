@@ -444,11 +444,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 @media (max-width: 900px) { .elegido-vistas { grid-template-columns: minmax(0, 1fr); } .elegido-3d, .elegido-2d { height: 220px; } }
 
 /* ===================================================================== v3.3 animación de los logos e íconos al pasar el mouse */
-/* Logo ZapatAPP (barra, pie y portada): la varilla se vuelve a doblar */
+/* Isotipo RomiCalc (barra, pie y portada): la R se vuelve a armar */
 @media (hover: hover) and (pointer: fine) {
-  #btn-inicio:hover .logo-dz path, .pie-marca:hover .logo-dz path, #bv-marca:hover .logo-dz path {
-    stroke-dasharray: 1; stroke-dashoffset: 1; animation: varillaDobla .9s var(--ease-io) forwards;
-  }
+  :is(#btn-inicio, .pie-marca, #bv-marca, #c-inicio):hover .lg-barra { animation: piezaSube .5s var(--ease-out) both; }
+  :is(#btn-inicio, .pie-marca, #bv-marca, #c-inicio):hover .lg-bola { animation: piezaCae .6s var(--ease-out) .1s both; }
+  :is(#btn-inicio, .pie-marca, #bv-marca, #c-inicio):hover .lg-pata { animation: piezaEntra .5s var(--ease-out) .2s both; }
   /* Ajustes: los deslizadores se mueven */
   .btn-icono[data-abrir-ajustes]:hover circle { animation: ajusteDesliza .7s var(--ease-io); transform-box: fill-box; }
   .btn-icono[data-abrir-ajustes]:hover circle:nth-of-type(2) { animation-direction: reverse; }
@@ -462,7 +462,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tinta); box-shad
 @keyframes ajusteDesliza { 0%, 100% { transform: none; } 50% { transform: translateX(-5px); } }
 @keyframes temaGira { 0% { transform: rotate(0); } 60% { transform: rotate(-40deg) scale(1.12); } 100% { transform: rotate(0); } }
 @keyframes ghSaluda { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-6deg); } }
-html.mov-reducido #btn-inicio:hover .logo-dz path, html.mov-reducido .pie-marca:hover .logo-dz path { stroke-dashoffset: 0; }
+html.mov-reducido .logo-dz .lg-pieza { animation: none !important; }
 
 /* ===================================================================== v3.3 pantalla de opciones y tipos */
 .bv-eti { margin: 0 0 22px; font: 500 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--acento-10); }

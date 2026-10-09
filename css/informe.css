@@ -58,6 +58,8 @@
 .inf-portada { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
 .inf-portada-sup { display: flex; align-items: center; gap: 14px; }
 .inf-logo { width: 16mm; height: 16mm; color: var(--tinta); }
+/* Isotipo en una tinta para imprimir en blanco y negro */
+.inf-logo, .inf-logo-mini { --marca-bloque: #1b1b1b; --marca-bola: #ffffff; }
 .inf-tipo { margin: 0; font: 700 7.5pt var(--sans); color: var(--tinta); letter-spacing: .05em; text-transform: uppercase; }
 .inf-portada-centro { border-top: 2px solid var(--tinta); padding-top: 10mm; }
 .inf-titulo { font: 400 34pt/0.86 var(--sans); letter-spacing: 0.013em; text-transform: uppercase; margin: 0 0 12mm; max-width: 165mm; text-wrap: balance; }

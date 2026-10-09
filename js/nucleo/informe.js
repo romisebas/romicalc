@@ -108,7 +108,7 @@
       (sis === 'ingles' ? '<li>ACI 318, Building Code Requirements for Structural Concrete (ecuaciones en psi).</li>' : '') +
       '<li>Diaco, Ficha técnica Malla Electrosoldada NTC 5806, versión 1.2026 (si se usa malla).</li>' +
       '<li>' + (d.metodoRef || 'Método de diseño de zapatas aisladas con momento del curso Diseño de Concreto II.') + '</li>' +
-      '<li>ZapatAPP, Sebastian Romario Martinez Guerrero (software de cálculo).</li></ul>');
+      '<li>RomiCalc, Sebastian Romario Martinez Guerrero (software de cálculo).</li></ul>');
 
     seccion('Cargas y combinaciones', false);
     add(tablaDatos(grupo('Cargas de servicio'), L));
@@ -192,7 +192,7 @@
     const total = hojas.length + 2; // portada y contenido
     const proyecto = esc(d.info.proyecto || d.info.titulo);
     const marco = (n, cuerpo) => '<div class="hoja"><header class="hoja-enc">' + global.Logo.svg('inf-logo-mini') + '<span>' + proyecto + '</span><span>Memoria de cálculo</span></header>' +
-      '<div class="hoja-cuerpo">' + cuerpo + '</div><footer class="hoja-pie"><span>ZapatAPP</span><span>Página ' + n + ' de ' + total + '</span></footer></div>';
+      '<div class="hoja-cuerpo">' + cuerpo + '</div><footer class="hoja-pie"><span>RomiCalc</span><span>Página ' + n + ' de ' + total + '</span></footer></div>';
     const contenido = '<h2 class="inf-h2">Contenido</h2><ol class="inf-toc">' +
       secs.map((s) => '<li><span>' + s.titulo + '</span><span class="inf-toc-pag">' + (s.hoja + 3) + '</span></li>').join('') + '</ol>';
     return '<div class="hoja hoja-portada">' + portada(d) + '</div>' +

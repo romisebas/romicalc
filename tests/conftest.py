@@ -1,4 +1,4 @@
-"""Fixtures compartidas por las pruebas de ZapatAPP (servidor local, navegador y cierre de páginas)."""
+"""Fixtures compartidas por las pruebas de RomiCalc (servidor local, navegador y cierre de páginas)."""
 import functools
 import http.server
 import threading

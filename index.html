@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ZapatAPP</title>
-  <meta name="description" content="ZapatAPP: diseño de zapatas de concreto reforzado según NSR-10: esfuerzos en el suelo, punzonamiento, cortante, flexión con barras o mallas electrosoldadas, aplastamiento y longitud de desarrollo, con memoria de cálculo.">
+  <title>RomiCalc</title>
+  <meta name="description" content="RomiCalc: cálculo de elementos estructurales según la NSR-10. Diseña zapatas aisladas y combinadas de concreto reforzado: esfuerzos en el suelo, punzonamiento, cortante, flexión con barras o mallas electrosoldadas, aplastamiento y longitud de desarrollo, con memoria de cálculo.">
   <meta name="theme-color" content="#000000">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/flujo.css">
   <link rel="stylesheet" href="css/informe.css">
   <link rel="stylesheet" href="css/air.css">
-  <link rel="icon" href="assets/logo/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/logo/romicalc/web/favicon.ico" sizes="48x48">
+  <link rel="icon" href="assets/logo/romicalc/web/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/logo/romicalc/web/apple-touch-icon.png">
 </head>
 <body class="en-bienvenida">
   <a class="saltar" href="#principal">Saltar al contenido</a>
@@ -24,17 +26,17 @@
 
     <section class="bv-pantalla bv-portada" id="bv-portada" aria-labelledby="titulo-app">
       <header class="bv-top">
-        <span class="bv-marca" id="bv-marca"></span><span class="bv-top-nom">ZapatAPP</span>
+        <span class="bv-marca" id="bv-marca"></span><span class="bv-top-nom">RomiCalc</span>
         <span class="bv-esp"></span>
         <span class="bv-version">beta 1.2 · NSR-10</span>
         <button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/><circle cx="12" cy="12" r="6.6"/></svg></button>
       </header>
       <div class="escultura" id="escultura" aria-hidden="true"></div>
       <div class="bv-accion">
-        <p class="bv-lema">Memorias de cálculo de <em>cimentaciones</em> según la NSR&#8209;10</p>
+        <p class="bv-lema">Cálculo de <em>elementos estructurales</em> según la NSR&#8209;10</p>
         <button type="button" class="bv-cta" id="btn-disenar">Diseñar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
       </div>
-      <h1 class="bv-titulo" id="titulo-app" aria-label="ZapatAPP"><span class="letra" style="--i:0">Z</span><span class="letra" style="--i:1">a</span><span class="letra" style="--i:2">p</span><span class="letra" style="--i:3">a</span><span class="letra" style="--i:4">t</span><span class="letra" style="--i:5">A</span><span class="letra" style="--i:6">P</span><span class="letra" style="--i:7">P</span></h1>
+      <h1 class="bv-titulo" id="titulo-app" aria-label="RomiCalc"><span class="letra" style="--i:0">R</span><span class="letra" style="--i:1">o</span><span class="letra" style="--i:2">m</span><span class="letra" style="--i:3">i</span><span class="letra" style="--i:4">C</span><span class="letra" style="--i:5">a</span><span class="letra" style="--i:6">l</span><span class="letra" style="--i:7">c</span></h1>
       <div class="bv-cinta" aria-hidden="true"><div class="bv-cinta-pista"><span class="bv-cinta-item">Esfuerzos en el suelo</span><span class="bv-cinta-item">Punzonamiento</span><span class="bv-cinta-item">Cortante en una dirección</span><span class="bv-cinta-item">Flexión y refuerzo</span><span class="bv-cinta-item">Mallas Diaco</span><span class="bv-cinta-item">Aplastamiento</span><span class="bv-cinta-item">Longitud de desarrollo</span><span class="bv-cinta-item">Memoria en PDF</span><span class="bv-cinta-item">Esfuerzos en el suelo</span><span class="bv-cinta-item">Punzonamiento</span><span class="bv-cinta-item">Cortante en una dirección</span><span class="bv-cinta-item">Flexión y refuerzo</span><span class="bv-cinta-item">Mallas Diaco</span><span class="bv-cinta-item">Aplastamiento</span><span class="bv-cinta-item">Longitud de desarrollo</span><span class="bv-cinta-item">Memoria en PDF</span></div></div>
       <footer class="bv-pie">Creado por Sebastian Romario Martinez Guerrero
         <a class="bv-pie-gh" href="https://github.com/romisebas" target="_blank" rel="noopener" aria-label="GitHub de Sebastian Romario Martinez Guerrero"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg></a></footer>
@@ -94,7 +96,7 @@
       <div class="barra-fila">
         <button type="button" class="marca" id="btn-inicio" aria-label="Volver al inicio">
           <span id="marca-logo"></span>
-          <span class="marca-nombre">ZapatAPP</span>
+          <span class="marca-nombre">RomiCalc</span>
         </button>
         <span class="tipo-actual" id="tipo-actual">Aislada con momento</span>
         <nav class="acciones" aria-label="Acciones">

@@ -5,7 +5,7 @@
  * 4 columna: bajan las dovelas, se doblan sus ganchos y los estribos suben en espiral.
  * 5 vaciado: el concreto llena la zapata como vidrio líquido, con borde ondulado y luminoso.
  * 6 carga: baja la carga sobre la columna y el suelo responde con los anillos del bulbo de presiones.
- * 7 logo: la obra se pierde en la niebla y una varilla se dobla en la Z de ZapatAPP.
+ * 7 logo: la obra se pierde en la niebla y una varilla se dobla en la R de RomiCalc.
  * Con { suave: true } la cámara queda quieta (sin vuelos). La calidad se ajusta al equipo (Escena3D).
  */
 (function (global) {
@@ -20,8 +20,8 @@
   const eInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
   const rebote = (k) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
 
-  // Trazo del logo (varilla en Z) en coordenadas 256 × 256, muestreado como polilínea
-  const LOGO = [[102, 106], [66, 70], [60, 62], [62, 57], [74, 56], [200, 56], [56, 200], [182, 200], [194, 199], [196, 193], [190, 186], [154, 150]];
+  // La R del isotipo hecha con una sola varilla (barra, bola y pata), en coordenadas 256 × 256
+  const LOGO = [[92, 184], [92, 72], [144, 72], [160, 76], [172, 88], [176, 104], [172, 120], [160, 132], [144, 136], [110, 136], [170, 184]];
 
   let vivo = null;
 
@@ -170,7 +170,7 @@
       new THREE.MeshBasicMaterial({ color: 0x6f8db5, transparent: true, opacity: 0, wireframe: true, depthWrite: false }));
     bulbo.position.y = -0.01; obra.add(bulbo);
 
-    // ---------------------------------------------------------------- 7. varilla que se dobla en la Z del logo
+    // ---------------------------------------------------------------- 7. varilla que se dobla en la R del logo
     const k = 0.0036; // 256 unidades del logo → ~0.92 m
     const zPts = LOGO.map((p) => new THREE.Vector3((p[0] - 128) * k, -(p[1] - 128) * k, 0));
     const largoZ = zPts.reduce((s, p, i) => s + (i ? p.distanceTo(zPts[i - 1]) : 0), 0);
@@ -266,7 +266,7 @@
       bulbo.material.opacity = 0.35 * Math.sin(Math.PI * golpe);
       azul.intensity = 18 * Math.sin(Math.PI * golpe);
 
-      // 7. logo: la obra se pierde en la niebla y la varilla se dobla en la Z
+      // 7. logo: la obra se pierde en la niebla y la varilla se dobla en la R
       const kNiebla = eIn(fase(t, 6.2, 7.0));
       scene.fog.near = 6 - 5.5 * kNiebla; scene.fog.far = 30 - 27 * kNiebla;
       const kl = fase(t, 6.3, 7.1);

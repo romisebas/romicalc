@@ -1,4 +1,4 @@
-/* ZapatAPP v3.2
+/* RomiCalc (antes ZapatAPP) v3.2
  * Mundo: cielo de medianoche a través de vidrio (adaptado de la referencia Air). Lienzo negro, islas claras (haze).
  * Tipos: Inter 500 para todo; Anton en mayúsculas para el titular de portada; una sola palabra en cursiva (Instrument Serif).
  * Formas: tarjetas 12px, botones 8px, campos 4px, píldoras solo en filtros y segmentados. Sin sombras ni degradados.
@@ -27,6 +27,8 @@
   --acento-10: #6f8db5;      /* 60-30-10: el 10 % (pestaña activa, barra de carga, progreso) */
   --enlace: #2b7fff;         /* azul señal: solo enlaces */
   --vidrio: #8fa9cc;
+  --marca-bloque: #2A5DB0;   /* isotipo RomiCalc: Cálculo sobre negro (Obra casi desaparece) */
+  --marca-bola: #CFE1FA;
   --acero: #ffffff;
   --dovela: #c8c8c8;
   --concreto: #2a2a2a;
@@ -76,6 +78,8 @@
   --titular: #426188;
   --acento-10: #426188;
   --vidrio: #426188;
+  --marca-bloque: #13315C;   /* isotipo RomiCalc: Obra sobre claro */
+  --marca-bola: #8DB8F2;
   --acero: #1b1b1b;
   --dovela: #3d3d3d;
   --concreto: #dcdcdc;
