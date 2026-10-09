@@ -225,69 +225,98 @@
   const FW = 560;
   const escalaFig = (R) => (FW - 100) / R.L;
 
+  // ---------------------------------------------------------------- figuras de la memoria, en dibujo técnico (js/nucleo/svg-tecnico.js)
+  // Son las del PDF y el respaldo del mini-3D: a escala, en una tinta y gris, con achurados y cotas.
+  const T = () => global.SvgTec;
+  const sufijo = (ult) => (ult ? 'u' : 's');
+
   // Zapata con las cargas de las columnas y el centroide (ult = cargas mayoradas)
   function figCargas(R, ult) {
-    const U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, yZ = 150, H = 230;
-    const p = ['<rect class="zapata" x="' + f2(X(0)) + '" y="' + yZ + '" width="' + f2(R.L * k) + '" height="26"/>'];
+    const t = T(), U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, H = 276;
+    const hz = Math.max(R.h * k, 18), yBot = 168, yTop = yBot - hz, colTop = yTop - 64;
+    let s = t.suelo(X(0) - 20, X(R.L) + 20, yBot) + t.concreto(X(0), yTop, R.L * k, hz);
     R.cols.forEach((c) => {
-      p.push('<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + (yZ - 60) + '" width="' + f2(Math.max(c.c1 * k, 8)) + '" height="60"/>');
-      p.push('<path class="fig-flecha" d="M' + f2(X(c.x)) + ' 30V' + (yZ - 66) + 'M' + f2(X(c.x) - 6) + ' ' + (yZ - 74) + 'l6 8 6-8"/>');
-      p.push('<text class="fig-txt" x="' + f2(X(c.x)) + '" y="22" text-anchor="middle">' + (ult ? 'Pu = ' + U.fmt(c.Pu, 'fuerza') : 'Ps = ' + U.fmt(c.Ps, 'fuerza')) + '</text>');
+      s += t.columna(X(c.x - c.c1 / 2), colTop, Math.max(c.c1 * k, 8), yTop - colTop) + t.eje(X(c.x), colTop - 10, X(c.x), yBot + 8);
+      s += t.flecha(X(c.x), 26, X(c.x), colTop - 6, { grosor: 2 }) + t.txt(X(c.x) + (c.i ? -8 : 8), 20, ['P', sufijo(ult), ' = ' + U.fmt(ult ? c.Pu : c.Ps, 'fuerza')], { anc: c.i ? 'end' : 'start' });
     });
-    p.push('<g class="fig-xbar"><path d="M' + f2(X(R.xbar)) + ' ' + (yZ + 30) + 'l-6 10h12z"/><text x="' + f2(X(R.xbar)) + '" y="' + (yZ + 56) + '" text-anchor="middle">x̄ = ' + U.fmt(R.xbar, 'longitud') + '</text></g>');
-    p.push(cotaH(X(0), X(R.L), yZ + 88, 'L = ' + U.fmt(R.L, 'longitud')).replace('class="cota ', 'class="cota zapata-cota '));
-    return '<svg class="fig-comb" viewBox="0 0 ' + FW + ' ' + (H + 20) + '" role="img" aria-label="Cargas sobre la zapata">' + p.join('') + '</svg>';
+    s += '<g class="fig-xbar"><path d="M' + f2(X(R.xbar)) + ' ' + (yBot + 12) + 'l-6 10h12z" fill="' + t.TINTA + '"/>' +
+      t.txt(X(R.xbar), yBot + 36, 'x̄ = ' + U.fmt(R.xbar, 'longitud') + ' (centroide de cargas)', { anc: 'middle', tam: 11 }) + '</g>';
+    s += t.cota(X(0), yBot + 52, X(R.L), yBot + 52, 'L = ' + U.fmt(R.L, 'longitud')).replace('class="cota', 'class="cota zapata-cota');
+    s += t.cota(X(R.L) + 14, yTop, X(R.L) + 14, yBot, 'h = ' + U.fmt(R.h, 'longitud'));
+    s += t.pie(FW, H - 8, ult ? 'Cargas mayoradas de las columnas' : 'Cargas de servicio de las columnas');
+    return t.svg(FW, H, s, 'Cargas sobre la zapata');
   }
 
   // Viga invertida: cargas de columna hacia abajo y presión del suelo hacia arriba
   function figPresion(R) {
-    const U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, yZ = 90, wmax = Math.max(R.q.q1, R.q.q2);
-    const hq = (q) => 50 * q / wmax, p = [];
-    p.push('<rect class="zapata" x="' + f2(X(0)) + '" y="' + yZ + '" width="' + f2(R.L * k) + '" height="22"/>');
-    R.cols.forEach((c) => p.push('<path class="fig-flecha" d="M' + f2(X(c.x)) + ' 20V' + (yZ - 6) + 'M' + f2(X(c.x) - 6) + ' ' + (yZ - 14) + 'l6 8 6-8"/><text class="fig-txt" x="' + f2(X(c.x)) + '" y="14" text-anchor="middle">' + U.fmt(c.Pu, 'fuerza') + '</text>'));
-    const y0 = yZ + 26;
-    p.push('<polygon class="fig-presion" points="' + f2(X(0)) + ',' + y0 + ' ' + f2(X(R.L)) + ',' + y0 + ' ' + f2(X(R.L)) + ',' + f2(y0 + hq(R.q.q2)) + ' ' + f2(X(0)) + ',' + f2(y0 + hq(R.q.q1)) + '"/>');
-    for (let j = 1; j < 10; j++) { const x = R.L * j / 10, q = R.q.q1 + (R.q.q2 - R.q.q1) * j / 10; p.push('<path class="fig-presion-f" d="M' + f2(X(x)) + ' ' + f2(y0 + hq(q)) + 'V' + (y0 + 3) + 'm-4 6l4-6 4 6"/>'); }
-    p.push('<text class="fig-txt" x="' + f2(X(0)) + '" y="' + f2(y0 + hq(R.q.q1) + 16) + '">' + U.fmt(R.q.q1, 'presion') + '</text>' +
-      '<text class="fig-txt" x="' + f2(X(R.L)) + '" y="' + f2(y0 + hq(R.q.q2) + 16) + '" text-anchor="end">' + U.fmt(R.q.q2, 'presion') + '</text>');
-    return '<svg class="fig-comb" viewBox="0 0 ' + FW + ' 210" role="img" aria-label="Viga invertida con la presión última">' + p.join('') + '</svg>';
+    const t = T(), U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, H = 230;
+    const hz = Math.max(R.h * k * 0.6, 16), yTop = 80, yBot = yTop + hz, wmax = Math.max(R.q.q1, R.q.q2), hq = (q) => 58 * q / wmax;
+    let s = t.concreto(X(0), yTop, R.L * k, hz);
+    R.cols.forEach((c) => {
+      s += '<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + (yTop - 22) + '" width="' + f2(Math.max(c.c1 * k, 8)) + '" height="22" fill="url(#st-columna)" stroke="' + t.TINTA + '" stroke-width="1.4"/>';
+      s += t.flecha(X(c.x), 18, X(c.x), yTop - 26, { grosor: 2 }) + t.txt(X(c.x) + (c.i ? -8 : 8), 14, ['P', 'u', ' = ' + U.fmt(c.Pu, 'fuerza')], { anc: c.i ? 'end' : 'start', tam: 11 });
+    });
+    const y0 = yBot + 4;
+    s += '<polygon class="fig-presion" points="' + f2(X(0)) + ',' + y0 + ' ' + f2(X(R.L)) + ',' + y0 + ' ' + f2(X(R.L)) + ',' + f2(y0 + hq(R.q.q2)) + ' ' + f2(X(0)) + ',' + f2(y0 + hq(R.q.q1)) + '" fill="url(#st-suelo)" stroke="' + t.TINTA + '" stroke-width="1.4"/>';
+    for (let j = 1; j < 12; j++) {
+      const x = R.L * j / 12, q = R.q.q1 + (R.q.q2 - R.q.q1) * j / 12;
+      s += '<g class="fig-presion-f">' + t.flecha(X(x), y0 + hq(q), X(x), y0 + 2, { grosor: 1, punta: 6 }) + '</g>';
+    }
+    s += t.txt(X(0), y0 + hq(R.q.q1) + 16, ['q', 'u1', ' = ' + U.fmt(R.q.q1, 'presion')], { tam: 11 }) +
+      t.txt(X(R.L), y0 + hq(R.q.q2) + 16, ['q', 'u2', ' = ' + U.fmt(R.q.q2, 'presion')], { anc: 'end', tam: 11 });
+    s += t.pie(FW, H - 8, 'Viga invertida: las columnas cargan y el suelo reacciona con presión lineal');
+    return t.svg(FW, H, s, 'Viga invertida con la presión última');
   }
 
   // Diagramas de cortante y momento con los puntos de inflexión y ld
   function figVM(R) {
-    const U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, yV = 80, yM = 230, h = 55;
+    const t = T(), U = global.Unidades, k = escalaFig(R), x0 = 50, X = (x) => x0 + x * k, yV = 116, yM = 270, h = 52;
     const Vmax = Math.max.apply(null, R.lon.V.map(Math.abs)) || 1, Mmax = Math.max.apply(null, R.lon.M.map(Math.abs)) || 1;
     const pts = (vals, y0, e) => R.lon.xs.map((x, j) => f2(X(x)) + ',' + f2(y0 - vals[j] * e)).join(' ');
-    const pp = R.lon.puntos, ld = R.ld.sup / 1000, p = [];
-    p.push('<text class="fig-tit" x="' + x0 + '" y="16">V (' + U.u('fuerza') + ')</text><line class="fig-eje" x1="' + f2(X(0)) + '" y1="' + yV + '" x2="' + f2(X(R.L)) + '" y2="' + yV + '"/>' +
-      '<polygon class="diagrama-v" points="' + f2(X(0)) + ',' + yV + ' ' + pts(R.lon.V, yV, h / Vmax) + ' ' + f2(X(R.L)) + ',' + yV + '"/>');
-    [[pp.ext.x, pp.ext.Vizq, -5], [pp.ext.x, pp.ext.Vder, 13], [pp.int.x, pp.int.Vizq, -5], [pp.int.x, pp.int.Vder, 13]].forEach(([x, v, dy]) =>
-      p.push('<text class="fig-txt" x="' + f2(X(x)) + '" y="' + f2(yV - v * h / Vmax + dy) + '" text-anchor="middle">' + U.num(v, 'fuerza') + '</text>'));
-    p.push('<text class="fig-tit" x="' + x0 + '" y="' + (yM - h - 14) + '">M (' + U.u('momento') + ')</text><line class="fig-eje" x1="' + f2(X(0)) + '" y1="' + yM + '" x2="' + f2(X(R.L)) + '" y2="' + yM + '"/>' +
-      '<polygon class="diagrama-m" points="' + f2(X(0)) + ',' + yM + ' ' + pts(R.lon.M.map((m) => -m), yM, h / Mmax) + ' ' + f2(X(R.L)) + ',' + yM + '"/>' +
-      '<text class="fig-txt" x="' + f2(X(R.lon.Mneg.x || 0)) + '" y="' + f2(yM + R.lon.Mneg.M * h / Mmax - 6) + '" text-anchor="middle">' + U.num(R.lon.Mneg.M, 'momento') + '</text>' +
-      R.lon.Mpos.map((m) => '<text class="fig-txt" x="' + f2(X(m.x)) + '" y="' + f2(yM + m.M * h / Mmax + 14) + '" text-anchor="middle">' + U.num(m.M, 'momento') + '</text>').join(''));
+    const pp = R.lon.puntos, ld = R.ld.sup / 1000, H = yM + h + 44;
+    // la zapata arriba, como referencia de dónde están las columnas
+    let s = t.concreto(X(0), 22, R.L * k, 10);
+    R.cols.forEach((c) => { s += '<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="10" width="' + f2(Math.max(c.c1 * k, 6)) + '" height="12" fill="url(#st-columna)" stroke="' + t.TINTA + '" stroke-width="1"/>'; });
+    s += t.txt(x0 - 6, yV - h - 4, ['V', 'u', ' (' + U.u('fuerza') + ')'], { tam: 11, peso: 600 }) +
+      '<line class="fig-eje" x1="' + f2(X(0)) + '" y1="' + yV + '" x2="' + f2(X(R.L)) + '" y2="' + yV + '" stroke="' + t.TINTA + '" stroke-width="1"/>' +
+      '<polygon class="diagrama-v diagrama" points="' + f2(X(0)) + ',' + yV + ' ' + pts(R.lon.V, yV, h / Vmax) + ' ' + f2(X(R.L)) + ',' + yV + '" fill="#e6e6e6" stroke="' + t.TINTA + '" stroke-width="1.6"/>';
+    [[pp.ext.x, pp.ext.Vizq, -5], [pp.ext.x, pp.ext.Vder, 13], [pp.int.x, pp.int.Vizq, -5], [pp.int.x, pp.int.Vder, 13]].forEach(([x, v, dy]) => {
+      s += t.txt(X(x), yV - v * h / Vmax + dy, U.num(v, 'fuerza'), { anc: 'middle', tam: 10.5, fondo: true });
+    });
+    s += t.txt(x0 - 6, yM - h - 10, ['M', 'u', ' (' + U.u('momento') + ')'], { tam: 11, peso: 600 }) +
+      '<line class="fig-eje" x1="' + f2(X(0)) + '" y1="' + yM + '" x2="' + f2(X(R.L)) + '" y2="' + yM + '" stroke="' + t.TINTA + '" stroke-width="1"/>' +
+      '<polygon class="diagrama-m diagrama" points="' + f2(X(0)) + ',' + yM + ' ' + pts(R.lon.M.map((m) => -m), yM, h / Mmax) + ' ' + f2(X(R.L)) + ',' + yM + '" fill="url(#st-suelo)" stroke="' + t.TINTA + '" stroke-width="1.6"/>' +
+      t.txt(X(R.lon.Mneg.x || 0), yM + R.lon.Mneg.M * h / Mmax - 6, U.num(R.lon.Mneg.M, 'momento'), { anc: 'middle', tam: 10.5, fondo: true }) +
+      R.lon.Mpos.map((m) => t.txt(X(m.x), yM + m.M * h / Mmax + 14, U.num(m.M, 'momento'), { anc: 'middle', tam: 10.5, fondo: true })).join('');
     pp.PI.forEach((x, j) => {
       const x2 = j === 0 ? Math.max(0, x - ld) : Math.min(R.L, x + ld);
-      p.push('<line class="fig-pi" x1="' + f2(X(x)) + '" y1="' + (yM - h) + '" x2="' + f2(X(x)) + '" y2="' + (yM + h) + '"/><text class="fig-txt" x="' + f2(X(x)) + '" y="' + (yM + h + 14) + '" text-anchor="middle">PI</text>' +
-        '<path class="fig-ld" d="M' + f2(X(x)) + ' ' + (yM + h + 24) + 'H' + f2(X(x2)) + '"/>');
+      s += '<line class="fig-pi" x1="' + f2(X(x)) + '" y1="' + (yM - h) + '" x2="' + f2(X(x)) + '" y2="' + (yM + h) + '" stroke="' + t.TINTA + '" stroke-width="1" stroke-dasharray="10 3 2 3"/>' +
+        t.txt(X(x), yM + h + 14, 'PI', { anc: 'middle', tam: 10.5, peso: 600 }) +
+        '<g class="cota ld"><line class="fig-ld" x1="' + f2(X(x)) + '" y1="' + (yM + h + 24) + '" x2="' + f2(X(x2)) + '" y2="' + (yM + h + 24) + '" stroke="' + t.TINTA + '" stroke-width="3" stroke-linecap="round"/>' +
+        t.txt((X(x) + X(x2)) / 2, yM + h + 38, ['l', 'd', ''], { anc: 'middle', tam: 10.5 }) + '</g>';
     });
-    return '<svg class="fig-comb" viewBox="0 0 ' + FW + ' ' + (yM + h + 34) + '" role="img" aria-label="Diagramas de cortante y momento">' + p.join('') + '</svg>';
+    return t.svg(FW, H, s, 'Diagramas de cortante y momento');
   }
 
-  // Perímetro crítico de punzonamiento alrededor de la columna i (en planta)
+  // Perímetro crítico de punzonamiento alrededor de la columna i (en planta); la exterior tiene 3 lados
   function figPunz(R, i) {
-    const U = global.Unidades, c = R.cols[i], pz = R.pz[i], d = R.d;
+    const t = T(), U = global.Unidades, c = R.cols[i], pz = R.pz[i], d = R.d;
     const ventana = Math.min(R.L, c.c1 + 2 * d + 1.2), xi = Math.max(0, Math.min(R.L - ventana, c.x - ventana / 2));
-    const k = 360 / Math.max(ventana, R.B), x0 = 60, y0 = 30, X = (x) => x0 + (x - xi) * k, Y = (y) => y0 + y * k;
+    const k = 300 / Math.max(ventana, R.B), x0 = 90, y0 = 40, X = (x) => x0 + (x - xi) * k, Y = (y) => y0 + y * k;
     const oL = c.x - c.c1 / 2, izq = c.x - c.c1 / 2 - Math.min(oL, d / 2);
-    const p = [];
-    p.push('<rect class="zapata" x="' + f2(X(Math.max(0, xi))) + '" y="' + f2(Y(0)) + '" width="' + f2((Math.min(R.L, xi + ventana) - Math.max(0, xi)) * k) + '" height="' + f2(R.B * k) + '"/>');
-    p.push('<rect class="area" x="' + f2(X(izq)) + '" y="' + f2(Y((R.B - pz.dy) / 2)) + '" width="' + f2(pz.dx * k) + '" height="' + f2(pz.dy * k) + '"/>');
-    p.push('<rect class="perimetro" x="' + f2(X(izq)) + '" y="' + f2(Y((R.B - pz.dy) / 2)) + '" width="' + f2(pz.dx * k) + '" height="' + f2(pz.dy * k) + '"/>');
-    p.push('<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + f2(Y((R.B - c.c2) / 2)) + '" width="' + f2(c.c1 * k) + '" height="' + f2(c.c2 * k) + '"/>');
-    p.push('<text class="fig-txt" x="' + f2(X(izq) + pz.dx * k / 2) + '" y="' + f2(Y((R.B + pz.dy) / 2) + 16) + '" text-anchor="middle">bo = ' + U.fmt(pz.bo, 'longitud') + ' (' + pz.lados + ' lados)</text>');
-    return '<svg class="fig-comb" viewBox="0 0 ' + (360 + 120) + ' ' + f2(R.B * k + 80) + '" role="img" aria-label="Perímetro crítico de punzonamiento">' + p.join('') + '</svg>';
+    const px = X(izq), py = Y((R.B - pz.dy) / 2), pw = pz.dx * k, ph = pz.dy * k, Wf = 480, H = R.B * k + 110;
+    let s = '<rect class="zapata" x="' + f2(X(Math.max(0, xi))) + '" y="' + f2(Y(0)) + '" width="' + f2((Math.min(R.L, xi + ventana) - Math.max(0, xi)) * k) + '" height="' + f2(R.B * k) + '" fill="#f7f6f3" stroke="' + t.TINTA + '" stroke-width="1.6"/>';
+    s += '<rect class="area" x="' + f2(px) + '" y="' + f2(py) + '" width="' + f2(pw) + '" height="' + f2(ph) + '" fill="url(#st-suelo)" fill-opacity="0.6" stroke="none"/>';
+    // perímetro crítico: con 3 lados, el lado del borde de la zapata no cuenta
+    const lados = pz.lados === 3 ? 'M' + f2(px) + ' ' + f2(py) + 'H' + f2(px + pw) + 'V' + f2(py + ph) + 'H' + f2(px) : 'M' + f2(px) + ' ' + f2(py) + 'h' + f2(pw) + 'v' + f2(ph) + 'h' + f2(-pw) + 'Z';
+    s += '<path class="perimetro" d="' + lados + '" fill="none" stroke="' + t.TINTA + '" stroke-width="2" stroke-dasharray="8 4"/>';
+    s += '<rect class="columna" x="' + f2(X(c.x - c.c1 / 2)) + '" y="' + f2(Y((R.B - c.c2) / 2)) + '" width="' + f2(c.c1 * k) + '" height="' + f2(c.c2 * k) + '" fill="url(#st-columna)" stroke="' + t.TINTA + '" stroke-width="1.6"/>';
+    s += t.eje(X(c.x), Y(0) - 8, X(c.x), Y(R.B) + 8) + t.eje(X(Math.max(0, xi)) - 8, Y(R.B / 2), X(Math.min(R.L, xi + ventana)) + 8, Y(R.B / 2));
+    s += t.cota(px, py - 14, px + pw, py - 14, 'b1 = ' + U.fmt(pz.dx, 'longitud'), { arriba: true });
+    s += t.cota(px + pw + 16, py, px + pw + 16, py + ph, 'b2 = ' + U.fmt(pz.dy, 'longitud'));
+    s += t.txt(px + pw / 2, Y(R.B) + 24, ['b', 'o', ' = ' + U.fmt(pz.bo, 'longitud') + ' (' + pz.lados + ' lados)'], { anc: 'middle' });
+    s += t.pie(Wf, H - 10, 'Columna ' + (i ? 'interior' : 'exterior') + ': perímetro crítico a d/2 de sus caras');
+    return t.svg(Wf, H, s, 'Perímetro crítico de punzonamiento');
   }
 
   global.DibujoCombinada = { tono, miniCarga, miniatura, lienzo, escalaLienzo, geometria, LZ, planta, corteLongitudinal, corteTransversal, servicioLineal,

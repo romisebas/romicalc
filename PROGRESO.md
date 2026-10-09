@@ -29,10 +29,20 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] D · Intro: la obra por etapas y el logo
 - [x] E · Pruebas y cierre
 
+## En curso: figuras de la memoria ([plan](docs/superpowers/plans/2026-10-09-romicalc-figuras-memoria.md))
+- [x] A · Base del SVG técnico (js/nucleo/svg-tecnico.js)
+- [x] B · SVG técnico de la aislada (9 figuras, a escala)
+- [x] C · SVG técnico de la combinada (cargas, presión, V y M, punzonamiento)
+- [ ] D · Motor mini-3D
+- [ ] E · Mini-3D de la aislada
+- [ ] F · Mini-3D de la combinada
+- [ ] G · Cierre (PDF en blanco y negro, pruebas, capturas)
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
-| 2026-10-09 | README interactivo (insignias, diagramas, galería, hoja de ruta, preguntas) con capturas nuevas y el sitio romicalc.netlify.app; subida a GitHub | (este) | 60 ✓ |
+| 2026-10-09 | Figuras A–C: dibujo técnico en SVG (achurados, cotas, momentos con signo, subíndices, acero real en el corte, a escala) para las 9 figuras de la aislada y las 4 de la combinada | (este) | 60 ✓ (parcial) |
+| 2026-10-09 | README interactivo (insignias, diagramas, galería, hoja de ruta, preguntas) con capturas nuevas y el sitio romicalc.netlify.app; subida a GitHub | bf00cf1 | 60 ✓ |
 | 2026-10-09 | Maqueta C–E: portada con la maqueta en despiece (zapatas en azul) e intro "una obra en 8 segundos" (terreno, edificio piso a piso, puente, box culvert, carga y logo); luces compartidas | b60e96d | 60 ✓ |
 | 2026-10-09 | Maqueta A–B: un solo modelo 3D realista (edificio de 3 pisos en obra gris, puente de losa + vigas I con pila, box culvert de doble celda, río y quebrada) en "¿Qué quieres calcular?", con cámara que viaja al elemento y rayos X para zapatas y box culvert | 4934118 | 60 ✓ (parcial) |
 | 2026-10-09 | D y E · Intro "del pórtico al logo" (zapatas, columnas, vigas, losa, carga y el isotipo que se arma) y portada con maqueta de vidrio de pórtico y puente de losa; cinta con los elementos | 5507166 | 59 ✓ |
