@@ -45,6 +45,7 @@ def siguiente(pagina):
 
 def entrar_ejemplo(pagina):
     pagina.click("#btn-disenar")
+    pagina.click('#elementos [data-elemento="zapatas"]')
     pagina.click("#op-ejemplo")
     pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#chequeos .chequeo")
@@ -95,10 +96,7 @@ def test_identidad_romicalc_oscura(navegador, url):
     assert pagina.evaluate("[...document.fonts].filter(f => f.status === 'loaded').map(f => f.family).join()").count("Manrope") == 0
     assert pagina.locator("#bv-portada .escultura canvas").count() == 1
     assert pagina.locator(".esfera").count() == 0
-    pagina.click("#btn-disenar")
-    pagina.click("#op-ejemplo")
-    pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
-    pagina.wait_for_selector("#chequeos .chequeo")
+    entrar_ejemplo(pagina)
     assert pagina.text_content(".marca-nombre").strip() == "RomiCalc"
     pagina.click("#btn-tema")
     pagina.wait_for_function("getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)'")
@@ -299,15 +297,14 @@ def test_animaciones_de_logos_y_cierre_de_pestana(navegador, url):
 def test_pantalla_de_opciones(navegador, url):
     pagina, errores = abrir(navegador, url, anim="activadas")
     pagina.click("#btn-disenar")
-    assert "Paso 1 de 2" in pagina.text_content("#bv-opciones .bv-eti")
-    assert pagina.locator("#bv-opciones .bv-sub").count() == 1
-    assert pagina.locator(".opcion .op-ico").count() == 3 and pagina.locator(".opcion .op-tit").count() == 3
+    pagina.click('#elementos [data-elemento="zapatas"]')
+    pagina.wait_for_selector("#bv-zapatas:not([hidden])", timeout=3000)
+    assert pagina.locator("#bv-zapatas .opcion .op-ico").count() == 2
     pagina.click("#op-nueva")
     assert "elige-nueva" in pagina.get_attribute("#op-nueva", "class")
     pagina.wait_for_selector("#bv-tipos:not([hidden])", timeout=3000)
-    assert pagina.locator("#tipos .tt-ico").count() == 6
-    assert "Paso 2 de 2" in pagina.text_content("#bv-tipos .bv-eti")
-    pagina.click('#bv-tipos [data-ir="opciones"]')
+    assert pagina.locator("#tipos .tt-ico").count() == 2
+    pagina.click('#bv-tipos [data-ir="zapatas"]')
     pagina.click("#op-ejemplo")
     assert "elige-ejemplo" in pagina.get_attribute("#op-ejemplo", "class")
     pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
@@ -319,6 +316,32 @@ def test_pantalla_de_opciones(navegador, url):
     pagina.click("#op-importar")
     assert "elige-importar" in pagina.get_attribute("#op-importar", "class")
     pagina.wait_for_function("window.__importar === true", timeout=3000)
+    assert not errores, errores
+
+
+def test_que_quieres_calcular(navegador, url):
+    """Página de elementos: camino de las cargas en 3D, 7 elementos en dos grupos y solo Zapatas disponible."""
+    pagina, errores = abrir(navegador, url, anim="activadas")
+    pagina.click("#btn-disenar")
+    pagina.wait_for_selector("#bv-opciones:not([hidden]) #camino-3d canvas")
+    assert pagina.locator("#elementos .el-tarjeta").count() == 7
+    assert pagina.locator("#elementos .el-tarjeta.disponible").count() == 1
+    assert pagina.get_attribute("#elementos .el-tarjeta.disponible", "data-elemento") == "zapatas"
+    grupos = pagina.locator("#elementos .el-grupo-cab").all_text_contents()
+    assert "NSR-10" in grupos[0] and "CCP-14" in grupos[1]
+    assert "Viga" in pagina.text_content("#camino-info .ci-nombre")
+    # Pasar por una tarjeta elige ese elemento en el 3D y explica su camino de carga
+    pagina.hover('#elementos [data-elemento="columnas"]')
+    pagina.wait_for_function("document.querySelector('#camino-info .ci-nombre').textContent.includes('Columna')")
+    assert pagina.evaluate("Camino3D.elegido()") == "columnas"
+    assert pagina.locator("#camino-info .ci-camino .actual").text_content() == "Columna"
+    # Un elemento que aún no existe avisa; Zapatas abre su pantalla
+    pagina.click('#elementos [data-elemento="vigas"]')
+    pagina.wait_for_selector("#aviso:not([hidden])")
+    assert "próxima" in pagina.text_content("#aviso").lower()
+    pagina.click('#elementos [data-elemento="zapatas"]')
+    pagina.wait_for_selector("#bv-zapatas:not([hidden])")
+    assert pagina.locator("#op-importar").count() == 1 and pagina.is_hidden("#op-importar")
     assert not errores, errores
 
 
@@ -396,7 +419,13 @@ def test_intro_de_la_tierra_al_logo(navegador, url):
 def test_portada_editorial(navegador, url):
     pagina, errores = abrir(navegador, url, anim="activadas")
     assert pagina.locator("#titulo-app .letra").count() == 8
-    assert "NSR-10" in pagina.text_content(".bv-version")
+    assert pagina.locator(".bv-version").count() == 0  # sin "beta" en la portada: la versión está en Ajustes
+    assert "beta 1.2" in pagina.text_content("#dlg-ajustes .aj-version")
+    antes = pagina.evaluate("document.documentElement.dataset.theme || 'dark'")
+    pagina.click("#bv-portada [data-alternar-tema]")
+    assert pagina.evaluate("document.documentElement.dataset.theme") != antes
+    pagina.click("#bv-portada [data-alternar-tema]")
+    assert pagina.evaluate("document.documentElement.dataset.theme") == antes
     assert pagina.locator(".bv-cinta .bv-cinta-item").count() >= 14  # la cinta se repite para girar sin cortes
     assert pagina.locator("#btn-disenar svg").count() == 1
     pagina.click("#btn-disenar")
@@ -490,8 +519,8 @@ def test_portada_titular_despiece_creditos(navegador, url):
     pagina.wait_for_function("Escultura.estado().armado > 0.9", timeout=5000)
     # Créditos y ajustes con ícono
     assert "Sebastian Romario Martinez Guerrero" in pagina.text_content(".bv-pie")
-    assert pagina.locator(".bv-ajustes-ico svg").count() == 1
-    pagina.click(".bv-ajustes-ico")
+    assert pagina.locator("#bv-portada [data-abrir-ajustes] svg").count() == 1
+    pagina.click("#bv-portada [data-abrir-ajustes]")
     pagina.wait_for_selector("#dlg-ajustes[open]")
     assert not errores, errores
 
@@ -588,6 +617,7 @@ def test_ejemplo_cumple_y_memoria_katex(navegador, url):
 def test_nueva_zapata_vacia_y_asistente(navegador, url):
     pagina, errores = abrir(navegador, url)
     pagina.click("#btn-disenar")
+    pagina.click('#elementos [data-elemento="zapatas"]')
     pagina.click("#op-nueva")
     pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
     pagina.wait_for_selector("#asistente[open]")
@@ -677,9 +707,10 @@ def test_malla_en_zapata_liviana(navegador, url):
 def test_tipos_de_zapata(navegador, url):
     pagina, _ = abrir(navegador, url)
     pagina.click("#btn-disenar")
+    pagina.click('#elementos [data-elemento="zapatas"]')
     pagina.click("#op-nueva")
-    assert pagina.locator(".tipo-tarjeta").count() == 6
-    assert pagina.locator(".tipo-tarjeta.pronto").count() == 4
+    assert pagina.locator(".tipo-tarjeta").count() == 2
+    assert pagina.locator(".tipo-tarjeta.pronto").count() == 0
 
 
 def test_informe_paginado_y_documento_listo(navegador, url):
@@ -717,6 +748,7 @@ def test_capturas_y_sin_scroll_horizontal(navegador, url):
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-portada.png"))
         pagina.click("#btn-disenar")
         pagina.screenshot(path=str(CAPTURAS / f"{nombre}-opciones.png"))
+        pagina.click('#elementos [data-elemento="zapatas"]')
         pagina.click("#op-ejemplo")
         pagina.click('.tipo-tarjeta[data-tipo="aislada-momento"]')
         pagina.wait_for_selector("#chequeos .chequeo")

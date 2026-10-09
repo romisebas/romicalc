@@ -23,12 +23,16 @@
     <div class="intro" id="intro" hidden>
       <button type="button" class="btn btn-quieto intro-saltar" id="btn-saltar">Saltar</button>
     </div>
+    <div class="bv-ctl">
+      <button type="button" class="bv-ajustes-ico bv-tema-ico" data-alternar-tema aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+      <button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/><circle cx="12" cy="12" r="6.6"/></svg></button>
+    </div>
 
     <section class="bv-pantalla bv-portada" id="bv-portada" aria-labelledby="titulo-app">
       <header class="bv-top">
         <span class="bv-marca" id="bv-marca"></span><span class="bv-top-nom">RomiCalc</span>
         <span class="bv-esp"></span>
-        <span class="bv-version">beta 1.2 · NSR-10</span>
+        <button type="button" class="bv-ajustes-ico bv-tema-ico" data-alternar-tema aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
         <button type="button" class="bv-ajustes-ico" data-abrir-ajustes aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/><circle cx="12" cy="12" r="6.6"/></svg></button>
       </header>
       <div class="escultura" id="escultura" aria-hidden="true"></div>
@@ -42,26 +46,42 @@
         <a class="bv-pie-gh" href="https://github.com/romisebas" target="_blank" rel="noopener" aria-label="GitHub de Sebastian Romario Martinez Guerrero"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg></a></footer>
     </section>
 
-    <section class="bv-pantalla" id="bv-opciones" aria-labelledby="titulo-opciones" hidden>
+    <section class="bv-pantalla bv-elementos" id="bv-opciones" aria-labelledby="titulo-opciones" hidden>
       <button type="button" class="bv-volver-ico" data-ir="portada"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Inicio</button>
-      <p class="bv-eti">Paso 1 de 2 · Empezar</p>
-      <h2 class="bv-h2" id="titulo-opciones">¿Qué quieres hacer?</h2>
-      <p class="bv-sub">Diseña una zapata desde cero, abre un proyecto guardado o explora los ejemplos del curso.</p>
-      <div class="opciones">
+      <p class="bv-eti">Empezar</p>
+      <h2 class="bv-h2" id="titulo-opciones">¿Qué quieres <em>calcular</em>?</h2>
+      <p class="bv-sub">Toda estructura es un camino para la carga: baja de un elemento al siguiente hasta llegar al suelo. Pasa el ratón o toca un elemento para ver qué hace.</p>
+      <div class="camino">
+        <div class="camino-3d" id="camino-3d"><span class="c3-eti c3-izq" aria-hidden="true">Edificio</span><span class="c3-eti c3-der" aria-hidden="true">Puente</span></div>
+        <aside class="camino-info" id="camino-info" aria-live="polite"></aside>
+      </div>
+      <div class="elementos" id="elementos"></div>
+      <div class="proyecto-fila">
+        <div class="pf-importar">
+          <h3 class="bv-h3">¿Ya tienes un proyecto?</h3>
+          <p class="pf-sub">Abre un archivo .json exportado desde RomiCalc.</p>
+          <button type="button" class="btn" id="op-importar">Importar proyecto</button>
+        </div>
+        <div class="recientes" id="recientes" hidden>
+          <h3 class="bv-h3">Continuar un proyecto</h3>
+          <ul class="lista-recientes" id="lista-recientes"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="bv-pantalla" id="bv-zapatas" aria-labelledby="titulo-zapatas" hidden>
+      <button type="button" class="bv-volver-ico" data-ir="opciones"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Elementos</button>
+      <p class="bv-eti">Zapatas · NSR-10</p>
+      <h2 class="bv-h2" id="titulo-zapatas">Zapatas</h2>
+      <p class="bv-sub">Reparten la carga de la columna sobre el suelo. Empieza una nueva o abre un ejemplo del curso.</p>
+      <div class="opciones opciones-2">
         <button type="button" class="opcion opcion-principal" id="op-nueva">
           <svg class="op-ico ico-nueva" viewBox="0 0 48 48" aria-hidden="true">
             <path class="ic-hoja" d="M8 6h24l8 8v28H8z"/><path class="ic-hoja" d="M32 6v8h8"/>
             <path class="ic-cota" pathLength="1" d="M12 38h24M12 36v4M36 36v4"/>
             <path class="ic-zap" d="M14 28h20v6H14z"/><path class="ic-col" d="M21 16h6v12h-6z"/>
           </svg>
-          <span class="op-tit">Nueva zapata</span><span class="op-desc">Empieza con todos los campos vacíos y el asistente paso a paso.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
-        </button>
-        <button type="button" class="opcion" id="op-importar">
-          <svg class="op-ico ico-importar" viewBox="0 0 48 48" aria-hidden="true">
-            <path class="ic-bandeja" d="M6 30v10h36V30M6 30h10l3 5h10l3-5h10"/>
-            <g class="ic-archivo"><path d="M17 4h10l5 5v14H17z"/><path d="M27 4v5h5"/><path class="ic-flecha" d="M24.5 12v8M21.5 17l3 3 3-3"/></g>
-          </svg>
-          <span class="op-tit">Importar proyecto</span><span class="op-desc">Abre un archivo .json exportado desde la app.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          <span class="op-tit">Nueva zapata</span><span class="op-desc">Empieza con los campos vacíos y el asistente paso a paso.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
         <button type="button" class="opcion" id="op-ejemplo">
           <svg class="op-ico ico-ejemplo" viewBox="0 0 48 48" aria-hidden="true">
@@ -69,18 +89,14 @@
             <path class="ic-hoja1" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/><path class="ic-hoja2" d="M24 12c4-3 10-4 17-3v28c-7-1-13 0-17 3z"/>
             <path class="ic-lineas" d="M11 16h8M11 21h8M11 26h6"/>
           </svg>
-          <span class="op-tit">Ejemplos</span><span class="op-desc">Carga el ejemplo del curso del tipo de zapata que elijas.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          <span class="op-tit">Ejemplos</span><span class="op-desc">Abre el ejemplo del curso de la zapata que elijas.</span><svg class="op-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
         </button>
-      </div>
-      <div class="recientes" id="recientes" hidden>
-        <h3 class="bv-h3">Continuar un proyecto</h3>
-        <ul class="lista-recientes" id="lista-recientes"></ul>
       </div>
     </section>
 
     <section class="bv-pantalla" id="bv-tipos" aria-labelledby="titulo-tipos" hidden>
-      <button type="button" class="bv-volver-ico" data-ir="opciones"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Atrás</button>
-      <p class="bv-eti" id="tipos-eti">Paso 2 de 2 · Tipo de cimentación</p>
+      <button type="button" class="bv-volver-ico" data-ir="zapatas"><span class="bv-volver-circ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"/></svg></span>Zapatas</button>
+      <p class="bv-eti" id="tipos-eti">Zapatas · Tipo</p>
       <h2 class="bv-h2" id="titulo-tipos">Tipo de zapata</h2>
       <p class="bv-sub" id="tipos-sub">Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.</p>
       <div class="tipos" id="tipos"></div>
@@ -483,7 +499,7 @@
           <p class="ayuda">Los coeficientes de cortante y de anclaje cambian con el sistema, así que los resultados pueden diferir hasta un 6 % de los del curso. Los proyectos se guardan igual en cualquier sistema.</p>
         </fieldset>
       </div>
-      <div class="dlg-pie"><span class="dlg-espacio"></span><button type="submit" class="btn btn-acento">Listo</button></div>
+      <div class="dlg-pie"><span class="dlg-espacio aj-version">RomiCalc beta 1.2 · NSR-10</span><button type="submit" class="btn btn-acento">Listo</button></div>
     </form>
   </dialog>
 
@@ -522,8 +538,10 @@
   <script src="js/nucleo/vista3d.js"></script>
   <script src="js/nucleo/intro3d.js"></script>
   <script src="js/nucleo/escultura.js"></script>
+  <script src="js/nucleo/camino3d.js"></script>
   <script src="js/nucleo/cargando.js"></script>
   <script src="js/tipos/catalogo.js"></script>
+  <script src="js/tipos/elementos.js"></script>
   <script src="js/nucleo/concreto.js"></script>
   <script src="js/tipos/aislada-momento.js"></script>
   <script src="js/tipos/combinada.js"></script>

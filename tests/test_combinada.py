@@ -113,6 +113,7 @@ def test_combinada_chequeos_y_validacion(navegador, url):
 # ---------------------------------------------------------------- tablero (interfaz)
 def a_tipos(pagina, opcion="#op-nueva"):
     pagina.click("#btn-disenar")
+    pagina.click('#elementos [data-elemento="zapatas"]')
     pagina.click(opcion)
     pagina.wait_for_selector("#bv-tipos:not([hidden])")
 
@@ -151,6 +152,7 @@ def test_tablero_desde_tipos_recientes_e_importar(navegador, url, tmp_path):
     pagina.click("#lista-recientes .reciente")
     pagina.wait_for_selector("#mesa:not([hidden]) #c-chequeos .anillo")
     pagina.click("#c-inicio")
+    pagina.click('#elementos [data-elemento="zapatas"]')
     pagina.click("#op-ejemplo")
     pagina.wait_for_selector("#bv-tipos:not([hidden])")
     assert "ejemplo" in pagina.text_content("#titulo-tipos").lower()

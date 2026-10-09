@@ -488,13 +488,39 @@
   function mostrarPantalla(nombre) {
     document.body.classList.toggle('en-portada', nombre === 'portada');
     window.scrollTo(0, 0);
-    ['portada', 'opciones', 'tipos'].forEach((n) => {
+    ['portada', 'opciones', 'zapatas', 'tipos'].forEach((n) => {
       const el = $('#bv-' + n);
       const activo = n === nombre;
       el.hidden = !activo;
       if (activo) { el.classList.remove('entra'); void el.offsetWidth; el.classList.add('entra'); }
     });
-    if (nombre === 'opciones') pintarRecientes();
+    if (nombre === 'opciones') {
+      pintarRecientes();
+      Camino3D.montar($('#camino-3d'), pintarCamino);
+    }
+  }
+
+  // ¿Qué quieres calcular?: tarjetas de los elementos por grupo y la explicación del elegido en el 3D
+  function pintarElementos() {
+    $('#elementos').innerHTML = GruposElementos.map((g) =>
+      '<section class="el-grupo"><h3 class="el-grupo-cab">' + g.nombre + ' <span class="el-norma">' + g.norma + '</span></h3><div class="el-lista">' +
+      Elementos.filter((e) => e.grupo === g.id).map((e) =>
+        '<button type="button" class="el-tarjeta' + (e.disponible ? ' disponible' : '') + '" data-elemento="' + e.id + '">' +
+        '<svg class="el-ico" viewBox="0 0 48 48" aria-hidden="true">' + e.ico + '</svg>' +
+        '<span class="el-nombre">' + e.nombre + '</span><span class="el-frase">' + e.frase + '</span>' +
+        '<span class="el-revisa">' + e.revisa + '</span>' +
+        '<span class="el-estado">' + (e.disponible ? 'Disponible' : 'Próximamente') + '</span></button>').join('') +
+      '</div></section>').join('');
+    pintarCamino(Camino3D.elegido());
+  }
+  function pintarCamino(id) {
+    const e = Elementos.find((x) => x.id === id);
+    if (!e) return;
+    $$('#elementos .el-tarjeta').forEach((t) => t.classList.toggle('el-activo', t.dataset.elemento === id));
+    $('#camino-info').innerHTML = '<p class="ci-eti">Elemento seleccionado</p><p class="ci-nombre">' + e.nombre + '</p>' +
+      '<p class="ci-explica">' + e.explica + '</p><p class="ci-camino">' +
+      e.camino.map((p) => '<span' + (p === e.actual ? ' class="actual"' : '') + '>' + p + '</span>').join('<span class="ci-flecha" aria-hidden="true">→</span>') + '</p>' +
+      '<p class="ci-revisa">Revisa: ' + e.revisa.toLowerCase() + ' · ' + GruposElementos.find((g) => g.id === e.grupo).norma + '</p>';
   }
 
   function pintarRecientes() {
@@ -559,9 +585,9 @@
   function abrirTipos(modo) {
     modoTipos = modo;
     const ej = modo === 'ejemplo';
-    $('#tipos-eti').textContent = ej ? 'Paso 2 de 2 · Ejemplos del curso' : 'Paso 2 de 2 · Tipo de cimentación';
+    $('#tipos-eti').textContent = ej ? 'Zapatas · Ejemplos del curso' : 'Zapatas · Tipo';
     $('#titulo-tipos').textContent = ej ? 'Elige un ejemplo' : 'Tipo de zapata';
-    $('#tipos-sub').textContent = ej ? 'Carga el ejemplo del documento del curso para el tipo de zapata que quieras.' : 'Elige cómo llega la carga de la columna al suelo. Los demás tipos llegarán en próximas versiones.';
+    $('#tipos-sub').textContent = ej ? 'Carga el ejemplo del documento del curso para el tipo de zapata que quieras.' : 'Elige cómo llega la carga de la columna al suelo: una columna o dos sobre la misma zapata.';
     mostrarPantalla('tipos');
   }
 
@@ -821,6 +847,15 @@
     $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => abrirTipos('nuevo')));
     $('#op-importar').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-importar', () => $('#archivo-importar').click()));
     $('#op-ejemplo').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-ejemplo', () => abrirTipos('ejemplo')));
+    const verElemento = (e) => { const t = e.target.closest('.el-tarjeta'); if (t) { Camino3D.elegir(t.dataset.elemento); pintarCamino(t.dataset.elemento); } };
+    $('#elementos').addEventListener('mouseover', verElemento);
+    $('#elementos').addEventListener('focusin', verElemento);
+    $('#elementos').addEventListener('click', (e) => {
+      const t = e.target.closest('.el-tarjeta');
+      if (!t) return;
+      if (t.classList.contains('disponible')) mostrarPantalla(t.dataset.elemento);
+      else avisar(t.querySelector('.el-nombre').textContent + ' llegará en una próxima versión de RomiCalc.');
+    });
     $('#tipos').addEventListener('click', (e) => {
       const t = e.target.closest('.tipo-tarjeta');
       if (!t) return;
@@ -1146,6 +1181,7 @@
     PlantaInteractiva.montar($('#planta'));
     PlantaInteractiva.montar($('#corte'));
     pintarTipos();
+    pintarElementos();
     enlazar();
     pintarCategorias(T.faltantes(estado));
     Escultura.montar($('#escultura'));

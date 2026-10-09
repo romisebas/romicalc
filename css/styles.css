@@ -29,6 +29,7 @@
   --vidrio: #8fa9cc;
   --marca-bloque: #2A5DB0;   /* isotipo RomiCalc: Cálculo sobre negro (Obra casi desaparece) */
   --marca-bola: #CFE1FA;
+  --marca-acento: #8DB8F2;   /* azul de la marca para texto y detalles sobre negro (9:1) */
   --acero: #ffffff;
   --dovela: #c8c8c8;
   --concreto: #2a2a2a;
@@ -80,6 +81,7 @@
   --vidrio: #426188;
   --marca-bloque: #13315C;   /* isotipo RomiCalc: Obra sobre claro */
   --marca-bola: #8DB8F2;
+  --marca-acento: #2A5DB0;   /* sobre blanco (6.4:1) */
   --acero: #1b1b1b;
   --dovela: #3d3d3d;
   --concreto: #dcdcdc;

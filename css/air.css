@@ -932,3 +932,69 @@ html.mov-reducido .dibujo.planta .perimetro { animation: none; }
 .riel .cat[data-cat="sismo"]:hover .ic-mov { animation: icoVibra .5s ease; }
 .riel .cat[data-cat="ubicacion"]:hover .ic-mov { animation: icoDesliza .6s var(--ease-out); }
 @keyframes icoDesliza { 0% { transform: translateX(-4px); } 60% { transform: translateX(1px); } 100% { transform: none; } }
+
+/* ===================================================================== 2026-10 inicio didáctico: ¿Qué quieres calcular? */
+.bv-elementos { width: min(1312px, 100%); }
+.bv-elementos .camino, .bv-elementos .elementos, .bv-elementos .proyecto-fila { align-self: stretch; width: 100%; }
+.bv-elementos .bv-h2 em, #bv-zapatas .bv-h2 em { color: var(--marca-acento); }
+.camino { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; margin-bottom: 40px; }
+.camino-3d { position: relative; height: 420px; border-radius: var(--r-cont); background: var(--superficie); overflow: hidden; touch-action: pan-y; }
+.camino-3d canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.c3-eti { position: absolute; top: 16px; font: 500 13px/1 var(--sans); color: var(--tinta-3); pointer-events: none; }
+.c3-izq { left: 20px; } .c3-der { right: 20px; }
+.camino-info { display: flex; flex-direction: column; gap: 14px; padding: 28px; border-radius: var(--r-cont); background: var(--superficie); border: 1px solid var(--marca-acento); }
+.camino-info p { margin: 0; }
+.ci-eti { font: 500 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--marca-acento); }
+.ci-nombre { font: 400 44px/.95 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.ci-explica { font: 400 16px/1.5 var(--sans); color: var(--tinta-2); }
+.ci-camino { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 500 13px/1 var(--sans); }
+.ci-camino span:not(.ci-flecha) { padding: 6px 10px; border-radius: var(--r-tag); border: 1px solid var(--linea-fuerte); color: var(--tinta-2); }
+.ci-camino .actual { background: var(--marca-bloque); border-color: var(--marca-bloque) !important; color: #fff !important; }
+.ci-flecha { color: var(--marca-acento); }
+.ci-revisa { margin-top: auto !important; font: 500 13px/1.4 var(--sans); color: var(--tinta-3); }
+
+.el-grupo { margin-bottom: 32px; }
+.el-grupo-cab { margin: 0 0 16px; font: 500 20px/1.2 var(--sans); }
+.el-norma { margin-left: 8px; font-size: 13px; color: var(--marca-acento); }
+.el-lista { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.el-tarjeta { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; text-align: left; border-radius: var(--r-cont);
+  background: var(--superficie); border: 1px solid transparent; color: var(--tinta); font: inherit; cursor: pointer;
+  transition: border-color .2s ease, transform .2s var(--ease-out), opacity .2s ease; }
+.el-tarjeta:not(.disponible) { opacity: .72; }
+.el-tarjeta.el-activo { border-color: var(--linea-fuerte); opacity: 1; }
+.el-tarjeta.disponible { border-color: var(--marca-acento); }
+.el-tarjeta:focus-visible { outline: 2px solid var(--marca-acento); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .el-tarjeta:hover { transform: translateY(-2px); opacity: 1; } }
+.el-ico { width: 44px; height: 44px; fill: none; stroke: var(--tinta-2); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.el-tarjeta.disponible .el-ico, .el-tarjeta.el-activo .el-ico { stroke: var(--marca-acento); }
+.el-nombre { font: 400 28px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.el-frase { font: 400 14px/1.45 var(--sans); color: var(--tinta-2); }
+.el-revisa { font: 500 12px/1.4 var(--sans); color: var(--tinta-3); }
+.el-estado { margin-top: auto; padding: 5px 10px; border-radius: var(--r-tag); border: 1px solid var(--linea-fuerte); font: 500 12px/1 var(--sans); color: var(--tinta-3); }
+.el-tarjeta.disponible .el-estado { background: var(--marca-bloque); border-color: var(--marca-bloque); color: #fff; }
+.el-tarjeta.disponible .el-estado::after { content: " →"; }
+
+.proyecto-fila { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; padding-top: 28px; border-top: 1px solid var(--linea); }
+.pf-importar { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.pf-importar .bv-h3, .proyecto-fila .recientes .bv-h3 { margin: 0; font: 500 20px/1.2 var(--sans); text-transform: none; color: var(--tinta); }
+.pf-sub { margin: 0; font: 500 14px/1.4 var(--sans); color: var(--tinta-3); }
+.proyecto-fila .recientes { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.opciones-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 900px) {
+  .camino, .proyecto-fila { grid-template-columns: minmax(0, 1fr); }
+  .camino-3d { height: 300px; }
+  .el-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opciones-2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) { .el-lista { grid-template-columns: minmax(0, 1fr); } .ci-nombre { font-size: 36px; } }
+
+/* Inicio: tema claro/oscuro y ajustes a mano en las pantallas de inicio (la portada los lleva en su barra) */
+.bv-ctl { position: fixed; top: 20px; right: clamp(16px, 4vw, 48px); z-index: 5; display: flex; gap: 10px; }
+body.en-portada .bv-ctl, body:not(.en-bienvenida) .bv-ctl { display: none; }
+@media (hover: hover) and (pointer: fine) { .bv-tema-ico:hover svg { transform: rotate(-40deg); } }
+.aj-version { font: 500 12px/1 var(--sans); color: var(--tinta-3); }
+/* Logo de la portada: se arma al cargar y la bola "respira" cada 6 s */
+#bv-marca .lg-bola { animation: piezaCae .7s var(--ease-out) .35s both, bolaRespira 6s ease-in-out 2.5s infinite; }
+@keyframes bolaRespira { 0%, 84%, 100% { transform: none; } 90% { transform: scale(1.14); } 95% { transform: scale(.96); } }
+html.mov-reducido #bv-marca .lg-bola { animation: none; }

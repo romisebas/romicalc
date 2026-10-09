@@ -5,7 +5,7 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 ## Estado actual
 - **Versión:** beta 1.2, publicada en GitHub (github.com/romisebas/romicalc, pre-release beta-1.2) y en Netlify (zapatapp.netlify.app).
 - **Nombre:** RomiCalc (antes ZapatAPP). El sitio sigue en zapatapp.netlify.app hasta renombrarlo.
-- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 57 pruebas.
+- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 58 pruebas.
 
 ## En curso: RomiCalc ([plan](docs/superpowers/plans/2026-10-08-romicalc.md))
 - [x] A · Skills y plugins: quitar karpathy-guidelines y redesign-existing-projects; Chrome DevTools MCP; skills de rendimiento y seguridad
@@ -13,9 +13,19 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] C · Renombrar la app a RomiCalc (lema: "Cálculo de elementos estructurales según la NSR-10")
 - [x] D · Auditoría 1–3: números como texto y barra desconocida al importar; CSS muerto
 
+## Siguiente: inicio didáctico ([plan](docs/superpowers/plans/2026-10-09-romicalc-inicio-didactico.md))
+- [x] A · Maqueta de "¿Qué quieres calcular?" en Claude Design
+- [x] B · Página de elementos (camino de las cargas + tarjetas)
+- [x] C · Zapatas: empezar y solo 2 tipos
+- [ ] D · Intro 3D: pórtico que termina en la R
+- [ ] E · Portada: 3D nuevo (falta) · sin "beta", logo que respira y botón de tema (hechos)
+- [ ] F · Azul de la marca en toda la app
+- [ ] G · Pruebas y cierre
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
+| 2026-10-09 | Inicio didáctico A–C y parte de E: maqueta en Claude Design; "¿Qué quieres calcular?" con 3D Three.js del camino de las cargas (edificio y puente) y 7 elementos (solo Zapatas disponible); pantalla Zapatas y solo 2 tipos; portada sin "beta", botón de tema y logo que respira | (este) | 58 ✓ |
 | 2026-10-08 | Publicación: repositorio renombrado a romisebas/romicalc, push de main, etiqueta y pre-release beta-1.2 | (este) | 57 ✓ |
 | 2026-10-08 | D · Auditoría 1 y 2: al importar un .json, "2.5" cuenta como número y una barra que no existe queda como dato faltante (aislada y combinada); 10: prueba de importación con datos raros; 3: 73 líneas de CSS `mesa-*` muerto fuera | 6cb977b | 57 ✓ |
 | 2026-10-08 | C · App renombrada a RomiCalc: portada ROMICALC y lema nuevo, isotipo en barra, pie, carga y PDF (una tinta), favicon e íconos, intro 3D dobla la varilla en la R; logo viejo a `assets/logo/conceptos/zapatapp/`; claves de guardado sin tocar | 58ae939 | 56 ✓ |
