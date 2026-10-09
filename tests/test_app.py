@@ -319,6 +319,21 @@ def test_pantalla_de_opciones(navegador, url):
     assert not errores, errores
 
 
+def test_maqueta_3d_compartida(navegador, url):
+    """Una sola maqueta (edificio, puente de dos luces y box culvert) con piezas por elemento, etapas de obra y caminos de carga."""
+    pagina, errores = abrir(navegador, url)
+    r = pagina.evaluate("""() => { const m = Maqueta3D.crear(THREE, { simple: false });
+      const ids = Elementos.map((e) => e.id);
+      return { faltan: ids.filter((id) => !(m.piezas[id] || []).length), sinCamino: ids.filter((id) => !(m.caminos[id] || []).length),
+        sinFoco: ids.filter((id) => !m.focos[id]), etapas: [...new Set(m.todas.map((x) => x.userData.etapa))].sort((a, b) => a - b),
+        columnas: m.piezas.columnas.length, zapatas: m.piezas.zapatas.length, pisos: new Set(m.piezas.losas.map((x) => x.userData.nivel)).size,
+        vigasI: m.piezas['puente-viga'].filter((x) => x.userData.parte === 'viga-i').length }; }""")
+    assert r["faltan"] == [] and r["sinCamino"] == [] and r["sinFoco"] == [], r
+    assert r["etapas"][0] == 0 and len(r["etapas"]) >= 8, r
+    assert r["columnas"] >= 36 and r["zapatas"] >= 12 and r["pisos"] == 3 and r["vigasI"] == 3, r
+    assert not errores, errores
+
+
 def test_que_quieres_calcular(navegador, url):
     """Página de elementos: camino de las cargas en 3D, 7 elementos en dos grupos y solo Zapatas disponible."""
     pagina, errores = abrir(navegador, url, anim="activadas")

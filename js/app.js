@@ -847,7 +847,8 @@
     $('#op-nueva').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-nueva', () => abrirTipos('nuevo')));
     $('#op-importar').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-importar', () => $('#archivo-importar').click()));
     $('#op-ejemplo').addEventListener('click', (e) => elegir(e.currentTarget, 'elige-ejemplo', () => abrirTipos('ejemplo')));
-    const verElemento = (e) => { const t = e.target.closest('.el-tarjeta'); if (t) { Camino3D.elegir(t.dataset.elemento); pintarCamino(t.dataset.elemento); } };
+    const verElemento = (e) => { const t = e.target.closest('.el-tarjeta'); if (t) { Camino3D.elegir(t.dataset.elemento, true); pintarCamino(t.dataset.elemento); } };
+    $('#c3-todo').addEventListener('click', () => Camino3D.verTodo());
     $('#elementos').addEventListener('mouseover', verElemento);
     $('#elementos').addEventListener('focusin', verElemento);
     $('#elementos').addEventListener('click', (e) => {

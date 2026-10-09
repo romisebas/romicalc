@@ -22,10 +22,18 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] F · Azul de la marca en toda la app
 - [x] G · Pruebas y cierre
 
+## En curso: maqueta 3D realista ([plan](docs/superpowers/plans/2026-10-09-romicalc-maqueta-3d.md))
+- [x] A · Maqueta compartida (js/nucleo/maqueta3d.js): terreno con estratos, edificio en obra gris, puente de dos luces, box culvert
+- [x] B · Página de elementos con la maqueta: resaltado, cámara al elemento, rayos X, "Ver todo"
+- [ ] C · Portada con la maqueta en despiece
+- [ ] D · Intro: la obra por etapas y el logo
+- [ ] E · Pruebas y cierre
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
-| 2026-10-09 | D y E · Intro "del pórtico al logo" (zapatas, columnas, vigas, losa, carga y el isotipo que se arma) y portada con maqueta de vidrio de pórtico y puente de losa; cinta con los elementos | (este) | 59 ✓ |
+| 2026-10-09 | Maqueta A–B: un solo modelo 3D realista (edificio de 3 pisos en obra gris, puente de losa + vigas I con pila, box culvert de doble celda, río y quebrada) en "¿Qué quieres calcular?", con cámara que viaja al elemento y rayos X para zapatas y box culvert | (este) | 60 ✓ (parcial) |
+| 2026-10-09 | D y E · Intro "del pórtico al logo" (zapatas, columnas, vigas, losa, carga y el isotipo que se arma) y portada con maqueta de vidrio de pórtico y puente de losa; cinta con los elementos | 5507166 | 59 ✓ |
 | 2026-10-09 | F · Azul de la marca (Cielo #8DB8F2 en oscuro, Cálculo #2A5DB0 en claro) en títulos, pestaña activa, progreso, foco, selección, riel, presiones 3D y capítulo de la memoria; el 3D de elementos solo redibuja si algo cambia | b2a669b | 59 ✓ |
 | 2026-10-09 | Inicio didáctico A–C y parte de E: maqueta en Claude Design; "¿Qué quieres calcular?" con 3D Three.js del camino de las cargas (edificio y puente) y 7 elementos (solo Zapatas disponible); pantalla Zapatas y solo 2 tipos; portada sin "beta", botón de tema y logo que respira | fab68f2 | 58 ✓ |
 | 2026-10-08 | Publicación: repositorio renombrado a romisebas/romicalc, push de main, etiqueta y pre-release beta-1.2 | (este) | 57 ✓ |
