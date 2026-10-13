@@ -85,6 +85,7 @@
 
   // Valores reportados en el PDF para la validación automática.
   // Muy se compara contra el valor corregido (el PDF reporta 8.8 por usar Ly·Ky).
+  // Asx y Asy también: el PDF usa 0.0018·b·d; la NSR-10 C.7.12 pide 0.0018·b·h.
   const VALORES_PDF = [
     { k: 'serv.s1', v: 10.87, lbl: 'σ1 servicio', u: 'tonf/m²' },
     { k: 'serv.s2', v: 10.59, lbl: 'σ2 servicio', u: 'tonf/m²' },
@@ -107,9 +108,9 @@
     { k: 'cy.phiVc', v: 78.99, lbl: 'φVcy', u: 'tonf' },
     { k: 'fx.Mu', v: 13.75, lbl: 'Mux', u: 'tonf·m' },
     { k: 'fx.Rn', v: 3.38, lbl: 'Rnx', u: 'kgf/cm²' },
-    { k: 'fx.As', v: 17.1, lbl: 'Asx', u: 'cm²' },
+    { k: 'fx.As', v: 19.80, lbl: 'Asx (corregido, PDF: 17.1)', u: 'cm²' },
     { k: 'fy.Mu', v: 11.0, lbl: 'Muy (corregido, PDF: 8.8)', u: 'tonf·m' },
-    { k: 'fy.As', v: 21.38, lbl: 'Asy', u: 'cm²' },
+    { k: 'fy.As', v: 24.75, lbl: 'Asy (corregido, PDF: 21.38)', u: 'cm²' },
     { k: 'ap.phiPnb1', v: 309.4, lbl: 'φPnb1', u: 'tonf' },
     { k: 'ap.phiPnb2', v: 618.8, lbl: 'φPnb2', u: 'tonf' },
   ];
@@ -202,14 +203,15 @@
   }
 
   // Flexión en una dirección: voladizo (L − C)/2, ancho b. fy depende del tipo de refuerzo.
-  function flexionDir(inp, L, C, b, d, su, fy) {
+  // As,min = 0.0018·b·h (NSR-10 C.7.12), con la altura total h.
+  function flexionDir(inp, L, C, b, d, h, su, fy) {
     const { fc, phiF } = inp.materiales;
     const K = (L - C) / 2;
     const Af = b * K;
     const F = su * Af;
     const Mu = F * K / 2;
-    const s = CO.flexion(Mu, b, d, fc, fy, phiF, 'bd');
-    return { K, Af, F, Mu, Rn: s.Rn, raiz: s.raiz, rhoCalc: s.rhoCalc, rhoMin: s.rhoMin, rhoMax: s.rhoMax, beta1: s.beta1, rho: s.rho, As: s.As, b, fy, ok: s.ok, gobiernaMin: !(s.rhoCalc > s.rhoMin) };
+    const s = CO.flexion(Mu, b, d, fc, fy, phiF, 'bh', h);
+    return { K, Af, F, Mu, Rn: s.Rn, raiz: s.raiz, rhoCalc: s.rhoCalc, rhoMin: s.rhoMin, rhoMax: s.rhoMax, beta1: s.beta1, rho: s.rho, As: s.As, AsMin: s.AsMin, b, fy, ok: s.ok, gobiernaMin: s.gobiernaMin };
   }
 
   function aplastamiento(inp, Lx, Ly, h, Pu) {
@@ -274,9 +276,9 @@
     const cu = cortanteUnaDir(inp, Lx, Ly, d, ult.su);
     const fyDis = inp.acero.tipo === 'malla' ? inp.acero.fyMalla : inp.materiales.fy;
     // X: barras paralelas a X, voladizo (Lx − Cx)/2, repartidas en Ly.
-    const fx = flexionDir(inp, Lx, inp.columna.Cx, Ly, d, ult.su, fyDis);
+    const fx = flexionDir(inp, Lx, inp.columna.Cx, Ly, d, h, ult.su, fyDis);
     // Y: barras paralelas a Y, voladizo (Ly − Cy)/2, repartidas en Lx (el PDF usa Ly por error).
-    const fyv = flexionDir(inp, Ly, inp.columna.Cy, Lx, d, ult.su, fyDis);
+    const fyv = flexionDir(inp, Ly, inp.columna.Cy, Lx, d, h, ult.su, fyDis);
     fyv.AfPdf = Ly * fyv.K;
     fyv.MuPdf = ult.su * fyv.AfPdf * fyv.K / 2;
     // Banda central en zapatas rectangulares (NSR-10 C.15.4.4.2), solo informativa

@@ -5,7 +5,7 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 ## Estado actual
 - **Versión:** beta 1.2 en GitHub (github.com/romisebas/romicalc) y en línea en https://romicalc.netlify.app/ (la dirección vieja zapatapp.netlify.app ya no responde).
 - **Nombre:** RomiCalc (antes ZapatAPP).
-- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 62 pruebas.
+- **Funciona:** zapata aislada con momento y zapata combinada (asistente, veredicto, planos, 3D, refuerzo, memoria y PDF). 63 pruebas.
 
 ## En curso: RomiCalc ([plan](docs/superpowers/plans/2026-10-08-romicalc.md))
 - [x] A · Skills y plugins: quitar karpathy-guidelines y redesign-existing-projects; Chrome DevTools MCP; skills de rendimiento y seguridad
@@ -53,9 +53,16 @@ Checkpoints del proyecto. Se actualiza al cerrar cada tarea, en el mismo commit 
 - [x] D · Pruebas, capturas y cierre
 - [ ] Q6: revisar los DWG que descargue el usuario
 
+## En curso: cuantía mínima de la aislada con b·h ([plan](docs/superpowers/plans/2026-10-13-aislada-cuantia-minima-bh.md))
+- [x] A · Prueba primero: Asx = 19.80 y Asy = 24.75 cm² en el ejemplo, con el mínimo gobernando
+- [x] B · Motor: `flexionDir` usa 0.0018·b·h (C.7.12); `VALORES_PDF` compara con el corregido y deja el del PDF en la etiqueta
+- [x] C · Memoria: ρmin aparte, ρx ≤ ρmax y As = max(ρx·b·d, ρmin·b·h); nota del curso en "Refuerzo en X"
+- [x] D · Pruebas, revisión en el navegador (Refuerzo, Planos y PDF), skill prog-nsr10 y cierre
+
 ## Checkpoints
 | Fecha | Qué se hizo | Commit | Pruebas |
 |---|---|---|---|
+| 2026-10-13 | Cuantía mínima A–D: la aislada calcula As,min = 0.0018·b·h (NSR-10 C.7.12) en vez de b·d; en el ejemplo Asx 17.10 → 19.80 y Asy 21.38 → 24.75 cm² (16 #4 y 20 #4), memoria y PDF con la nota del curso; skill prog-nsr10 sin el pendiente | (este) | 63 ✓ (la intro falló una vez por tiempo en la suite y pasa sola) |
 | 2026-10-09 | Armado NSR-10 A–D: traslapo superior desde el punto de inflexión (L1 lo pasa e; L3/L4 del borde al PI), mínima solo en partes vacías, barras elegibles junto al 3D en las dos zapatas; corrige las fórmulas con una sola barra invertida de la diapositiva de la cara superior | (este) | 62 ✓ |
 | 2026-10-09 | Acero A–F: la combinada lleva la cara superior completa a cuantía mínima (L3/L4 y T4, en despiece, memoria y PDF); un solo armador 3D con ganchos curvos para Planos (aislada y combinada) y la memoria; las 41 diapositivas en mini-3D, también plantas y cortes con su acero; nota en la aislada sobre la cara superior | (este) | 61 ✓ |
 | 2026-10-09 | Figuras D–G: mini-3D quieto en las diapositivas (un solo renderizador, se arrastra y vuelve, etiquetas HTML, ligas en los dos sentidos) para las 13 figuras de la aislada y las 9 de la combinada; SVG técnico como respaldo y en el PDF (patrones con id propio para que el achurado salga impreso) | (este) | 61 ✓ |

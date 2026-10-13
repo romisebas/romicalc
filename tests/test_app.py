@@ -72,6 +72,16 @@ def test_validacion_contra_pdf(navegador, url):
     assert not errores, errores
 
 
+def test_cuantia_minima_bh(navegador, url):
+    """As,min de la aislada = 0.0018·b·h (NSR-10 C.7.12), no b·d: en el ejemplo gobierna el mínimo."""
+    pagina, errores = abrir(navegador, url)
+    r = pagina.evaluate("(() => { const T = Tipos['aislada-momento']; const R = T.calcular(T.preparar(T.EJEMPLO));"
+                        " return {asx: R.fx.As, asy: R.fy.As, gx: R.fx.gobiernaMin, gy: R.fy.gobiernaMin}; })()")
+    assert abs(r["asx"] - 19.80) < 0.01 and abs(r["asy"] - 24.75) < 0.01, r
+    assert r["gx"] and r["gy"], r
+    assert not errores, errores
+
+
 def test_intro_y_saltar(navegador, url):
     pagina, errores = abrir(navegador, url, intro=True, anim="activadas")
     pagina.wait_for_selector("#intro:not([hidden]) canvas")

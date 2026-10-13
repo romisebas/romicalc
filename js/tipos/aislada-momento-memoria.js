@@ -158,14 +158,16 @@
         { tipo: 'voladizo', dir });
       const MuC = UN.a(F.Mu, 'momento', sis) * convMv;
       diapo(c4, 'Cuantía de acero en ' + dir,
-        'Con el momento se obtiene la cuantía necesaria. No puede ser menor que la mínima por retracción y temperatura (C.7.12.2.1) ni mayor que la de una sección controlada por tracción.',
+        'Con el momento se obtiene la cuantía necesaria, que no puede pasar la de una sección controlada por tracción. El acero mínimo por retracción y temperatura se mide con la altura total h (C.7.12.2.1).',
         [eq('Coeficiente de resistencia', 'R_{n' + dl + '}', '\\dfrac{M_{u' + dl + '}\\cdot ' + convM + '}{\\phi_f\\,b\\,d^{2}}', '\\dfrac{' + n(MuC, 0) + '}{' + n(m.phiF, 2) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto') + '^{2}}', v(F.Rn, 'esfuerzo', en ? 1 : 3), uEsf),
         eq('Cuantía requerida', '\\rho_{' + dl + '}', '\\dfrac{0.85 f\'_c}{f_y}\\left(1 - \\sqrt{1 - \\dfrac{2R_n}{0.85 f\'_c}}\\right)',
           '\\dfrac{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}{' + v(F.fy, 'esfuerzo') + '}\\left(1 - \\sqrt{1 - \\dfrac{2\\cdot' + v(F.Rn, 'esfuerzo', en ? 1 : 3) + '}{0.85\\cdot' + v(m.fc, 'esfuerzo') + '}}\\right)', n(F.rhoCalc, 5), ''),
-        eq('Cuantía de diseño', '\\rho', '\\max(\\rho_{' + dl + '},\\ \\rho_{min})', '\\max(' + n(F.rhoCalc, 5) + ',\\ ' + n(F.rhoMin, 5) + ')', n(F.rho, 5), ''),
-        ver('Cuantía máxima', '\\rho = ' + n(F.rho, 5) + ' \\;' + le(F.rho <= F.rhoMax) + '\\; \\rho_{max} = ' + n(F.rhoMax, 5), F.rho <= F.rhoMax)],
+        eq('Cuantía mínima de retracción', '\\rho_{min}', null, null, n(F.rhoMin, 4), ''),
+        ver('Cuantía máxima', '\\rho_{' + dl + '} = ' + n(F.rhoCalc, 5) + ' \\;' + le(F.rhoCalc <= F.rhoMax) + '\\; \\rho_{max} = ' + n(F.rhoMax, 5), F.rhoCalc <= F.rhoMax)],
         { tipo: 'momento', dir });
-      const items = [eq('Acero requerido', 'A_{s' + dl + '}', '\\rho\\,b\\,d', n(F.rho, 5) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto'), v(F.As, 'acero'), U('acero'))];
+      const items = [eq('Acero requerido', 'A_{s' + dl + '}', '\\max(\\rho_{' + dl + '}\\,b\\,d,\\ \\rho_{min}\\,b\\,h)',
+        '\\max(' + n(F.rhoCalc, 5) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.d, 'corto') + ',\\ ' + n(F.rhoMin, 4) + '\\cdot' + v(bVal, 'corto') + '\\cdot' + v(R.h, 'corto') + ')', v(F.As, 'acero'), U('acero'))];
+      if (dir === 'X') items.push(nota('info', 'El curso usa 0.0018·b·d; la NSR-10 C.7.12 pide la altura total h.'));
       if (rf.tipo === 'barras') {
         const sel = dir === 'X' ? rf.selX : rf.selY;
         items.push(eq('Acero suministrado', 'A_{s,prov}', 'n\\,A_b', sel.n + '\\cdot' + v(sel.Ab, 'acero') + '\\quad(' + sel.n + '\\,\\#' + sel.barra + '\\ @\\ ' + v(sel.s, 'longitud') + U('longitud') + ')', v(sel.AsProv, 'acero'), U('acero')));
